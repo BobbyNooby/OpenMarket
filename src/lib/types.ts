@@ -26,7 +26,10 @@ export type UserActivity = {
 };
 
 //Query result of User Table JOINED with UserActivity and Votes and Comments
-export type UserPageProfile = User & UserActivity;
+export type UserPageProfile = User &
+	UserActivity & {
+		reviews: ProfileReview[];
+	};
 
 // & {
 // 	votes: ProfileVote[];
@@ -34,13 +37,11 @@ export type UserPageProfile = User & UserActivity;
 // };
 
 // Vote Table
-export type ProfileVote = DefaultIdentifier & {
+export type ProfileReview = DefaultIdentifier & {
 	type: 'upvote' | 'downvote';
-	voter: User;
-};
-
-export type ProfileComment = DefaultIdentifier & {
-	content: string;
+	profile_user_id: string;
+	voter_id: string;
+	comment?: string;
 };
 
 export type Currency = GenericItem;

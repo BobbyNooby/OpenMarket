@@ -3,7 +3,7 @@ import { usersTable, usersActivityTable } from '$lib/db/schemas';
 
 type UserInsert = typeof usersTable.$inferInsert;
 
-type UpsertedUser = { id: number; username: string };
+type UpsertedUser = { id: string; username: string };
 
 type UpsertResult = { status: 200; data: UpsertedUser } | { status: number; error: string };
 

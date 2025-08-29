@@ -1,13 +1,14 @@
 import { db } from '$lib/db/db';
-import { usersTable, usersActivityTable } from '$lib/db/schemas';
-import type { UserPageProfile } from '$lib/types';
+import { usersTable, usersActivityTable, profileReviewsTable } from '$lib/db/schemas';
+import type { UserPageProfile, ProfileReview } from '$lib/types';
 import { eq } from 'drizzle-orm';
 
 export async function getUserProfileFromUsername(
 	username: string
 ): Promise<{ status: number; data: UserPageProfile | null; error?: any }> {
 	try {
-		const result = await db
+		// 1. fetch user + activity
+		const userRows = await db
 			.select({
 				id: usersTable.id,
 				created_at: usersTable.created_at,
@@ -23,27 +24,44 @@ export async function getUserProfileFromUsername(
 			.leftJoin(usersActivityTable, eq(usersTable.id, usersActivityTable.user_id))
 			.where(eq(usersTable.username, username));
 
+		if (userRows.length === 0) {
+			return { status: 404, data: null };
+		}
+
+		const userRow = userRows[0];
+
+		// 2. fetch profile reviews for this user
+		const reviewRows = await db
+			.select()
+			.from(profileReviewsTable)
+			.where(eq(profileReviewsTable.profile_user_id, userRow.id));
+
+		// map reviews into your ProfileReview type
+		const reviews: ProfileReview[] = reviewRows.map((r) => ({
+			id: r.id,
+			created_at: r.created_at.toISOString(),
+			type: r.type,
+			profile_user_id: r.profile_user_id,
+			voter_id: r.voter_user_id,
+			comment: r.comment ?? undefined
+		}));
+
+		// 3. merge into UserPageProfile
 		const returnObject: UserPageProfile = {
-			id: result[0].id.toString(),
-			created_at: result[0].created_at.toISOString(),
-			discord_id: result[0].discord_id,
-			username: result[0].username,
-			display_name: result[0].display_name,
-			avatar_url: result[0].avatar_url || undefined,
-			description: result[0].description || undefined,
-			is_active: result[0].is_active!,
-			last_activity_at: result[0].last_activity_at?.toISOString()!
+			id: userRow.id,
+			created_at: userRow.created_at.toISOString(),
+			discord_id: userRow.discord_id,
+			username: userRow.username,
+			display_name: userRow.display_name,
+			avatar_url: userRow.avatar_url ?? undefined,
+			description: userRow.description ?? undefined,
+			is_active: userRow.is_active ?? false,
+			last_activity_at: userRow.last_activity_at?.toISOString()! ?? undefined,
+			reviews
 		};
-		// return first match, or null
-		return {
-			status: result.length > 0 ? 200 : 404,
-			data: result.length > 0 ? returnObject : null
-		};
+
+		return { status: 200, data: returnObject };
 	} catch (err: any) {
-		return {
-			status: 500,
-			data: null,
-			error: err
-		};
+		return { status: 500, data: null, error: err };
 	}
 }
