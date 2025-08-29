@@ -1,0 +1,29 @@
+openapi: 3.0.4
+
+info:
+  title: OpenMarket API
+  version: 0.0.1
+
+paths:
+  /:
+    get:
+      summary: Welcome to OpenMarket API
+      responses:
+        '200':
+          description: Welcome
+
+components:
+  schemas:
+    MarketOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        author_id:
+          type: integer
+          format: int64
+          example: 1
+        re
+    

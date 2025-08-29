@@ -4,12 +4,12 @@ services:
     container_name: openmarket-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"           # change left side if 5432 is already used (e.g. "15432:5432")
+      - '5432:5432' # change left side if 5432 is already used (e.g. "15432:5432")
     env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d openmarket"]
+      test: ['CMD-SHELL', 'pg_isready -U dev -d openmarket']
       interval: 2s
       timeout: 2s
       retries: 15
@@ -19,7 +19,7 @@ services:
     image: adminer
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - '8080:8080'
     depends_on:
       db:
         condition: service_healthy
