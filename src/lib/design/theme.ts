@@ -1,56 +1,43 @@
-import { get, writable, type Writable } from 'svelte/store';
-import { darkTheme, lightTheme, type Theme } from './themes';
+import { writable, get, type Writable } from 'svelte/store';
+import { THEME_MAP, type Theme, type ThemeName } from '$lib/design/themes';
 
-function createThemeStore() {
-	const themes: Theme[] = [darkTheme, lightTheme];
-	const theme: Writable<Theme> = writable(themes[0]);
-	const STORAGE_KEY = 'theme';
+const STORAGE_KEY = 'theme';
+const COOKIE_KEY = 'theme';
 
-	function cycleTheme() {
-		const nextIndex = (themes.indexOf(get(theme)) + 1) % themes.length;
-		setTheme(themes[nextIndex]);
-	}
+const theme: Writable<Theme> = writable(THEME_MAP.dark); // SSR fallback
 
-	function setTheme(chosen: Theme) {
-		theme.set(chosen);
-		cacheTheme();
-	}
-
-	function initializeTheme() {
-		if (typeof window === 'undefined') return; // 🚫 SSR safe-guard
-
-		const storedTheme = localStorage.getItem(STORAGE_KEY);
-		if (storedTheme) {
-			try {
-				const parsed = JSON.parse(storedTheme) as Partial<Theme>;
-				const valid = parsed?.name && themes.find((t) => t.name === parsed.name);
-
-				if (valid) {
-					theme.set(valid);
-				} else {
-					throw new Error('Invalid theme name');
-				}
-			} catch (error) {
-				console.error('Error parsing stored theme:', error);
-				localStorage.removeItem(STORAGE_KEY);
-				theme.set(themes[0]);
-				cacheTheme();
-			}
-		}
-	}
-
-	function cacheTheme() {
-		if (typeof window === 'undefined') return; // 🚫 SSR safe-guard
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(get(theme)));
-	}
-
-	return {
-		theme,
-		cycleTheme,
-		setTheme,
-		cacheTheme,
-		initializeTheme
-	};
+function writeCookieAndAttr(t: Theme) {
+	if (typeof document === 'undefined') return;
+	// reflect on <html> (keeps Tailwind/data-theme users happy)
+	document.documentElement.setAttribute('data-theme', t.name);
+	// 1 year cookie
+	document.cookie = `${COOKIE_KEY}=${encodeURIComponent(t.name)}; Path=/; Max-Age=31536000; SameSite=Lax`;
 }
 
-export const useTheme = createThemeStore();
+function writeLocalStorage(t: Theme) {
+	if (typeof localStorage === 'undefined') return;
+	localStorage.setItem(STORAGE_KEY, JSON.stringify(t));
+}
+
+export function setTheme(next: Theme) {
+	theme.set(next);
+	writeCookieAndAttr(next);
+	writeLocalStorage(next);
+}
+
+export function toggleTheme() {
+	const current = get(theme);
+	const nextName: ThemeName = current.name === 'dark' ? 'light' : 'dark';
+	setTheme(THEME_MAP[nextName]);
+}
+
+/** Call once in +layout.svelte with the SSR theme */
+export function hydrateThemeFromSSR(ssrTheme: Theme) {
+	theme.set(ssrTheme);
+	// Ensure <html data-theme> reflects SSR theme after hydration
+	if (typeof document !== 'undefined') {
+		document.documentElement.setAttribute('data-theme', ssrTheme.name);
+	}
+}
+
+export { theme };

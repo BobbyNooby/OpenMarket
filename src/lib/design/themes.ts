@@ -1,5 +1,5 @@
 export type Theme = {
-	name: string;
+	name: ThemeName;
 	colors: {
 		primary: string;
 		secondary: string;
@@ -31,6 +31,8 @@ export type Theme = {
 		link: string;
 	};
 };
+
+export type ThemeName = 'light' | 'dark';
 
 export const lightTheme: Theme = {
 	name: 'light',
@@ -98,4 +100,9 @@ export const darkTheme: Theme = {
 		disabled: '#475569', // slate-600
 		link: '#93C5FD' // blue-300
 	}
+};
+
+export const THEME_MAP: Record<ThemeName, Theme> = {
+	light: lightTheme,
+	dark: darkTheme
 };

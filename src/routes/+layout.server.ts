@@ -1,10 +1,10 @@
 import { updateUserOnSessionRequest } from '$lib/api/updateUserOnSessionRequest';
 import type { usersTable } from '$lib/db/schemas';
 import type { LayoutServerLoad } from './$types';
+import { THEME_MAP } from '$lib/design/themes';
 
-export const load: LayoutServerLoad = async (event) => {
-	const session = await event.locals.auth();
-	console.log(session);
+export const load: LayoutServerLoad = async ({ locals }) => {
+	const session = await locals.auth();
 	if (session) {
 		const { discord_id, username, display_name, avatar_url } = session as {
 			discord_id: string;
@@ -20,7 +20,9 @@ export const load: LayoutServerLoad = async (event) => {
 		};
 		console.log(await updateUserOnSessionRequest(user));
 	}
+	const theme = THEME_MAP[locals.themeName ?? 'dark'];
 	return {
+		theme,
 		session
 	};
 };
