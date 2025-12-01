@@ -1,11 +1,14 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { hydrateThemeFromSSR } from '$lib/design/theme';
+	import { injectThemeVariables } from '$lib/design/cssVariables';
+	import { onMount } from 'svelte';
 
 	let { children, data } = $props();
 
-	hydrateThemeFromSSR(data.theme);
+	onMount(() => {
+		injectThemeVariables();
+	});
 </script>
 
 <svelte:head>

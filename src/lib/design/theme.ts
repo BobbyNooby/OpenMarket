@@ -4,19 +4,18 @@ import { THEME_MAP, type Theme, type ThemeName } from '$lib/design/themes';
 const STORAGE_KEY = 'theme';
 const COOKIE_KEY = 'theme';
 
-const theme: Writable<Theme> = writable(THEME_MAP.dark); // SSR fallback
+const theme: Writable<Theme> = writable(THEME_MAP.dark);
 
 function writeCookieAndAttr(t: Theme) {
 	if (typeof document === 'undefined') return;
-	// reflect on <html> (keeps Tailwind/data-theme users happy)
 	document.documentElement.setAttribute('data-theme', t.name);
-	// 1 year cookie
 	document.cookie = `${COOKIE_KEY}=${encodeURIComponent(t.name)}; Path=/; Max-Age=31536000; SameSite=Lax`;
 }
 
 function writeLocalStorage(t: Theme) {
 	if (typeof localStorage === 'undefined') return;
 	localStorage.setItem(STORAGE_KEY, JSON.stringify(t));
+	localStorage.setItem('theme-mode', t.name); // sync with cssVariables
 }
 
 export function setTheme(next: Theme) {
@@ -31,10 +30,9 @@ export function toggleTheme() {
 	setTheme(THEME_MAP[nextName]);
 }
 
-/** Call once in +layout.svelte with the SSR theme */
+// Call this in +layout.svelte with SSR theme
 export function hydrateThemeFromSSR(ssrTheme: Theme) {
 	theme.set(ssrTheme);
-	// Ensure <html data-theme> reflects SSR theme after hydration
 	if (typeof document !== 'undefined') {
 		document.documentElement.setAttribute('data-theme', ssrTheme.name);
 	}
