@@ -11,15 +11,7 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
-		"lint": "prettier --check . && eslint .",
-		"server": "go run ./server/main.go",
-		"db:up": "docker compose -f ./postgres/docker-compose.yml up -d db",
-		"db:down": "docker compose -f ./postgres/docker-compose.yml down",
-		"db:logs": "docker compose -f ./postgres/docker-compose.yml logs -f db",
-		"db:nuke": "docker compose -f ./postgres/docker-compose.yml down -v",
-		"db:shell": "docker compose -f ./postgres/docker-compose.yml exec db psql -U dev -d openmarket",
-		"db:wait": "node -e \"(async()=>{const {Client}=require('pg');const url=process.env.DATABASE_URL;for(;;){try{const c=new Client({connectionString:url});await c.connect();await c.end();break;}catch(e){await new Promise(r=>setTimeout(r,500));}}})()\"",
-		"db:reset": "npm run db:down && npm run db:up && npm run db:wait && npm run db:migrate"
+		"lint": "prettier --check . && eslint ."
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -28,8 +20,7 @@
 		"@sveltejs/kit": "^2.22.0",
 		"@sveltejs/vite-plugin-svelte": "^6.0.0",
 		"@tailwindcss/vite": "^4.0.0",
-		"@types/pg": "^8.15.5",
-		"drizzle-kit": "^0.31.4",
+		"elysia": "^1.4.18",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.0.0",
@@ -47,9 +38,8 @@
 	},
 	"dependencies": {
 		"@auth/sveltekit": "^1.10.0",
+		"@elysiajs/eden": "^1.4.5",
 		"concurrently": "^9.2.0",
-		"dotenv": "^17.2.1",
-		"drizzle-orm": "^0.44.5",
-		"postgres": "^3.4.7"
+		"dotenv": "^17.2.1"
 	}
 }
