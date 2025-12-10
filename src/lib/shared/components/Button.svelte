@@ -2,6 +2,7 @@
 	interface Props {
 		variant?: 'primary' | 'secondary' | 'danger';
 		size?: 'sm' | 'md' | 'lg';
+		type?: 'button' | 'submit' | 'reset';
 		disabled?: boolean;
 		children?: any;
 		class?: string;
@@ -11,6 +12,7 @@
 	let {
 		variant = 'primary',
 		size = 'md',
+		type = 'button',
 		disabled = false,
 		children,
 		class: className = '',
@@ -45,7 +47,7 @@
 	`;
 </script>
 
-<button {disabled} class={styles} {...rest}>
+<button {type} {disabled} class={styles} {...rest}>
 	{#if children}
 		{@render children()}
 	{/if}
