@@ -1,15 +1,34 @@
-import { getUserProfileFromUsername } from '$lib/api/getUserProfileFromUsername.js';
+import type { PageServerLoad } from './$types';
+import { api } from '$lib/api/client';
 
-export const load = async ({ params }) => {
+export const load: PageServerLoad = async ({ params }) => {
 	const { username } = params;
 
-	if (!username) return { status: 404, error: 'User not found' };
+	if (!username) {
+		return { status: 404, error: 'Username not provided' };
+	}
 
-	const response = await getUserProfileFromUsername(username);
+	// Fetch user profile from API
+	const profileResult = await api.users.profile({ username }).get();
 
-	const { status, data } = response;
-	if (status !== 200)
-		return { status, profile: undefined, error: `No profile for user "${username}" found` };
+	if (!profileResult.data?.success || !profileResult.data.data) {
+		return {
+			username,
+			profile: null,
+			listings: [],
+			error: profileResult.data?.error || 'User not found'
+		};
+	}
 
-	return { status, profile: data };
+	const profile = profileResult.data.data;
+
+	// Fetch user's listings
+	const listingsResult = await api.listings.user({ userId: profile.id }).get();
+	const listings = listingsResult.data?.success ? listingsResult.data.data : [];
+
+	return {
+		username,
+		profile,
+		listings
+	};
 };
