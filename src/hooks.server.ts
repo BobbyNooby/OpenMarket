@@ -1,6 +1,8 @@
 import type { Handle } from '@sveltejs/kit';
 import type { ThemeName } from '$lib/design/themes';
-import { handle as handleAuth } from '$lib/auth';
+import { svelteKitHandler } from 'better-auth/svelte-kit';
+import { building } from '$app/environment';
+import { auth } from '$lib/auth/auth';
 
 function readThemeCookie(cookieHeader: string | null): ThemeName | null {
 	if (!cookieHeader) return null;
@@ -10,12 +12,17 @@ function readThemeCookie(cookieHeader: string | null): ThemeName | null {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
-	handleAuth({ event, resolve });
 	const cookieTheme = readThemeCookie(event.request.headers.get('cookie'));
-	const theme: ThemeName = cookieTheme ?? 'dark'; // ← default
+	const theme: ThemeName = cookieTheme ?? 'dark';
 	event.locals.themeName = theme;
 
-	return resolve(event, {
-		transformPageChunk: ({ html }) => html.replace('<html', `<html data-theme="${theme}"`)
+	return svelteKitHandler({
+		event,
+		resolve: (event) =>
+			resolve(event, {
+				transformPageChunk: ({ html }) => html.replace('<html', `<html data-theme="${theme}"`)
+			}),
+		auth,
+		building
 	});
 };
