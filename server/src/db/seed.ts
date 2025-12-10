@@ -1,6 +1,8 @@
 import { db } from './db';
+import { sql } from 'drizzle-orm';
 import {
-	usersTable,
+	user,
+	userProfilesTable,
 	usersActivityTable,
 	itemsTable,
 	currenciesTable,
@@ -350,38 +352,260 @@ function hashCode(str: string): number {
 	return hash;
 }
 
+// Generate a random ID similar to better-auth format
+function generateId(): string {
+	const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+	let result = '';
+	for (let i = 0; i < 24; i++) {
+		result += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+	return result;
+}
+
 // ============== SEED FUNCTION ==============
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+const userCountArg = args.find(arg => arg.startsWith('--users='));
+const listingsPerUserArg = args.find(arg => arg.startsWith('--listings-per-user='));
+const USER_COUNT = userCountArg ? parseInt(userCountArg.split('=')[1], 10) : users.length;
+const LISTINGS_PER_USER = listingsPerUserArg ? parseInt(listingsPerUserArg.split('=')[1], 10) : 3;
 
 async function seed() {
 	console.log('🌱 Starting database seed...');
+	console.log(`   User count: ${USER_COUNT} (use --users=N to customize)`);
+	console.log(`   Listings per user: ${LISTINGS_PER_USER} (use --listings-per-user=N to customize)`);
 
-	// Clear existing data (in reverse order of dependencies)
-	console.log('🗑️  Clearing existing data...');
-	await db.delete(listingOfferedCurrenciesTable);
-	await db.delete(listingOfferedItemsTable);
-	await db.delete(listingsTable);
-	await db.delete(profileReviewsTable);
-	await db.delete(usersActivityTable);
-	await db.delete(currenciesTable);
-	await db.delete(itemsTable);
-	await db.delete(usersTable);
+	// Drop and recreate all tables for a fresh start
+	console.log('🗑️  Dropping existing tables...');
+	await db.execute(sql`
+		DROP TABLE IF EXISTS
+			listing_offered_currencies,
+			listing_offered_items,
+			listings,
+			profile_reviews,
+			users_activity,
+			user_profiles,
+			currencies,
+			items,
+			session,
+			account,
+			verification,
+			"user"
+		CASCADE
+	`);
 
-	// Insert users with DiceBear avatars
+	// Recreate tables
+	console.log('📦 Creating tables...');
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS "user" (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL,
+			email TEXT NOT NULL UNIQUE,
+			email_verified BOOLEAN NOT NULL DEFAULT false,
+			image TEXT,
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+		)
+	`);
+
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS session (
+			id TEXT PRIMARY KEY,
+			expires_at TIMESTAMP NOT NULL,
+			token TEXT NOT NULL UNIQUE,
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			ip_address TEXT,
+			user_agent TEXT,
+			user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE
+		)
+	`);
+
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS account (
+			id TEXT PRIMARY KEY,
+			account_id TEXT NOT NULL,
+			provider_id TEXT NOT NULL,
+			user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+			access_token TEXT,
+			refresh_token TEXT,
+			id_token TEXT,
+			access_token_expires_at TIMESTAMP,
+			refresh_token_expires_at TIMESTAMP,
+			scope TEXT,
+			password TEXT,
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+		)
+	`);
+
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS verification (
+			id TEXT PRIMARY KEY,
+			identifier TEXT NOT NULL,
+			value TEXT NOT NULL,
+			expires_at TIMESTAMP NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+		)
+	`);
+
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS user_profiles (
+			user_id TEXT PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
+			username TEXT NOT NULL UNIQUE,
+			description TEXT
+		)
+	`);
+
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS users_activity (
+			user_id TEXT PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
+			is_active BOOLEAN NOT NULL DEFAULT false,
+			last_activity_at TIMESTAMP NOT NULL DEFAULT NOW()
+		)
+	`);
+
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS items (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			slug TEXT NOT NULL UNIQUE,
+			name TEXT NOT NULL,
+			description TEXT,
+			wiki_link TEXT,
+			image_url TEXT
+		)
+	`);
+
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS currencies (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			slug TEXT NOT NULL UNIQUE,
+			name TEXT NOT NULL,
+			description TEXT,
+			wiki_link TEXT,
+			image_url TEXT
+		)
+	`);
+
+	await db.execute(sql`
+		DO $$ BEGIN
+			CREATE TYPE review_type AS ENUM ('upvote', 'downvote');
+		EXCEPTION
+			WHEN duplicate_object THEN null;
+		END $$
+	`);
+
+	await db.execute(sql`
+		DO $$ BEGIN
+			CREATE TYPE order_type AS ENUM ('buy', 'sell');
+		EXCEPTION
+			WHEN duplicate_object THEN null;
+		END $$
+	`);
+
+	await db.execute(sql`
+		DO $$ BEGIN
+			CREATE TYPE paying_type AS ENUM ('each', 'total');
+		EXCEPTION
+			WHEN duplicate_object THEN null;
+		END $$
+	`);
+
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS profile_reviews (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			profile_user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+			voter_user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+			type review_type NOT NULL,
+			comment TEXT
+		)
+	`);
+
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS listings (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			author_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+			requested_item_id UUID REFERENCES items(id) ON DELETE CASCADE,
+			requested_currency_id UUID REFERENCES currencies(id) ON DELETE CASCADE,
+			amount INTEGER NOT NULL DEFAULT 1,
+			order_type order_type NOT NULL,
+			paying_type paying_type NOT NULL DEFAULT 'each',
+			is_active BOOLEAN NOT NULL DEFAULT true
+		)
+	`);
+
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS listing_offered_items (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			listing_id UUID NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+			item_id UUID NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+			amount INTEGER NOT NULL DEFAULT 1
+		)
+	`);
+
+	await db.execute(sql`
+		CREATE TABLE IF NOT EXISTS listing_offered_currencies (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			listing_id UUID NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+			currency_id UUID NOT NULL REFERENCES currencies(id) ON DELETE CASCADE,
+			amount INTEGER NOT NULL DEFAULT 1
+		)
+	`);
+
+	console.log('   ✅ Tables created');
+
+	// Insert users (both auth user and profile)
 	console.log('👥 Inserting users...');
-	const usersToInsert = users.map((user, i) => ({
-		discord_id: `${100000000000000000n + BigInt(i) * 1000000000000000n}`,
-		username: user.username,
-		display_name: user.display_name,
-		avatar_url: getAvatarUrl(user.username),
-		description: user.description
-	}));
-	const insertedUsers = await db.insert(usersTable).values(usersToInsert).returning();
-	console.log(`   ✅ Inserted ${insertedUsers.length} users with avatars`);
+	const insertedUsers: { id: string; username: string }[] = [];
+
+	// Use predefined users up to the limit, generate random users for the rest
+	const usersToInsert = USER_COUNT <= users.length
+		? users.slice(0, USER_COUNT)
+		: [
+			...users,
+			...Array.from({ length: USER_COUNT - users.length }, (_, i) => ({
+				username: `trader${users.length + i + 1}`,
+				display_name: `Trader ${users.length + i + 1}`,
+				description: `Auto-generated trader #${users.length + i + 1}`
+			}))
+		];
+
+	for (const userData of usersToInsert) {
+		const userId = generateId();
+		const now = new Date();
+
+		// Insert into better-auth user table
+		await db.insert(user).values({
+			id: userId,
+			name: userData.display_name,
+			email: `${userData.username}@openmarket.test`,
+			emailVerified: false,
+			image: getAvatarUrl(userData.username),
+			createdAt: now,
+			updatedAt: now
+		});
+
+		// Insert into user_profiles table
+		await db.insert(userProfilesTable).values({
+			userId: userId,
+			username: userData.username,
+			description: userData.description
+		});
+
+		insertedUsers.push({ id: userId, username: userData.username });
+	}
+	console.log(`   ✅ Inserted ${insertedUsers.length} users with profiles`);
 
 	// Insert user activity
 	console.log('📊 Inserting user activity...');
-	const activityData = insertedUsers.map((user, index) => ({
-		user_id: user.id,
+	const activityData = insertedUsers.map((u, index) => ({
+		user_id: u.id,
 		is_active: index < 8, // First 8 users are active
 		last_activity_at: randomDate(7)
 	}));
@@ -436,33 +660,35 @@ async function seed() {
 		is_active: boolean;
 	}[] = [];
 
-	// Create 30 listings for variety - 25 requesting items, 5 requesting currencies
-	for (let i = 0; i < 30; i++) {
-		const author = randomChoice(insertedUsers);
+	// Create listings for each user
+	for (const author of insertedUsers) {
+		const numListings = randomInt(Math.max(1, LISTINGS_PER_USER - 1), LISTINGS_PER_USER + 1);
 
-		// 80% request items, 20% request currencies
-		const requestsCurrency = i >= 24; // Last 6 listings request currencies
+		for (let i = 0; i < numListings; i++) {
+			// 20% request currencies, 80% request items
+			const requestsCurrency = Math.random() < 0.2;
 
-		if (requestsCurrency) {
-			const requestedCurrency = randomChoice(insertedCurrencies);
-			listings.push({
-				author_id: author.id,
-				requested_currency_id: requestedCurrency.id,
-				amount: randomInt(1000, 100000),
-				order_type: Math.random() > 0.5 ? 'buy' : 'sell',
-				paying_type: Math.random() > 0.7 ? 'total' : 'each',
-				is_active: Math.random() > 0.1 // 90% active
-			});
-		} else {
-			const requestedItem = randomChoice(insertedItems);
-			listings.push({
-				author_id: author.id,
-				requested_item_id: requestedItem.id,
-				amount: randomInt(1, 10),
-				order_type: Math.random() > 0.5 ? 'buy' : 'sell',
-				paying_type: Math.random() > 0.7 ? 'total' : 'each',
-				is_active: Math.random() > 0.1 // 90% active
-			});
+			if (requestsCurrency) {
+				const requestedCurrency = randomChoice(insertedCurrencies);
+				listings.push({
+					author_id: author.id,
+					requested_currency_id: requestedCurrency.id,
+					amount: randomInt(1000, 100000),
+					order_type: Math.random() > 0.5 ? 'buy' : 'sell',
+					paying_type: Math.random() > 0.7 ? 'total' : 'each',
+					is_active: Math.random() > 0.1 // 90% active
+				});
+			} else {
+				const requestedItem = randomChoice(insertedItems);
+				listings.push({
+					author_id: author.id,
+					requested_item_id: requestedItem.id,
+					amount: randomInt(1, 10),
+					order_type: Math.random() > 0.5 ? 'buy' : 'sell',
+					paying_type: Math.random() > 0.7 ? 'total' : 'each',
+					is_active: Math.random() > 0.1 // 90% active
+				});
+			}
 		}
 	}
 	const insertedListings = await db.insert(listingsTable).values(listings).returning();
