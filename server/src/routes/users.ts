@@ -1,42 +1,37 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../db/db';
-import { usersTable, usersActivityTable, profileReviewsTable } from '../db/schemas';
+import { user, userProfilesTable, usersActivityTable, profileReviewsTable } from '../db/schemas';
 import { eq } from 'drizzle-orm';
 
 export const usersRoutes = new Elysia({ prefix: '/users' })
-	// Upsert user on session (called on login)
+	// Create or update user profile (called after OAuth login)
 	.post(
-		'/upsert',
+		'/profile',
 		async ({ body }) => {
 			try {
 				const result = await db.transaction(async (tx) => {
-					const [user] = await tx
-						.insert(usersTable)
+					// Upsert user profile
+					const [profile] = await tx
+						.insert(userProfilesTable)
 						.values({
-							discord_id: body.discord_id,
+							userId: body.user_id,
 							username: body.username,
-							display_name: body.display_name,
-							avatar_url: body.avatar_url,
 							description: body.description
 						})
 						.onConflictDoUpdate({
-							target: usersTable.discord_id,
+							target: userProfilesTable.userId,
 							set: {
 								username: body.username,
-								display_name: body.display_name,
-								avatar_url: body.avatar_url,
 								description: body.description
 							}
 						})
-						.returning({
-							id: usersTable.id,
-							username: usersTable.username
-						});
+						.returning();
 
+					// Update activity
 					await tx
 						.insert(usersActivityTable)
 						.values({
-							user_id: user.id,
+							user_id: body.user_id,
 							is_active: true,
 							last_activity_at: new Date()
 						})
@@ -48,13 +43,13 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 							}
 						});
 
-					return user;
+					return profile;
 				});
 
-				console.log(`User upserted: ${result.id} (${result.username})`);
+				console.log(`User profile upserted: ${result.userId} (${result.username})`);
 				return { success: true, data: result };
 			} catch (err: any) {
-				console.error('User upsert error:', err);
+				console.error('User profile upsert error:', err);
 				const message = typeof err?.message === 'string' ? err.message : 'Unknown error';
 				const isConflict = /unique|constraint|conflict/i.test(message);
 				return {
@@ -66,10 +61,8 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 		},
 		{
 			body: t.Object({
-				discord_id: t.String(),
+				user_id: t.String(),
 				username: t.String(),
-				display_name: t.String(),
-				avatar_url: t.Optional(t.String()),
 				description: t.Optional(t.String())
 			})
 		}
@@ -81,19 +74,20 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 			try {
 				const userRows = await db
 					.select({
-						id: usersTable.id,
-						created_at: usersTable.created_at,
-						discord_id: usersTable.discord_id,
-						username: usersTable.username,
-						display_name: usersTable.display_name,
-						avatar_url: usersTable.avatar_url,
-						description: usersTable.description,
+						id: user.id,
+						name: user.name,
+						email: user.email,
+						image: user.image,
+						createdAt: user.createdAt,
+						username: userProfilesTable.username,
+						description: userProfilesTable.description,
 						is_active: usersActivityTable.is_active,
 						last_activity_at: usersActivityTable.last_activity_at
 					})
-					.from(usersTable)
-					.leftJoin(usersActivityTable, eq(usersTable.id, usersActivityTable.user_id))
-					.where(eq(usersTable.username, params.username));
+					.from(user)
+					.innerJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
+					.leftJoin(usersActivityTable, eq(user.id, usersActivityTable.user_id))
+					.where(eq(userProfilesTable.username, params.username));
 
 				if (userRows.length === 0) {
 					return { success: false, error: 'User not found', status: 404 };
@@ -111,17 +105,19 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 						voter_user_id: profileReviewsTable.voter_user_id,
 						comment: profileReviewsTable.comment,
 						voter: {
-							id: usersTable.id,
-							discord_id: usersTable.discord_id,
-							username: usersTable.username,
-							display_name: usersTable.display_name,
-							avatar_url: usersTable.avatar_url,
-							description: usersTable.description,
-							created_at: usersTable.created_at
+							id: user.id,
+							name: user.name,
+							image: user.image,
+							createdAt: user.createdAt
+						},
+						voterProfile: {
+							username: userProfilesTable.username,
+							description: userProfilesTable.description
 						}
 					})
 					.from(profileReviewsTable)
-					.innerJoin(usersTable, eq(profileReviewsTable.voter_user_id, usersTable.id))
+					.innerJoin(user, eq(profileReviewsTable.voter_user_id, user.id))
+					.innerJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
 					.where(eq(profileReviewsTable.profile_user_id, userRow.id));
 
 				const reviews = reviewRows.map((r) => ({
@@ -133,12 +129,11 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 					comment: r.comment ?? undefined,
 					voter: {
 						id: r.voter.id,
-						discord_id: r.voter.discord_id,
-						username: r.voter.username,
-						display_name: r.voter.display_name,
-						avatar_url: r.voter.avatar_url ?? undefined,
-						description: r.voter.description ?? undefined,
-						created_at: r.voter.created_at.toISOString()
+						username: r.voterProfile.username,
+						display_name: r.voter.name,
+						avatar_url: r.voter.image ?? undefined,
+						description: r.voterProfile.description ?? undefined,
+						created_at: r.voter.createdAt.toISOString()
 					}
 				}));
 
@@ -146,11 +141,10 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 					success: true,
 					data: {
 						id: userRow.id,
-						created_at: userRow.created_at.toISOString(),
-						discord_id: userRow.discord_id,
+						created_at: userRow.createdAt.toISOString(),
 						username: userRow.username,
-						display_name: userRow.display_name,
-						avatar_url: userRow.avatar_url ?? undefined,
+						display_name: userRow.name,
+						avatar_url: userRow.image ?? undefined,
 						description: userRow.description ?? undefined,
 						is_active: userRow.is_active ?? false,
 						last_activity_at: userRow.last_activity_at?.toISOString() ?? undefined,
@@ -173,16 +167,35 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 		'/:id',
 		async ({ params }) => {
 			try {
-				const [user] = await db
-					.select()
-					.from(usersTable)
-					.where(eq(usersTable.id, params.id));
+				const [result] = await db
+					.select({
+						id: user.id,
+						name: user.name,
+						email: user.email,
+						image: user.image,
+						createdAt: user.createdAt,
+						username: userProfilesTable.username,
+						description: userProfilesTable.description
+					})
+					.from(user)
+					.leftJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
+					.where(eq(user.id, params.id));
 
-				if (!user) {
+				if (!result) {
 					return { success: false, error: 'User not found', status: 404 };
 				}
 
-				return { success: true, data: user };
+				return {
+					success: true,
+					data: {
+						id: result.id,
+						created_at: result.createdAt.toISOString(),
+						username: result.username ?? result.name,
+						display_name: result.name,
+						avatar_url: result.image ?? undefined,
+						description: result.description ?? undefined
+					}
+				};
 			} catch (err: any) {
 				console.error('Get user error:', err);
 				return { success: false, error: err.message, status: 500 };
