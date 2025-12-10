@@ -59,3 +59,14 @@ export type DefaultIdentifier = {
 	id: string;
 	created_at: string;
 };
+
+// Form data type for creating/editing items (without required DB fields)
+export type ItemFormData = {
+	id?: string;
+	name: string;
+	type: 'item' | 'currency' | '';
+	description?: string;
+	wiki_link?: string;
+	image_url?: string;
+	created_at?: string;
+};
