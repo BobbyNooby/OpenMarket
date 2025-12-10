@@ -1,26 +1,29 @@
 import { pgEnum, pgTable, uuid, text, timestamp, boolean, integer } from 'drizzle-orm/pg-core';
+import { user } from './auth-schema';
 
 // --- enums ---
 export const reviewType = pgEnum('review_type', ['upvote', 'downvote']);
 export const orderType = pgEnum('order_type', ['buy', 'sell']);
 export const payingType = pgEnum('paying_type', ['each', 'total']);
 
-// --- users ---
-export const usersTable = pgTable('users', {
-	id: uuid('id').primaryKey().defaultRandom(),
-	created_at: timestamp('created_at').defaultNow().notNull(),
-	discord_id: text('discord_id').notNull().unique(),
-	username: text('username').notNull(),
-	display_name: text('display_name').notNull(),
-	avatar_url: text('avatar_url'),
+// Re-export auth user table for convenience
+export { user, session, account, verification } from './auth-schema';
+
+// --- user profiles (extension of auth user table) ---
+// Stores marketplace-specific user data that better-auth doesn't handle
+export const userProfilesTable = pgTable('user_profiles', {
+	userId: text('user_id')
+		.primaryKey()
+		.references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+	username: text('username').notNull().unique(),
 	description: text('description')
 });
 
 // --- activity ---
 export const usersActivityTable = pgTable('users_activity', {
-	user_id: uuid('user_id')
+	user_id: text('user_id')
 		.primaryKey()
-		.references(() => usersTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+		.references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
 	is_active: boolean('is_active').notNull().default(false),
 	last_activity_at: timestamp('last_activity_at').notNull().defaultNow()
 });
@@ -50,12 +53,12 @@ export const currenciesTable = pgTable('currencies', {
 export const profileReviewsTable = pgTable('profile_reviews', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	created_at: timestamp('created_at').defaultNow().notNull(),
-	profile_user_id: uuid('profile_user_id')
+	profile_user_id: text('profile_user_id')
 		.notNull()
-		.references(() => usersTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-	voter_user_id: uuid('voter_user_id')
+		.references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+	voter_user_id: text('voter_user_id')
 		.notNull()
-		.references(() => usersTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+		.references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
 	type: reviewType('type').notNull(),
 	comment: text('comment')
 });
@@ -65,9 +68,9 @@ export const profileReviewsTable = pgTable('profile_reviews', {
 export const listingsTable = pgTable('listings', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	created_at: timestamp('created_at').defaultNow().notNull(),
-	author_id: uuid('author_id')
+	author_id: text('author_id')
 		.notNull()
-		.references(() => usersTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+		.references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
 	requested_item_id: uuid('requested_item_id')
 		.references(() => itemsTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
 	requested_currency_id: uuid('requested_currency_id')
@@ -103,8 +106,8 @@ export const listingOfferedCurrenciesTable = pgTable('listing_offered_currencies
 });
 
 // --- Type exports ---
-export type UserInsert = typeof usersTable.$inferInsert;
-export type UserSelect = typeof usersTable.$inferSelect;
+export type UserProfileInsert = typeof userProfilesTable.$inferInsert;
+export type UserProfileSelect = typeof userProfilesTable.$inferSelect;
 export type UserActivityInsert = typeof usersActivityTable.$inferInsert;
 export type UserActivitySelect = typeof usersActivityTable.$inferSelect;
 export type ItemInsert = typeof itemsTable.$inferInsert;
