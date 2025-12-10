@@ -61,6 +61,7 @@ export const profileReviewsTable = pgTable('profile_reviews', {
 });
 
 // --- listings (market orders) ---
+// A listing can request either an item OR a currency (one must be set, the other null)
 export const listingsTable = pgTable('listings', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	created_at: timestamp('created_at').defaultNow().notNull(),
@@ -68,8 +69,9 @@ export const listingsTable = pgTable('listings', {
 		.notNull()
 		.references(() => usersTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
 	requested_item_id: uuid('requested_item_id')
-		.notNull()
 		.references(() => itemsTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+	requested_currency_id: uuid('requested_currency_id')
+		.references(() => currenciesTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
 	amount: integer('amount').notNull().default(1),
 	order_type: orderType('order_type').notNull(),
 	paying_type: payingType('paying_type').notNull().default('each'),

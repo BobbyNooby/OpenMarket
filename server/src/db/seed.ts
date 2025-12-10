@@ -428,38 +428,57 @@ async function seed() {
 	console.log('📜 Inserting listings...');
 	const listings: {
 		author_id: string;
-		requested_item_id: string;
+		requested_item_id?: string;
+		requested_currency_id?: string;
 		amount: number;
 		order_type: 'buy' | 'sell';
 		paying_type: 'each' | 'total';
 		is_active: boolean;
 	}[] = [];
 
-	// Create 30 listings for variety
+	// Create 30 listings for variety - 25 requesting items, 5 requesting currencies
 	for (let i = 0; i < 30; i++) {
 		const author = randomChoice(insertedUsers);
-		const requestedItem = randomChoice(insertedItems);
 
-		listings.push({
-			author_id: author.id,
-			requested_item_id: requestedItem.id,
-			amount: randomInt(1, 10),
-			order_type: Math.random() > 0.5 ? 'buy' : 'sell',
-			paying_type: Math.random() > 0.7 ? 'total' : 'each',
-			is_active: Math.random() > 0.1 // 90% active
-		});
+		// 80% request items, 20% request currencies
+		const requestsCurrency = i >= 24; // Last 6 listings request currencies
+
+		if (requestsCurrency) {
+			const requestedCurrency = randomChoice(insertedCurrencies);
+			listings.push({
+				author_id: author.id,
+				requested_currency_id: requestedCurrency.id,
+				amount: randomInt(1000, 100000),
+				order_type: Math.random() > 0.5 ? 'buy' : 'sell',
+				paying_type: Math.random() > 0.7 ? 'total' : 'each',
+				is_active: Math.random() > 0.1 // 90% active
+			});
+		} else {
+			const requestedItem = randomChoice(insertedItems);
+			listings.push({
+				author_id: author.id,
+				requested_item_id: requestedItem.id,
+				amount: randomInt(1, 10),
+				order_type: Math.random() > 0.5 ? 'buy' : 'sell',
+				paying_type: Math.random() > 0.7 ? 'total' : 'each',
+				is_active: Math.random() > 0.1 // 90% active
+			});
+		}
 	}
 	const insertedListings = await db.insert(listingsTable).values(listings).returning();
-	console.log(`   ✅ Inserted ${insertedListings.length} listings`);
+	console.log(`   ✅ Inserted ${insertedListings.length} listings (${listings.filter(l => l.requested_currency_id).length} requesting currencies)`);
 
 	// Insert offered items/currencies for listings
 	console.log('🔄 Inserting listing offers...');
 	let offeredItemsCount = 0;
 	let offeredCurrenciesCount = 0;
 
-	for (const listing of insertedListings) {
-		// 85% chance to offer currencies
-		if (Math.random() > 0.15) {
+	for (let idx = 0; idx < insertedListings.length; idx++) {
+		const listing = insertedListings[idx];
+		const originalListing = listings[idx];
+
+		// 85% chance to offer currencies (but not for listings that request currencies)
+		if (Math.random() > 0.15 && !originalListing.requested_currency_id) {
 			const numCurrencies = randomInt(1, Math.min(3, insertedCurrencies.length));
 			const shuffledCurrencies = [...insertedCurrencies].sort(() => Math.random() - 0.5);
 
@@ -473,13 +492,27 @@ async function seed() {
 			}
 		}
 
-		// 40% chance to also offer items (barter)
-		if (Math.random() > 0.6) {
+		// For listings that request currencies, offer items instead
+		if (originalListing.requested_currency_id) {
 			const numItems = randomInt(1, 4);
 			const shuffledItems = [...insertedItems].sort(() => Math.random() - 0.5);
 
 			for (let i = 0; i < numItems && i < shuffledItems.length; i++) {
-				if (shuffledItems[i].id !== listing.requested_item_id) {
+				await db.insert(listingOfferedItemsTable).values({
+					listing_id: listing.id,
+					item_id: shuffledItems[i].id,
+					amount: randomInt(1, 5)
+				});
+				offeredItemsCount++;
+			}
+		}
+		// 40% chance to also offer items (barter) for regular listings
+		else if (Math.random() > 0.6) {
+			const numItems = randomInt(1, 4);
+			const shuffledItems = [...insertedItems].sort(() => Math.random() - 0.5);
+
+			for (let i = 0; i < numItems && i < shuffledItems.length; i++) {
+				if (shuffledItems[i].id !== originalListing.requested_item_id) {
 					await db.insert(listingOfferedItemsTable).values({
 						listing_id: listing.id,
 						item_id: shuffledItems[i].id,

@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../db/db';
 import { itemsTable, currenciesTable } from '../db/schemas';
-import { eq } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 
 // Generate URL-friendly slug from name
 function generateSlug(name: string): string {
@@ -63,6 +63,16 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 		'/',
 		async ({ body }) => {
 			try {
+				// Check for duplicate name
+				const [existing] = await db
+					.select()
+					.from(itemsTable)
+					.where(eq(itemsTable.name, body.name));
+
+				if (existing) {
+					return { success: false, error: 'An item with this name already exists', status: 400 };
+				}
+
 				// Generate slug from name if not provided
 				const slug = body.slug || generateSlug(body.name);
 
@@ -98,10 +108,24 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 		'/:id',
 		async ({ params, body }) => {
 			try {
+				// Check for duplicate name (excluding current item)
+				const [existing] = await db
+					.select()
+					.from(itemsTable)
+					.where(and(eq(itemsTable.name, body.name), ne(itemsTable.id, params.id)));
+
+				if (existing) {
+					return { success: false, error: 'An item with this name already exists', status: 400 };
+				}
+
+				// Auto-update slug when name changes
+				const newSlug = generateSlug(body.name);
+
 				const [item] = await db
 					.update(itemsTable)
 					.set({
 						name: body.name,
+						slug: newSlug,
 						description: body.description,
 						wiki_link: body.wiki_link,
 						image_url: body.image_url
@@ -207,6 +231,16 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 		'/',
 		async ({ body }) => {
 			try {
+				// Check for duplicate name
+				const [existing] = await db
+					.select()
+					.from(currenciesTable)
+					.where(eq(currenciesTable.name, body.name));
+
+				if (existing) {
+					return { success: false, error: 'A currency with this name already exists', status: 400 };
+				}
+
 				// Generate slug from name if not provided
 				const slug = body.slug || generateSlug(body.name);
 
@@ -242,10 +276,24 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 		'/:id',
 		async ({ params, body }) => {
 			try {
+				// Check for duplicate name (excluding current currency)
+				const [existing] = await db
+					.select()
+					.from(currenciesTable)
+					.where(and(eq(currenciesTable.name, body.name), ne(currenciesTable.id, params.id)));
+
+				if (existing) {
+					return { success: false, error: 'A currency with this name already exists', status: 400 };
+				}
+
+				// Auto-update slug when name changes
+				const newSlug = generateSlug(body.name);
+
 				const [currency] = await db
 					.update(currenciesTable)
 					.set({
 						name: body.name,
+						slug: newSlug,
 						description: body.description,
 						wiki_link: body.wiki_link,
 						image_url: body.image_url

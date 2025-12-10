@@ -11,6 +11,10 @@ import {
 import { eq, desc } from 'drizzle-orm';
 import type { Listing } from '../types/api';
 
+// Alias for requested currency (to distinguish from offered currencies join)
+import { alias } from 'drizzle-orm/pg-core';
+const requestedCurrencyTable = alias(currenciesTable, 'requested_currency');
+
 // Helper to serialize dates and nulls for API response
 function serializeUser(user: any) {
 	return {
@@ -48,11 +52,22 @@ function serializeCurrency(currency: any) {
 	};
 }
 
+// Nullable versions for requested_item/requested_currency (only one will be set)
+function serializeItemOrNull(item: any) {
+	if (!item || !item.id) return undefined;
+	return serializeItem(item);
+}
+
+function serializeCurrencyOrNull(currency: any) {
+	if (!currency || !currency.id) return undefined;
+	return serializeCurrency(currency);
+}
+
 export const listingsRoutes = new Elysia({ prefix: '/listings' })
-	// Get all listings with full details (author, requested item, offered items/currencies)
+	// Get all listings with full details (author, requested item/currency, offered items/currencies)
 	.get('/', async () => {
 		try {
-			// Get all listings with author and requested item
+			// Get all listings with author and requested item OR currency (one will be null)
 			const listings = await db
 				.select({
 					id: listingsTable.id,
@@ -78,11 +93,21 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						wiki_link: itemsTable.wiki_link,
 						image_url: itemsTable.image_url,
 						created_at: itemsTable.created_at
+					},
+					requested_currency: {
+						id: requestedCurrencyTable.id,
+						slug: requestedCurrencyTable.slug,
+						name: requestedCurrencyTable.name,
+						description: requestedCurrencyTable.description,
+						wiki_link: requestedCurrencyTable.wiki_link,
+						image_url: requestedCurrencyTable.image_url,
+						created_at: requestedCurrencyTable.created_at
 					}
 				})
 				.from(listingsTable)
 				.innerJoin(usersTable, eq(listingsTable.author_id, usersTable.id))
-				.innerJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
+				.leftJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
+				.leftJoin(requestedCurrencyTable, eq(listingsTable.requested_currency_id, requestedCurrencyTable.id))
 				.orderBy(desc(listingsTable.created_at));
 
 			// For each listing, get offered items and currencies
@@ -93,6 +118,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						.select({
 							item: {
 								id: itemsTable.id,
+								slug: itemsTable.slug,
 								name: itemsTable.name,
 								description: itemsTable.description,
 								wiki_link: itemsTable.wiki_link,
@@ -110,6 +136,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						.select({
 							currency: {
 								id: currenciesTable.id,
+								slug: currenciesTable.slug,
 								name: currenciesTable.name,
 								description: currenciesTable.description,
 								wiki_link: currenciesTable.wiki_link,
@@ -129,13 +156,15 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						id: listing.id,
 						created_at: listing.created_at.toISOString(),
 						author_id: listing.author.id,
-						requested_item_id: listing.requested_item.id,
+						requested_item_id: listing.requested_item?.id ?? undefined,
+						requested_currency_id: listing.requested_currency?.id ?? undefined,
 						amount: listing.amount,
 						order_type: listing.order_type,
 						paying_type: listing.paying_type,
 						is_active: listing.is_active,
 						author: serializeUser(listing.author),
-						requested_item: serializeItem(listing.requested_item),
+						requested_item: serializeItemOrNull(listing.requested_item),
+						requested_currency: serializeCurrencyOrNull(listing.requested_currency),
 						offered_items: offeredItems.map((o) => ({
 							item: serializeItem(o.item),
 							amount: o.amount
@@ -179,16 +208,27 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						},
 						requested_item: {
 							id: itemsTable.id,
+							slug: itemsTable.slug,
 							name: itemsTable.name,
 							description: itemsTable.description,
 							wiki_link: itemsTable.wiki_link,
 							image_url: itemsTable.image_url,
 							created_at: itemsTable.created_at
+						},
+						requested_currency: {
+							id: requestedCurrencyTable.id,
+							slug: requestedCurrencyTable.slug,
+							name: requestedCurrencyTable.name,
+							description: requestedCurrencyTable.description,
+							wiki_link: requestedCurrencyTable.wiki_link,
+							image_url: requestedCurrencyTable.image_url,
+							created_at: requestedCurrencyTable.created_at
 						}
 					})
 					.from(listingsTable)
 					.innerJoin(usersTable, eq(listingsTable.author_id, usersTable.id))
-					.innerJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
+					.leftJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
+					.leftJoin(requestedCurrencyTable, eq(listingsTable.requested_currency_id, requestedCurrencyTable.id))
 					.where(eq(listingsTable.author_id, params.userId))
 					.orderBy(desc(listingsTable.created_at));
 
@@ -199,6 +239,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 							.select({
 								item: {
 									id: itemsTable.id,
+									slug: itemsTable.slug,
 									name: itemsTable.name,
 									description: itemsTable.description,
 									wiki_link: itemsTable.wiki_link,
@@ -215,6 +256,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 							.select({
 								currency: {
 									id: currenciesTable.id,
+									slug: currenciesTable.slug,
 									name: currenciesTable.name,
 									description: currenciesTable.description,
 									wiki_link: currenciesTable.wiki_link,
@@ -234,13 +276,15 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 							id: listing.id,
 							created_at: listing.created_at.toISOString(),
 							author_id: listing.author.id,
-							requested_item_id: listing.requested_item.id,
+							requested_item_id: listing.requested_item?.id ?? undefined,
+							requested_currency_id: listing.requested_currency?.id ?? undefined,
 							amount: listing.amount,
 							order_type: listing.order_type,
 							paying_type: listing.paying_type,
 							is_active: listing.is_active,
 							author: serializeUser(listing.author),
-							requested_item: serializeItem(listing.requested_item),
+							requested_item: serializeItemOrNull(listing.requested_item),
+							requested_currency: serializeCurrencyOrNull(listing.requested_currency),
 							offered_items: offeredItems.map((o) => ({
 								item: serializeItem(o.item),
 								amount: o.amount
@@ -290,16 +334,27 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						},
 						requested_item: {
 							id: itemsTable.id,
+							slug: itemsTable.slug,
 							name: itemsTable.name,
 							description: itemsTable.description,
 							wiki_link: itemsTable.wiki_link,
 							image_url: itemsTable.image_url,
 							created_at: itemsTable.created_at
+						},
+						requested_currency: {
+							id: requestedCurrencyTable.id,
+							slug: requestedCurrencyTable.slug,
+							name: requestedCurrencyTable.name,
+							description: requestedCurrencyTable.description,
+							wiki_link: requestedCurrencyTable.wiki_link,
+							image_url: requestedCurrencyTable.image_url,
+							created_at: requestedCurrencyTable.created_at
 						}
 					})
 					.from(listingsTable)
 					.innerJoin(usersTable, eq(listingsTable.author_id, usersTable.id))
-					.innerJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
+					.leftJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
+					.leftJoin(requestedCurrencyTable, eq(listingsTable.requested_currency_id, requestedCurrencyTable.id))
 					.where(eq(listingsTable.id, params.id));
 
 				if (!listing) {
@@ -349,13 +404,15 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 					id: listing.id,
 					created_at: listing.created_at.toISOString(),
 					author_id: listing.author.id,
-					requested_item_id: listing.requested_item.id,
+					requested_item_id: listing.requested_item?.id ?? undefined,
+					requested_currency_id: listing.requested_currency?.id ?? undefined,
 					amount: listing.amount,
 					order_type: listing.order_type,
 					paying_type: listing.paying_type,
 					is_active: listing.is_active,
 					author: serializeUser(listing.author),
-					requested_item: serializeItem(listing.requested_item),
+					requested_item: serializeItemOrNull(listing.requested_item),
+					requested_currency: serializeCurrencyOrNull(listing.requested_currency),
 					offered_items: offeredItems.map((o) => ({
 						item: serializeItem(o.item),
 						amount: o.amount
@@ -383,11 +440,20 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 		'/',
 		async ({ body }) => {
 			try {
+				// Validate that exactly one of requested_item_id or requested_currency_id is set
+				if (!body.requested_item_id && !body.requested_currency_id) {
+					return { success: false, error: 'Either requested_item_id or requested_currency_id must be provided', status: 400 };
+				}
+				if (body.requested_item_id && body.requested_currency_id) {
+					return { success: false, error: 'Only one of requested_item_id or requested_currency_id can be set', status: 400 };
+				}
+
 				const [listing] = await db
 					.insert(listingsTable)
 					.values({
 						author_id: body.author_id,
 						requested_item_id: body.requested_item_id,
+						requested_currency_id: body.requested_currency_id,
 						amount: body.amount,
 						order_type: body.order_type,
 						paying_type: body.paying_type
@@ -425,7 +491,8 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 		{
 			body: t.Object({
 				author_id: t.String(),
-				requested_item_id: t.String(),
+				requested_item_id: t.Optional(t.String()),
+				requested_currency_id: t.Optional(t.String()),
 				amount: t.Number(),
 				order_type: t.Union([t.Literal('buy'), t.Literal('sell')]),
 				paying_type: t.Union([t.Literal('each'), t.Literal('total')]),

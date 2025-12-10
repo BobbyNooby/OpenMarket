@@ -67,13 +67,15 @@ export interface Listing {
 	id: string;
 	created_at: string;
 	author_id: string;
-	requested_item_id: string;
+	requested_item_id?: string;
+	requested_currency_id?: string;
 	amount: number;
 	order_type: 'buy' | 'sell';
 	paying_type: 'each' | 'total';
 	is_active: boolean;
 	author: User;
-	requested_item: Item;
+	requested_item?: Item;
+	requested_currency?: Currency;
 	offered_items: OfferedItem[];
 	offered_currencies: OfferedCurrency[];
 }
