@@ -18,3 +18,6 @@ export { default as ItemImage } from './ItemImage.svelte';
 export { default as ItemTooltip } from './ItemTooltip.svelte';
 export { default as ItemButton } from './ItemButton.svelte';
 export { default as ListingCard } from './ListingCard.svelte';
+
+// Layout Components
+export { default as Header } from './Header.svelte';
