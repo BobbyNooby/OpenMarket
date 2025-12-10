@@ -26,4 +26,5 @@ import type { Listing, ProfileReview } from '../../../server/src/types/api';
 
 export type ListingAuthor = Listing['author'];
 export type ListingRequestedItem = Listing['requested_item'];
+export type ListingRequestedCurrency = Listing['requested_currency'];
 export type ReviewVoter = ProfileReview['voter'];
