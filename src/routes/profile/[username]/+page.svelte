@@ -3,12 +3,18 @@
 	import Button from '$lib/shared/components/Button.svelte';
 	import Textarea from '$lib/shared/components/Textarea.svelte';
 	import CommentCard from '$lib/shared/components/CommentCard.svelte';
+	import { api } from '$lib/api/client';
+	import { invalidateAll } from '$app/navigation';
 
 	let { data } = $props();
 
-	// Get profile and listings from server data
+	// Get session, profile and listings from server data
+	const session = $derived(data.session);
 	const profile = $derived(data.profile);
-	const reviews = $derived(profile?.reviews || []);
+	let reviews = $state(profile?.reviews || []);
+
+	// Check if user is viewing their own profile
+	const isOwnProfile = $derived(session?.user?.id === profile?.id);
 
 	// Transform listings for display
 	const listings = $derived(
@@ -60,17 +66,50 @@
 
 	let reviewType = $state<'upvote' | 'downvote' | null>(null);
 	let reviewComment = $state('');
+	let submitting = $state(false);
+	let submitError = $state<string | null>(null);
 
-	function handleSubmitReview() {
-		if (!reviewType) {
-			alert('Please select either upvote or downvote');
+	async function handleSubmitReview() {
+		if (!session?.user) {
 			return;
 		}
-		alert(
-			`Review submitted: ${reviewType} ${reviewComment ? `with comment: "${reviewComment}"` : '(no comment)'}`
-		);
-		reviewType = null;
-		reviewComment = '';
+
+		if (!reviewType) {
+			submitError = 'Please select either upvote or downvote';
+			return;
+		}
+
+		if (!profile?.username) {
+			submitError = 'Profile not found';
+			return;
+		}
+
+		submitting = true;
+		submitError = null;
+
+		try {
+			const result = await api.users.profile({ username: profile.username }).reviews.post({
+				voter_user_id: session.user.id,
+				type: reviewType,
+				comment: reviewComment || undefined
+			});
+
+			if (result.data?.success) {
+				// Refresh page data to get updated reviews
+				await invalidateAll();
+				// Update local reviews state from new data
+				reviews = data.profile?.reviews || [];
+				reviewType = null;
+				reviewComment = '';
+			} else {
+				submitError = result.data?.error || 'Failed to submit review';
+			}
+		} catch (err: any) {
+			console.error('Failed to submit review:', err);
+			submitError = err.message || 'Failed to submit review';
+		} finally {
+			submitting = false;
+		}
 	}
 </script>
 
@@ -208,48 +247,86 @@
 				>
 					<h3 class="mb-4 text-lg font-semibold text-[var(--color-text)]">Leave a Review</h3>
 
-					<!-- Vote Buttons -->
-					<div class="mb-4 flex gap-4">
-						<button
-							class="flex items-center gap-2 rounded-[var(--radius-md)] border-2 px-6 py-3 transition-all"
-							class:border-[var(--color-success)]={reviewType === 'upvote'}
-							class:bg-[var(--color-success)]={reviewType === 'upvote'}
-							class:text-white={reviewType === 'upvote'}
-							class:border-[var(--color-border)]={reviewType !== 'upvote'}
-							class:hover:border-[var(--color-success)]={reviewType !== 'upvote'}
-							onclick={() => (reviewType = reviewType === 'upvote' ? null : 'upvote')}
-						>
-							<span class="text-2xl">👍</span>
-							<span class="font-semibold">Upvote</span>
-						</button>
+					{#if !session?.user}
+						<!-- Not signed in -->
+						<div class="py-4 text-center">
+							<p class="mb-4 text-[var(--color-textSecondary)]">
+								You must be signed in to leave a review.
+							</p>
+							<a
+								href="/auth/signin"
+								class="inline-block rounded-[var(--radius-md)] bg-[var(--color-primary)] px-6 py-2 font-semibold text-white transition-colors hover:opacity-90"
+							>
+								Sign In
+							</a>
+						</div>
+					{:else if isOwnProfile}
+						<!-- Viewing own profile -->
+						<div class="py-4 text-center">
+							<p class="text-[var(--color-textSecondary)]">You cannot review your own profile.</p>
+						</div>
+					{:else}
+						<!-- Can leave review -->
+						{#if submitError}
+							<div
+								class="mb-4 rounded-[var(--radius-md)] bg-red-100 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400"
+							>
+								{submitError}
+							</div>
+						{/if}
 
-						<button
-							class="flex items-center gap-2 rounded-[var(--radius-md)] border-2 px-6 py-3 transition-all"
-							class:border-[var(--color-danger)]={reviewType === 'downvote'}
-							class:bg-[var(--color-danger)]={reviewType === 'downvote'}
-							class:text-white={reviewType === 'downvote'}
-							class:border-[var(--color-border)]={reviewType !== 'downvote'}
-							class:hover:border-[var(--color-danger)]={reviewType !== 'downvote'}
-							onclick={() => (reviewType = reviewType === 'downvote' ? null : 'downvote')}
-						>
-							<span class="text-2xl">👎</span>
-							<span class="font-semibold">Downvote</span>
-						</button>
-					</div>
+						<!-- Vote Buttons -->
+						<div class="mb-4 flex gap-4">
+							<button
+								class="flex items-center gap-2 rounded-[var(--radius-md)] border-2 px-6 py-3 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+								class:border-[var(--color-success)]={reviewType === 'upvote'}
+								class:bg-[var(--color-success)]={reviewType === 'upvote'}
+								class:text-white={reviewType === 'upvote'}
+								class:border-[var(--color-border)]={reviewType !== 'upvote'}
+								class:hover:border-[var(--color-success)]={reviewType !== 'upvote'}
+								onclick={() => (reviewType = reviewType === 'upvote' ? null : 'upvote')}
+								disabled={submitting}
+							>
+								<span class="text-2xl">👍</span>
+								<span class="font-semibold">Upvote</span>
+							</button>
 
-					<!-- Comment Textarea -->
-					<div class="mb-4">
-						<Textarea
-							bind:value={reviewComment}
-							placeholder="Share your experience with this user (optional)..."
-							rows={3}
-						/>
-					</div>
+							<button
+								class="flex items-center gap-2 rounded-[var(--radius-md)] border-2 px-6 py-3 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+								class:border-[var(--color-danger)]={reviewType === 'downvote'}
+								class:bg-[var(--color-danger)]={reviewType === 'downvote'}
+								class:text-white={reviewType === 'downvote'}
+								class:border-[var(--color-border)]={reviewType !== 'downvote'}
+								class:hover:border-[var(--color-danger)]={reviewType !== 'downvote'}
+								onclick={() => (reviewType = reviewType === 'downvote' ? null : 'downvote')}
+								disabled={submitting}
+							>
+								<span class="text-2xl">👎</span>
+								<span class="font-semibold">Downvote</span>
+							</button>
+						</div>
 
-					<!-- Submit Button -->
-					<div class="flex justify-end">
-						<Button variant="primary" onclick={handleSubmitReview}>Submit Review</Button>
-					</div>
+						<!-- Comment Textarea -->
+						<div class="mb-4">
+							<Textarea
+								bind:value={reviewComment}
+								placeholder="Share your experience with this user (optional)..."
+								rows={3}
+								disabled={submitting}
+							/>
+						</div>
+
+						<!-- Submit Button -->
+						<div class="flex justify-end">
+							<Button variant="primary" onclick={handleSubmitReview} disabled={submitting}>
+								{#if submitting}
+									Submitting...
+								{:else}
+									Submit Review
+								{/if}
+							</Button>
+						</div>
+					{/if}
 				</div>
 
 				{#if reviews.length === 0}

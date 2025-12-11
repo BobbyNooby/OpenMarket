@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../db/db';
 import { user, userProfilesTable, usersActivityTable, profileReviewsTable } from '../db/schemas';
-import { eq } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 
 export const usersRoutes = new Elysia({ prefix: '/users' })
 	// Create or update user profile (called after OAuth login)
@@ -118,7 +118,8 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 					.from(profileReviewsTable)
 					.innerJoin(user, eq(profileReviewsTable.voter_user_id, user.id))
 					.innerJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
-					.where(eq(profileReviewsTable.profile_user_id, userRow.id));
+					.where(eq(profileReviewsTable.profile_user_id, userRow.id))
+					.orderBy(desc(profileReviewsTable.created_at));
 
 				const reviews = reviewRows.map((r) => ({
 					id: r.id,
@@ -159,6 +160,85 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 		{
 			params: t.Object({
 				username: t.String()
+			})
+		}
+	)
+	// Submit a review for a user profile
+	.post(
+		'/profile/:username/reviews',
+		async ({ params, body }) => {
+			try {
+				// Get the profile being reviewed
+				const profileRows = await db
+					.select({
+						id: user.id,
+						username: userProfilesTable.username
+					})
+					.from(user)
+					.innerJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
+					.where(eq(userProfilesTable.username, params.username));
+
+				if (profileRows.length === 0) {
+					return { success: false, error: 'User not found', status: 404 };
+				}
+
+				const profileUser = profileRows[0];
+
+				// Check if user is trying to review themselves
+				if (profileUser.id === body.voter_user_id) {
+					return { success: false, error: 'You cannot review yourself', status: 400 };
+				}
+
+				// Check if user has already reviewed this profile
+				const existingReview = await db
+					.select({ id: profileReviewsTable.id })
+					.from(profileReviewsTable)
+					.where(
+						and(
+							eq(profileReviewsTable.profile_user_id, profileUser.id),
+							eq(profileReviewsTable.voter_user_id, body.voter_user_id)
+						)
+					);
+
+				if (existingReview.length > 0) {
+					// Update existing review
+					const [updated] = await db
+						.update(profileReviewsTable)
+						.set({
+							type: body.type,
+							comment: body.comment || null
+						})
+						.where(eq(profileReviewsTable.id, existingReview[0].id))
+						.returning();
+
+					return { success: true, data: updated, updated: true };
+				}
+
+				// Create new review
+				const [review] = await db
+					.insert(profileReviewsTable)
+					.values({
+						profile_user_id: profileUser.id,
+						voter_user_id: body.voter_user_id,
+						type: body.type,
+						comment: body.comment || null
+					})
+					.returning();
+
+				return { success: true, data: review, updated: false };
+			} catch (err: any) {
+				console.error('Submit review error:', err);
+				return { success: false, error: err.message, status: 500 };
+			}
+		},
+		{
+			params: t.Object({
+				username: t.String()
+			}),
+			body: t.Object({
+				voter_user_id: t.String(),
+				type: t.Union([t.Literal('upvote'), t.Literal('downvote')]),
+				comment: t.Optional(t.String())
 			})
 		}
 	)

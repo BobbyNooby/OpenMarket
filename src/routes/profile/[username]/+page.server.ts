@@ -1,7 +1,8 @@
 import type { PageServerLoad } from './$types';
 import { api } from '$lib/api/client';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, parent }) => {
+	const { session } = await parent();
 	const { username } = params;
 
 	if (!username) {
@@ -29,6 +30,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	return {
 		username,
 		profile,
-		listings
+		listings,
+		session
 	};
 };
