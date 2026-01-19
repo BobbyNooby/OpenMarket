@@ -1,8 +1,32 @@
 import { pgEnum, pgTable, uuid, text, timestamp, boolean, integer } from 'drizzle-orm/pg-core';
+import { user } from './auth-schema';
 
 // --- enums ---
+export const reviewType = pgEnum('review_type', ['upvote', 'downvote']);
 export const orderType = pgEnum('order_type', ['buy', 'sell']);
 export const payingType = pgEnum('paying_type', ['each', 'total']);
+
+// Re-export auth user table for convenience
+export { user, session, account, verification } from './auth-schema';
+
+// --- user profiles (extension of auth user table) ---
+// Stores marketplace-specific user data that better-auth doesn't handle
+export const userProfilesTable = pgTable('user_profiles', {
+	userId: text('user_id')
+		.primaryKey()
+		.references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+	username: text('username').notNull().unique(),
+	description: text('description')
+});
+
+// --- activity ---
+export const usersActivityTable = pgTable('users_activity', {
+	user_id: text('user_id')
+		.primaryKey()
+		.references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+	is_active: boolean('is_active').notNull().default(false),
+	last_activity_at: timestamp('last_activity_at').notNull().defaultNow()
+});
 
 // --- items/currencies (generic) ---
 export const itemsTable = pgTable('items', {
@@ -25,12 +49,28 @@ export const currenciesTable = pgTable('currencies', {
 	image_url: text('image_url')
 });
 
+// --- profile reviews ---
+export const profileReviewsTable = pgTable('profile_reviews', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	created_at: timestamp('created_at').defaultNow().notNull(),
+	profile_user_id: text('profile_user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+	voter_user_id: text('voter_user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+	type: reviewType('type').notNull(),
+	comment: text('comment')
+});
+
 // --- listings (market orders) ---
 // A listing can request either an item OR a currency (one must be set, the other null)
 export const listingsTable = pgTable('listings', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	created_at: timestamp('created_at').defaultNow().notNull(),
-	author_id: text('author_id').notNull(),
+	author_id: text('author_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
 	requested_item_id: uuid('requested_item_id')
 		.references(() => itemsTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
 	requested_currency_id: uuid('requested_currency_id')
@@ -66,10 +106,16 @@ export const listingOfferedCurrenciesTable = pgTable('listing_offered_currencies
 });
 
 // --- Type exports ---
+export type UserProfileInsert = typeof userProfilesTable.$inferInsert;
+export type UserProfileSelect = typeof userProfilesTable.$inferSelect;
+export type UserActivityInsert = typeof usersActivityTable.$inferInsert;
+export type UserActivitySelect = typeof usersActivityTable.$inferSelect;
 export type ItemInsert = typeof itemsTable.$inferInsert;
 export type ItemSelect = typeof itemsTable.$inferSelect;
 export type CurrencyInsert = typeof currenciesTable.$inferInsert;
 export type CurrencySelect = typeof currenciesTable.$inferSelect;
+export type ProfileReviewInsert = typeof profileReviewsTable.$inferInsert;
+export type ProfileReviewSelect = typeof profileReviewsTable.$inferSelect;
 export type ListingInsert = typeof listingsTable.$inferInsert;
 export type ListingSelect = typeof listingsTable.$inferSelect;
 export type ListingOfferedItemInsert = typeof listingOfferedItemsTable.$inferInsert;

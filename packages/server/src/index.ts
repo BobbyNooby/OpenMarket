@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { itemsRoutes, currenciesRoutes } from "./routes/items";
 import { listingsRoutes } from "./routes/listings";
+import { usersRoutes } from "./routes/users";
 
 const app = new Elysia()
   .use(
@@ -16,6 +17,7 @@ const app = new Elysia()
   .use(itemsRoutes)
   .use(currenciesRoutes)
   .use(listingsRoutes)
+  .use(usersRoutes)
   .listen(3000);
 
 console.log(
