@@ -17,13 +17,13 @@
 
 	let dropdownOpen = $state(false);
 
-	// Get username from session user name (Discord username is stored in name field)
 	const username = $derived(session?.user?.name ?? '');
 	const userImage = $derived(session?.user?.image);
 
 	async function signInWithDiscord() {
 		await authClient.signIn.social({
-			provider: 'discord'
+			provider: 'discord',
+			callbackURL: 'http://localhost:5173'
 		});
 	}
 

@@ -23,9 +23,10 @@
     "vite": "^7.0.4"
   },
   "dependencies": {
+    "@elysiajs/eden": "^1.4.5",
     "@openmarket/lib": "workspace:*",
     "@openmarket/server": "workspace:*",
-    "@elysiajs/eden": "^1.4.5",
+    "better-auth": "^1.4.15",
     "elysia": "^1.4.18"
   }
 }
