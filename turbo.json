@@ -2,7 +2,11 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "tasks": {
+    "//#check-env": {
+      "cache": false
+    },
     "dev": {
+      "dependsOn": ["//#check-env"],
       "cache": false,
       "persistent": true
     },

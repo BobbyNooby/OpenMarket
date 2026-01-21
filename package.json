@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.22.0",
   "type": "module",
   "scripts": {
+    "check-env": "node scripts/check-env.js",
     "dev": "turbo run dev",
     "dev:server": "pnpm --filter @openmarket/server dev",
     "dev:frontend": "pnpm --filter @openmarket/frontend dev",
