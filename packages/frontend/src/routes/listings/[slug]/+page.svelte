@@ -1,39 +1,26 @@
 <script lang="ts">
 	import { ListingCard, Button } from '$lib/shared/components';
+	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 
 	let { data } = $props();
 
 	// Filter state
 	let orderTypeFilter = $state<'all' | 'buy' | 'sell'>('all');
 
-	// Transform API data to match component expectations
 	const listings = $derived(
-		(data.listings || []).map((listing: any) => ({
-			id: listing.id,
-			created_at: listing.created_at,
-			author_id: listing.author.id,
-			requested_item_id: listing.requested_item?.id,
-			requested_currency_id: listing.requested_currency?.id,
-			amount: listing.amount,
-			order_type: listing.order_type,
-			paying_type: listing.paying_type,
-			offered_items: listing.offered_items,
-			offered_currencies: listing.offered_currencies,
-			_author: listing.author,
-			_requested_item: listing.requested_item,
-			_requested_currency: listing.requested_currency
-		}))
+		(data.listings || [])
+			.map(transformListing)
+			.filter((l: ReturnType<typeof transformListing>): l is TransformedListing => l !== null)
 	);
 
 	// Apply filters
-	const filteredListings = $derived(() => {
-		if (orderTypeFilter === 'all') return listings;
-		return listings.filter((l: any) => l.order_type === orderTypeFilter);
-	});
+	const filteredListings = $derived(
+		orderTypeFilter === 'all' ? listings : listings.filter((l) => l.order_type === orderTypeFilter)
+	);
 
 	// Separate buy and sell counts
-	const buyCount = $derived(listings.filter((l: any) => l.order_type === 'buy').length);
-	const sellCount = $derived(listings.filter((l: any) => l.order_type === 'sell').length);
+	const buyCount = $derived(listings.filter((l) => l.order_type === 'buy').length);
+	const sellCount = $derived(listings.filter((l) => l.order_type === 'sell').length);
 
 	// Handle contact click
 	function handleContact(order: any) {
@@ -164,7 +151,7 @@
 		</div>
 
 		<!-- Listings Grid -->
-		{#if filteredListings().length === 0}
+		{#if filteredListings.length === 0}
 			<div
 				class="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] py-16 text-center"
 			>
@@ -182,7 +169,7 @@
 			</div>
 		{:else}
 			<div class="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-				{#each filteredListings() as order}
+				{#each filteredListings as order (order.id)}
 					<ListingCard
 						{order}
 						author={order._author}

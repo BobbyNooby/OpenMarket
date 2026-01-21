@@ -1,42 +1,35 @@
 <script lang="ts">
 	import { ListingCard, Input } from '$lib/shared/components';
 	import { api } from '$lib/api/client';
+	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 	import { onMount } from 'svelte';
 
 	let { data } = $props();
 	let searchQuery = $state('');
 
-	// All loaded listings
-	let allListings = $state<any[]>(data.listings || []);
+	// All loaded listings - use $derived for initial data from props
+	let allListings = $state<any[]>([]);
 	let loading = $state(false);
-	let hasMore = $state(data.pagination?.hasMore ?? false);
-	let offset = $state(data.listings?.length || 0);
+	let hasMore = $state(false);
+	let offset = $state(0);
 	const limit = 12;
 
-	// Transform listings for display
-	function transformListing(listing: any) {
-		return {
-			id: listing.id,
-			created_at: listing.created_at,
-			author_id: listing.author.id,
-			requested_item_id: listing.requested_item?.id,
-			requested_currency_id: listing.requested_currency?.id,
-			amount: listing.amount,
-			order_type: listing.order_type,
-			paying_type: listing.paying_type,
-			offered_items: listing.offered_items,
-			offered_currencies: listing.offered_currencies,
-			_author: listing.author,
-			_requested_item: listing.requested_item,
-			_requested_currency: listing.requested_currency
-		};
-	}
+	// Initialize from data prop
+	$effect(() => {
+		if (data.listings) {
+			allListings = data.listings;
+			offset = data.listings.length;
+		}
+		hasMore = data.pagination?.hasMore ?? false;
+	});
 
-	const listings = $derived(allListings.map(transformListing));
+	const listings = $derived(
+		(allListings || []).map(transformListing).filter((l): l is TransformedListing => l !== null)
+	);
 
 	// Filter orders by type
-	const buyOrders = $derived(listings.filter((o: any) => o.order_type === 'buy'));
-	const sellOrders = $derived(listings.filter((o: any) => o.order_type === 'sell'));
+	const buyOrders = $derived(listings.filter((o) => o.order_type === 'buy'));
+	const sellOrders = $derived(listings.filter((o) => o.order_type === 'sell'));
 
 	// Load more listings
 	async function loadMore() {
@@ -64,7 +57,7 @@
 	}
 
 	// Intersection observer for infinite scroll
-	let sentinelRef: HTMLDivElement;
+	let sentinelRef = $state<HTMLDivElement | null>(null);
 
 	onMount(() => {
 		const observer = new IntersectionObserver(
