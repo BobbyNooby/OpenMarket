@@ -2,9 +2,10 @@
   "name": "openmarket",
   "private": true,
   "version": "0.0.1",
+  "packageManager": "pnpm@10.22.0",
   "type": "module",
   "scripts": {
-    "dev": "pnpm run --parallel --filter @openmarket/server --filter @openmarket/frontend dev",
+    "dev": "turbo run dev",
     "dev:server": "pnpm --filter @openmarket/server dev",
     "dev:frontend": "pnpm --filter @openmarket/frontend dev",
     "build": "pnpm run -r build",
@@ -12,6 +13,7 @@
     "setup": "pnpm install && pnpm docker:dev"
   },
   "devDependencies": {
+    "turbo": "^2",
     "typescript": "^5.0.0"
   }
 }
