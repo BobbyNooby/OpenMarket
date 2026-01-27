@@ -9,6 +9,9 @@
 		id?: string;
 		name?: string;
 		required?: boolean;
+		min?: number;
+		max?: number;
+		step?: number;
 		class?: string;
 		oninput?: (e: Event & { currentTarget: HTMLInputElement }) => void;
 		onchange?: (e: Event & { currentTarget: HTMLInputElement }) => void;
