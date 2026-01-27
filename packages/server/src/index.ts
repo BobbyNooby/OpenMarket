@@ -16,12 +16,9 @@ const app = new Elysia()
   )
   .get("/", () => "OpenMarket API")
   .get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }))
-  .all("/api/auth/*", ({ request }) => auth.handler(request))
   .use(authMiddleware)
-  .get("/me", ({ session }) => {
-    console.log("[/me] Session:", session);
-    return session;
-  })
+  .get("/api/auth/get-session", ({ session }) => session)
+  .all("/api/auth/*", ({ request }) => auth.handler(request))
   // RBAC role management endpoints (for testing/demo purposes)
   .get("/giveRole/:role/:userId", async ({ params }) => {
     const { assignRole } = await import("./middleware/rbac");
