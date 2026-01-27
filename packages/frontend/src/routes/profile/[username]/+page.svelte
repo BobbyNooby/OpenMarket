@@ -3,8 +3,8 @@
 	import Button from '$lib/shared/components/Button.svelte';
 	import Textarea from '$lib/shared/components/Textarea.svelte';
 	import CommentCard from '$lib/shared/components/CommentCard.svelte';
-	import { api } from '$lib/api/client';
 	import { invalidateAll } from '$app/navigation';
+	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 
 	let { data } = $props();
 
@@ -18,21 +18,9 @@
 
 	// Transform listings for display
 	const listings = $derived(
-		(data.listings || []).map((listing: any) => ({
-			id: listing.id,
-			created_at: listing.created_at,
-			author_id: listing.author.id,
-			requested_item_id: listing.requested_item?.id,
-			requested_currency_id: listing.requested_currency?.id,
-			amount: listing.amount,
-			order_type: listing.order_type,
-			paying_type: listing.paying_type,
-			offered_items: listing.offered_items,
-			offered_currencies: listing.offered_currencies,
-			_author: listing.author,
-			_requested_item: listing.requested_item,
-			_requested_currency: listing.requested_currency
-		}))
+		(data.listings || [])
+			.map(transformListing)
+			.filter((l): l is TransformedListing => l !== null)
 	);
 
 	// Calculate review stats
@@ -88,21 +76,26 @@
 		submitError = null;
 
 		try {
-			const result = await api.users.profile({ username: profile.username }).reviews.post({
-				voter_user_id: session.user.id,
-				type: reviewType,
-				comment: reviewComment || undefined
-			});
+			const formData = new FormData();
+			formData.set('voter_user_id', session.user.id);
+			formData.set('type', reviewType);
+			if (reviewComment) formData.set('comment', reviewComment);
 
-			if (result.data?.success) {
+			const res = await fetch('?/submitReview', {
+				method: 'POST',
+				body: formData
+			});
+			const result = await res.json();
+
+			if (result.type === 'failure') {
+				submitError = result.data?.error || 'Failed to submit review';
+			} else {
 				// Refresh page data to get updated reviews
 				await invalidateAll();
 				// Update local reviews state from new data
 				reviews = data.profile?.reviews || [];
 				reviewType = null;
 				reviewComment = '';
-			} else {
-				submitError = result.data?.error || 'Failed to submit review';
 			}
 		} catch (err: any) {
 			console.error('Failed to submit review:', err);
@@ -195,13 +188,7 @@
 							</h3>
 							<div class="space-y-4">
 								{#each buyOrders as order}
-									<ListingCard
-										{order}
-										author={order._author}
-										requestedItem={order._requested_item}
-										requestedCurrency={order._requested_currency}
-										onContact={() => handleContact(order)}
-									/>
+									<ListingCard {order} onContact={() => handleContact(order)} />
 								{/each}
 								{#if buyOrders.length === 0}
 									<p class="py-4 text-center text-[var(--color-textSecondary)]">No buy orders</p>
@@ -218,13 +205,7 @@
 							</h3>
 							<div class="space-y-4">
 								{#each sellOrders as order}
-									<ListingCard
-										{order}
-										author={order._author}
-										requestedItem={order._requested_item}
-										requestedCurrency={order._requested_currency}
-										onContact={() => handleContact(order)}
-									/>
+									<ListingCard {order} onContact={() => handleContact(order)} />
 								{/each}
 								{#if sellOrders.length === 0}
 									<p class="py-4 text-center text-[var(--color-textSecondary)]">No sell orders</p>

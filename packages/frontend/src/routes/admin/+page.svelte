@@ -4,7 +4,6 @@
 	import Button from '$lib/shared/components/Button.svelte';
 	import ItemButton from '$lib/shared/components/ItemButton.svelte';
 	import type { ItemFormData, GenericItem } from '$lib/api/types';
-	import { api } from '$lib/api/client';
 	import { invalidateAll } from '$app/navigation';
 
 	let { data } = $props();
@@ -20,59 +19,43 @@
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 
+	// Helper to submit form actions
+	async function submitFormAction(action: string, formData: FormData) {
+		const res = await fetch(`?/${action}`, {
+			method: 'POST',
+			body: formData
+		});
+		const result = await res.json();
+		if (result.type === 'failure') {
+			throw new Error(result.data?.error || 'Action failed');
+		}
+		return result;
+	}
+
 	// Handle form submission
-	async function handleSubmit(formData: ItemFormData) {
+	async function handleSubmit(formDataInput: ItemFormData) {
 		isLoading = true;
 		error = null;
 
 		try {
+			const formData = new FormData();
+			formData.set('name', formDataInput.name);
+			if (formDataInput.description) formData.set('description', formDataInput.description);
+			if (formDataInput.wiki_link) formData.set('wiki_link', formDataInput.wiki_link);
+			if (formDataInput.image_url) formData.set('image_url', formDataInput.image_url);
+
 			if (editingItem) {
-				// Edit existing item/currency
+				formData.set('id', editingItem.id);
 				if (editingItem.type === 'item') {
-					// @ts-expect-error - Eden treaty type inference issue with dynamic routes
-					const result = await api.items({ id: editingItem.id }).put({
-						name: formData.name,
-						description: formData.description || undefined,
-						wiki_link: formData.wiki_link || undefined,
-						image_url: formData.image_url || undefined
-					});
-					if (!result.data?.success) {
-						throw new Error(result.data?.error || 'Failed to update item');
-					}
+					await submitFormAction('updateItem', formData);
 				} else {
-					// @ts-expect-error - Eden treaty type inference issue with dynamic routes
-					const result = await api.currencies({ id: editingItem.id }).put({
-						name: formData.name,
-						description: formData.description || undefined,
-						wiki_link: formData.wiki_link || undefined,
-						image_url: formData.image_url || undefined
-					});
-					if (!result.data?.success) {
-						throw new Error(result.data?.error || 'Failed to update currency');
-					}
+					await submitFormAction('updateCurrency', formData);
 				}
 			} else {
-				// Create new item/currency
-				if (formData.type === 'item') {
-					const result = await api.items.post({
-						name: formData.name,
-						description: formData.description || undefined,
-						wiki_link: formData.wiki_link || undefined,
-						image_url: formData.image_url || undefined
-					});
-					if (!result.data?.success) {
-						throw new Error(result.data?.error || 'Failed to create item');
-					}
+				if (formDataInput.type === 'item') {
+					await submitFormAction('createItem', formData);
 				} else {
-					const result = await api.currencies.post({
-						name: formData.name,
-						description: formData.description || undefined,
-						wiki_link: formData.wiki_link || undefined,
-						image_url: formData.image_url || undefined
-					});
-					if (!result.data?.success) {
-						throw new Error(result.data?.error || 'Failed to create currency');
-					}
+					await submitFormAction('createCurrency', formData);
 				}
 			}
 
@@ -110,18 +93,13 @@
 		error = null;
 
 		try {
+			const formData = new FormData();
+			formData.set('id', item.id);
+
 			if (item.type === 'item') {
-				// @ts-expect-error - Eden treaty type inference issue with dynamic routes
-				const result = await api.items({ id: item.id }).delete();
-				if (!result.data?.success) {
-					throw new Error(result.data?.error || 'Failed to delete item');
-				}
+				await submitFormAction('deleteItem', formData);
 			} else {
-				// @ts-expect-error - Eden treaty type inference issue with dynamic routes
-				const result = await api.currencies({ id: item.id }).delete();
-				if (!result.data?.success) {
-					throw new Error(result.data?.error || 'Failed to delete currency');
-				}
+				await submitFormAction('deleteCurrency', formData);
 			}
 
 			// Refresh data from server

@@ -5,7 +5,6 @@
 	import Input from './Input.svelte';
 	import ItemButton from './ItemButton.svelte';
 	import type { Item, Currency } from '$lib/api/types';
-	import { api } from '$lib/api/client';
 
 	interface Props {
 		items: Item[];
@@ -119,31 +118,36 @@
 		error = null;
 
 		try {
-			const body: any = {
-				author_id: authorId,
-				amount,
-				order_type: orderType,
-				paying_type: payingType,
-				offered_items: offeredItems.map((o) => ({ item_id: o.id, amount: o.amount })),
-				offered_currencies: offeredCurrencies.map((o) => ({
-					currency_id: o.id,
-					amount: o.amount
-				}))
-			};
+			const formData = new FormData();
+			formData.set('author_id', authorId);
+			formData.set('amount', String(amount));
+			formData.set('order_type', orderType);
+			formData.set('paying_type', payingType);
+			formData.set('offered_items', JSON.stringify(offeredItems.map((o) => ({ item_id: o.id, amount: o.amount }))));
+			formData.set('offered_currencies', JSON.stringify(offeredCurrencies.map((o) => ({ currency_id: o.id, amount: o.amount }))));
 
 			if (requestType === 'item') {
-				body.requested_item_id = selectedRequestedId;
+				formData.set('requested_item_id', selectedRequestedId);
 			} else {
-				body.requested_currency_id = selectedRequestedId;
+				formData.set('requested_currency_id', selectedRequestedId);
 			}
 
-			// @ts-expect-error - Eden treaty type inference
-			const result = await api.listings.post(body);
+			const res = await fetch('?/createListing', {
+				method: 'POST',
+				body: formData
+			});
 
-			if (result.data?.success) {
-				goto('/listings');
-			} else {
+			// Check for redirect (success case)
+			if (res.redirected) {
+				goto(res.url);
+				return;
+			}
+
+			const result = await res.json();
+			if (result.type === 'failure') {
 				error = result.data?.error || 'Failed to create listing';
+			} else {
+				goto('/listings');
 			}
 		} catch (err: any) {
 			error = err.message || 'An error occurred';

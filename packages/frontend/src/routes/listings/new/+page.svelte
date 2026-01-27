@@ -2,23 +2,15 @@
 	import { AddListingForm, Button } from '$lib/shared/components';
 	import { authClient } from '$lib/api/client';
 	import type { Item, Currency } from '$lib/api/types';
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 
 	let { data } = $props();
 
-	let session = $state<any>(null);
-	let loading = $state(true);
+	// Use server-side session from layout
+	const session = $derived(data.session);
+	const items = $derived((data.items || []) as unknown as Item[]);
+	const currencies = $derived((data.currencies || []) as unknown as Currency[]);
 
-	const items = $derived((data.items || []) as Item[]);
-	const currencies = $derived((data.currencies || []) as Currency[]);
-
-	onMount(async () => {
-		const result = await authClient.getSession();
-		session = result.data?.session;
-		loading = false;
-	});
-
+	// Only authClient is needed for OAuth redirect (must be client-side)
 	async function signInWithDiscord() {
 		await authClient.signIn.social({
 			provider: 'discord',
@@ -40,9 +32,7 @@
 
 	<!-- Content -->
 	<div class="mx-auto max-w-3xl px-8 py-8">
-		{#if loading}
-			<p class="text-center text-[var(--color-textSecondary)]">Loading...</p>
-		{:else if !session}
+		{#if !session?.user}
 			<div class="text-center py-12">
 				<p class="text-lg text-[var(--color-textSecondary)] mb-4">
 					You need to sign in to create a listing
@@ -50,7 +40,7 @@
 				<Button onclick={signInWithDiscord}>Sign In with Discord</Button>
 			</div>
 		{:else}
-			<AddListingForm {items} {currencies} authorId={session.userId} />
+			<AddListingForm {items} {currencies} authorId={session.user.id} />
 		{/if}
 	</div>
 </div>
