@@ -24,6 +24,18 @@
   const userImage = $derived(session?.user?.image);
   const perms = $derived(createPermissionChecker(session));
 
+  const leftLinks = [
+    { href: "/", label: "Home" },
+    { href: "/listings", label: "Listings" },
+    { href: "/items", label: "Items" },
+  ];
+
+  const rightLinks = $derived(
+    perms.canAccessAdmin || perms.canManageItems
+      ? [{ href: "/admin", label: "Admin" }]
+      : []
+  );
+
   async function signInWithDiscord() {
     await authClient.signIn.social({
       provider: "discord",
@@ -62,37 +74,28 @@
 
       <!-- Navigation Links -->
       <nav class="flex items-center gap-6">
-        <a
-          href="/"
-          class="font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-primary)]"
-        >
-          Home
-        </a>
-        <a
-          href="/listings"
-          class="font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-primary)]"
-        >
-          Listings
-        </a>
-        <a
-          href="/items"
-          class="font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-primary)]"
-        >
-          Items
-        </a>
-        {#if perms.canAccessAdmin || perms.canManageItems}
+        {#each leftLinks as { href, label }}
           <a
-            href="/admin"
+            {href}
             class="font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-primary)]"
           >
-            Admin
+            {label}
           </a>
-        {/if}
+        {/each}
       </nav>
     </div>
 
-    <!-- Right: User Section -->
-    <div class="flex items-center gap-4">
+    <!-- Right: Navigation and User Section -->
+    <div class="flex items-center gap-6">
+      <!-- Right Navigation Links -->
+      {#each rightLinks as { href, label }}
+        <a
+          {href}
+          class="font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-primary)]"
+        >
+          {label}
+        </a>
+      {/each}
       {#if session}
         <!-- Avatar Dropdown -->
         <div class="relative">
