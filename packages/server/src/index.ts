@@ -43,7 +43,7 @@ const app = new Elysia()
   .use(currenciesRoutes)
   .use(listingsRoutes)
   .use(usersRoutes)
-  .listen(3000);
+  .listen(process.env.API_PORT || 3000);
 
 console.log(
   `Server running at http://${app.server?.hostname}:${app.server?.port}`,
