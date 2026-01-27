@@ -3,8 +3,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { injectThemeVariables } from '$lib/design/cssVariables';
 	import { toggleTheme, theme } from '$lib/design/theme';
-	import { Header } from '$lib/shared/components';
-	import Button from '$lib/shared/components/Button.svelte';
+	import { Header, Button } from '$lib/shared/components';
 	import { onMount } from 'svelte';
 
 	let { children, data } = $props();

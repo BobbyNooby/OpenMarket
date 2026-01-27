@@ -1,8 +1,5 @@
 <script lang="ts">
-	import { ListingCard } from '$lib/shared/components';
-	import Button from '$lib/shared/components/Button.svelte';
-	import Textarea from '$lib/shared/components/Textarea.svelte';
-	import CommentCard from '$lib/shared/components/CommentCard.svelte';
+	import { ListingCard, Button, Textarea, CommentCard } from '$lib/shared/components';
 	import { invalidateAll } from '$app/navigation';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 

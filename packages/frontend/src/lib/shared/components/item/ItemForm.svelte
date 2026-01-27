@@ -1,8 +1,8 @@
 <script lang="ts">
-	import Input from './Input.svelte';
-	import Textarea from './Textarea.svelte';
-	import Select from './Select.svelte';
-	import Button from './Button.svelte';
+	import Input from '../ui/Input.svelte';
+	import Textarea from '../ui/Textarea.svelte';
+	import Select from '../ui/Select.svelte';
+	import Button from '../ui/Button.svelte';
 	import ItemImage from './ItemImage.svelte';
 	import ItemTooltip from './ItemTooltip.svelte';
 	import type { ItemFormData } from '$lib/api/types';

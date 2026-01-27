@@ -1,6 +1,6 @@
 <script lang="ts">
   import { authClient } from "$lib/api/client.js";
-  import Button from "./Button.svelte";
+  import Button from "../ui/Button.svelte";
   import { createPermissionChecker } from "$lib/utils/permissions";
 
   interface Props {

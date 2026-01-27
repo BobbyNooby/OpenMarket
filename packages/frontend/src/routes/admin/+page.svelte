@@ -1,8 +1,5 @@
 <script lang="ts">
-	import ItemCurrencyForm from '$lib/shared/components/ItemCurrencyForm.svelte';
-	import Modal from '$lib/shared/components/Modal.svelte';
-	import Button from '$lib/shared/components/Button.svelte';
-	import ItemButton from '$lib/shared/components/ItemButton.svelte';
+	import { ItemForm, Modal, Button, ItemButton } from '$lib/shared/components';
 	import type { ItemFormData, GenericItem } from '$lib/api/types';
 	import { invalidateAll } from '$app/navigation';
 
@@ -144,7 +141,7 @@
 					{error}
 				</div>
 			{/if}
-			<ItemCurrencyForm
+			<ItemForm
 				data={editingItem}
 				mode={editingItem ? 'edit' : 'create'}
 				onSubmit={handleSubmit}

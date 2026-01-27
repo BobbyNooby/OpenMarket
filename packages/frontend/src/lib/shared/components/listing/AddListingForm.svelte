@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import Button from './Button.svelte';
-	import Select from './Select.svelte';
-	import Input from './Input.svelte';
-	import ItemButton from './ItemButton.svelte';
+	import Button from '../ui/Button.svelte';
+	import Select from '../ui/Select.svelte';
+	import Input from '../ui/Input.svelte';
+	import ItemButton from '../item/ItemButton.svelte';
 	import type { Item, Currency } from '$lib/api/types';
 
 	interface Props {
