@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { ListingCard, Input } from '$lib/shared/components';
-	import { api } from '$lib/api/client';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 	import { onMount } from 'svelte';
 
@@ -37,17 +36,16 @@
 
 		loading = true;
 		try {
-			const result = await api.listings.get({
-				query: { limit: String(limit), offset: String(offset) }
-			});
+			const res = await fetch(`/api/listings?limit=${limit}&offset=${offset}`);
+			const result = await res.json();
 
-			if (result.data?.success && result.data.data) {
+			if (result.success && result.data) {
 				// Deduplicate by id to prevent key conflicts
 				const existingIds = new Set(allListings.map((l: any) => l.id));
-				const newListings = result.data.data.filter((l: any) => !existingIds.has(l.id));
+				const newListings = result.data.filter((l: any) => !existingIds.has(l.id));
 				allListings = [...allListings, ...newListings];
-				offset += result.data.data.length;
-				hasMore = result.data.pagination?.hasMore ?? false;
+				offset += result.data.length;
+				hasMore = result.pagination?.hasMore ?? false;
 			}
 		} catch (err) {
 			console.error('Failed to load more listings:', err);
@@ -77,8 +75,8 @@
 	});
 
 	// Handle contact click
-	function handleContact(order: any) {
-		alert(`Contact ${order._author.display_name} (@${order._author.username}) about this order!`);
+	function handleContact(order: TransformedListing) {
+		alert(`Contact ${order.author.display_name} (@${order.author.username}) about this order!`);
 	}
 </script>
 
@@ -127,13 +125,7 @@
 						</h3>
 						<div class="space-y-4">
 							{#each buyOrders as order (order.id)}
-								<ListingCard
-									{order}
-									author={order._author}
-									requestedItem={order._requested_item}
-									requestedCurrency={order._requested_currency}
-									onContact={() => handleContact(order)}
-								/>
+								<ListingCard {order} onContact={() => handleContact(order)} />
 							{/each}
 							{#if buyOrders.length === 0}
 								<p class="py-4 text-center text-[var(--color-textSecondary)]">No buy orders</p>
@@ -150,13 +142,7 @@
 						</h3>
 						<div class="space-y-4">
 							{#each sellOrders as order (order.id)}
-								<ListingCard
-									{order}
-									author={order._author}
-									requestedItem={order._requested_item}
-									requestedCurrency={order._requested_currency}
-									onContact={() => handleContact(order)}
-								/>
+								<ListingCard {order} onContact={() => handleContact(order)} />
 							{/each}
 							{#if sellOrders.length === 0}
 								<p class="py-4 text-center text-[var(--color-textSecondary)]">No sell orders</p>

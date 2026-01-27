@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { ListingCard, Input } from '$lib/shared/components';
-	import { api } from '$lib/api/client';
 	import { onMount } from 'svelte';
 	import type { Item } from '$lib/api/types';
+	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 
 	let { data } = $props();
 
@@ -21,26 +21,9 @@
 	let orderTypeFilter = $state<'all' | 'buy' | 'sell'>('all');
 	let selectedItemId = $state<string | null>(null);
 
-	// Transform listing for display
-	function transformListing(listing: any) {
-		return {
-			id: listing.id,
-			created_at: listing.created_at,
-			author_id: listing.author.id,
-			requested_item_id: listing.requested_item?.id,
-			requested_currency_id: listing.requested_currency?.id,
-			amount: listing.amount,
-			order_type: listing.order_type,
-			paying_type: listing.paying_type,
-			offered_items: listing.offered_items,
-			offered_currencies: listing.offered_currencies,
-			_author: listing.author,
-			_requested_item: listing.requested_item,
-			_requested_currency: listing.requested_currency
-		};
-	}
-
-	const listings = $derived(allListings.map(transformListing));
+	const listings = $derived(
+		allListings.map(transformListing).filter((l): l is TransformedListing => l !== null)
+	);
 
 	// Apply filters (client-side filtering on loaded data)
 	const filteredListings = $derived(() => {
@@ -48,23 +31,23 @@
 
 		// Filter by order type
 		if (orderTypeFilter !== 'all') {
-			result = result.filter((l: any) => l.order_type === orderTypeFilter);
+			result = result.filter((l) => l.order_type === orderTypeFilter);
 		}
 
 		// Filter by selected item
 		if (selectedItemId) {
-			result = result.filter((l: any) => l.requested_item_id === selectedItemId);
+			result = result.filter((l) => l.requested_item_id === selectedItemId);
 		}
 
 		// Filter by search query
 		if (searchQuery.trim()) {
 			const query = searchQuery.toLowerCase();
 			result = result.filter(
-				(l: any) =>
-					l._requested_item?.name?.toLowerCase().includes(query) ||
-					l._requested_currency?.name?.toLowerCase().includes(query) ||
-					l._author.display_name.toLowerCase().includes(query) ||
-					l._author.username.toLowerCase().includes(query)
+				(l) =>
+					l.requested_item?.name?.toLowerCase().includes(query) ||
+					l.requested_currency?.name?.toLowerCase().includes(query) ||
+					l.author.display_name.toLowerCase().includes(query) ||
+					l.author.username.toLowerCase().includes(query)
 			);
 		}
 
@@ -77,17 +60,16 @@
 
 		loading = true;
 		try {
-			const result = await api.listings.get({
-				query: { limit: String(limit), offset: String(offset) }
-			});
+			const res = await fetch(`/api/listings?limit=${limit}&offset=${offset}`);
+			const result = await res.json();
 
-			if (result.data?.success && result.data.data) {
+			if (result.success && result.data) {
 				// Deduplicate by id to prevent key conflicts
 				const existingIds = new Set(allListings.map((l: any) => l.id));
-				const newListings = result.data.data.filter((l: any) => !existingIds.has(l.id));
+				const newListings = result.data.filter((l: any) => !existingIds.has(l.id));
 				allListings = [...allListings, ...newListings];
-				offset += result.data.data.length;
-				hasMore = result.data.pagination?.hasMore ?? false;
+				offset += result.data.length;
+				hasMore = result.pagination?.hasMore ?? false;
 			}
 		} catch (err) {
 			console.error('Failed to load more listings:', err);
@@ -117,8 +99,8 @@
 	});
 
 	// Handle contact click
-	function handleContact(order: any) {
-		alert(`Contact ${order._author.display_name} (@${order._author.username}) about this order!`);
+	function handleContact(order: TransformedListing) {
+		alert(`Contact ${order.author.display_name} (@${order.author.username}) about this order!`);
 	}
 
 	function clearFilters() {
@@ -271,13 +253,7 @@
 				{:else}
 					<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
 						{#each filteredListings() as order (order.id)}
-							<ListingCard
-								{order}
-								author={order._author}
-								requestedItem={order._requested_item}
-								requestedCurrency={order._requested_currency}
-								onContact={() => handleContact(order)}
-							/>
+							<ListingCard {order} onContact={() => handleContact(order)} />
 						{/each}
 					</div>
 				{/if}
