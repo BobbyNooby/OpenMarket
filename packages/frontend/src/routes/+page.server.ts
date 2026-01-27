@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { api } from '$lib/api/client';
+import { api } from '$lib/api/server';
 
 export const load: PageServerLoad = async () => {
 	const limit = 12;

@@ -1,5 +1,6 @@
-import type { PageServerLoad } from './$types';
-import { api } from '$lib/api/client';
+import type { PageServerLoad, Actions } from './$types';
+import { api } from '$lib/api/server';
+import { fail } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ params, parent }) => {
 	const { session } = await parent();
@@ -33,4 +34,30 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 		listings,
 		session
 	};
+};
+
+export const actions: Actions = {
+	submitReview: async ({ request, params }) => {
+		const formData = await request.formData();
+		const voter_user_id = formData.get('voter_user_id') as string;
+		const type = formData.get('type') as 'upvote' | 'downvote';
+		const comment = formData.get('comment') as string | null;
+		const { username } = params;
+
+		if (!username) {
+			return fail(400, { error: 'Username not provided' });
+		}
+
+		const result = await api.users.profile({ username }).reviews.post({
+			voter_user_id,
+			type,
+			comment: comment || undefined
+		});
+
+		if (!result.data?.success) {
+			return fail(400, { error: result.data?.error || 'Failed to submit review' });
+		}
+
+		return { success: true };
+	}
 };
