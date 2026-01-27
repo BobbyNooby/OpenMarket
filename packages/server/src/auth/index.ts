@@ -4,7 +4,7 @@ import { db } from "../db/db";
 import * as schema from "../db/auth-schema";
 
 export const auth = betterAuth({
-  baseURL: process.env.API_BASE_URL,
+  baseURL: process.env.PUBLIC_API_URL,
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
@@ -14,6 +14,7 @@ export const auth = betterAuth({
       verification: schema.verification,
     },
   }),
+
   emailAndPassword: {
     enabled: false,
   },
