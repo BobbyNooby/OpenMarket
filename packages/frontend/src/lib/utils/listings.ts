@@ -1,24 +1,47 @@
+import type { User, Item, Currency, OfferedItem, OfferedCurrency } from '$lib/api/types';
+
+/**
+ * Transformed listing type that matches what ListingCard expects
+ */
+export interface TransformedListing {
+	id: string;
+	created_at: string;
+	author_id: string;
+	requested_item_id?: string;
+	requested_currency_id?: string;
+	amount: number;
+	order_type: 'buy' | 'sell';
+	paying_type: 'each' | 'total';
+	is_active: boolean;
+	offered_items: OfferedItem[];
+	offered_currencies: OfferedCurrency[];
+	author: User;
+	requested_item?: Item;
+	requested_currency?: Currency;
+}
+
 /**
  * Transform raw API listing data to match component expectations
  */
-export function transformListing(listing: any) {
+export function transformListing(listing: any): TransformedListing | null {
 	if (!listing) return null;
 
 	return {
 		id: listing.id,
-		created_at: listing.created_at,
+		created_at: typeof listing.created_at === 'string'
+			? listing.created_at
+			: listing.created_at?.toISOString?.() ?? new Date().toISOString(),
 		author_id: listing.author_id ?? listing.author?.id,
-		requested_item_id: listing.requested_item?.id,
-		requested_currency_id: listing.requested_currency?.id,
+		requested_item_id: listing.requested_item?.id ?? listing.requested_item_id,
+		requested_currency_id: listing.requested_currency?.id ?? listing.requested_currency_id,
 		amount: listing.amount,
 		order_type: listing.order_type,
 		paying_type: listing.paying_type,
+		is_active: listing.is_active ?? true,
 		offered_items: listing.offered_items ?? [],
 		offered_currencies: listing.offered_currencies ?? [],
-		_author: listing.author,
-		_requested_item: listing.requested_item,
-		_requested_currency: listing.requested_currency
+		author: listing.author,
+		requested_item: listing.requested_item,
+		requested_currency: listing.requested_currency
 	};
 }
-
-export type TransformedListing = NonNullable<ReturnType<typeof transformListing>>;

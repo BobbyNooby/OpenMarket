@@ -51,8 +51,8 @@
 							<ItemButton
 								name={item.name}
 								type="item"
-								description={item.description}
-								image_url={item.image_url}
+								description={item.description ?? undefined}
+								image_url={item.image_url ?? undefined}
 								item_id={item.id}
 								slug={item.slug}
 							/>
@@ -74,8 +74,8 @@
 							<ItemButton
 								name={currency.name}
 								type="currency"
-								description={currency.description}
-								image_url={currency.image_url}
+								description={currency.description ?? undefined}
+								image_url={currency.image_url ?? undefined}
 								item_id={currency.id}
 								slug={currency.slug}
 							/>

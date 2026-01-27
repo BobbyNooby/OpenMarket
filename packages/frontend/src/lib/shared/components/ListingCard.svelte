@@ -1,17 +1,19 @@
 <script lang="ts">
 	import ItemButton from './ItemButton.svelte';
 	import Button from './Button.svelte';
-	import type { Listing, ListingAuthor, ListingRequestedItem, ListingRequestedCurrency } from '$lib/api/types';
+	import type { TransformedListing } from '$lib/utils/listings';
 
 	interface Props {
-		order: Listing;
-		author: ListingAuthor;
-		requestedItem?: ListingRequestedItem;
-		requestedCurrency?: ListingRequestedCurrency;
+		order: TransformedListing;
 		onContact?: () => void;
 	}
 
-	let { order, author, requestedItem, requestedCurrency, onContact }: Props = $props();
+	let { order, onContact }: Props = $props();
+
+	// Extract from transformed listing
+	const author = $derived(order.author);
+	const requestedItem = $derived(order.requested_item);
+	const requestedCurrency = $derived(order.requested_currency);
 
 	// Get the requested thing (item or currency)
 	const requestedName = $derived(requestedItem?.name ?? requestedCurrency?.name ?? 'Unknown');
