@@ -8,12 +8,14 @@ const root = resolve(__dirname, "..");
 // Required environment variables (add/remove as needed)
 const requiredVars = [
   "DATABASE_URL",
-  "APP_SECRET",
-  "BETTER_AUTH_URL",
+  "REDIS_URL",
+  "BETTER_AUTH_SECRET",
   "DISCORD_CLIENT_ID",
   "DISCORD_CLIENT_SECRET",
-  "DISCORD_BOT_TOKEN",
   "API_BASE_URL",
+  "API_MASTER_KEY",
+  "API_PORT",
+  "NODE_ENV",
 ];
 
 const envPath = resolve(root, ".env");
