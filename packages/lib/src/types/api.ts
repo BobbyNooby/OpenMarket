@@ -9,6 +9,16 @@ export interface User {
   description?: string;
 }
 
+// Public user type (without sensitive fields like discord_id)
+export interface PublicUser {
+  id: string;
+  created_at: string;
+  username: string;
+  display_name: string;
+  avatar_url?: string;
+  description?: string;
+}
+
 export interface UserWithActivity extends User {
   is_active: boolean;
   last_activity_at?: string;
@@ -57,7 +67,7 @@ export interface ProfileReviewBase {
 
 // Full review with joined voter data (from API responses)
 export interface ProfileReview extends ProfileReviewBase {
-  voter: User;
+  voter: PublicUser;
 }
 
 // === Listing Types ===

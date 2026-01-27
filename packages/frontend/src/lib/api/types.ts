@@ -2,6 +2,7 @@
 export type {
 	// Base entities
 	User,
+	PublicUser,
 	UserWithActivity,
 	ItemBase,
 	Item,
