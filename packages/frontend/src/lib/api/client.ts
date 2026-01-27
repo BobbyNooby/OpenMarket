@@ -1,9 +1,7 @@
-import { treaty } from '@elysiajs/eden';
-import type { App } from '@openmarket/server';
-import { createAuthClient } from 'better-auth/svelte';
+import { PUBLIC_API_URL } from "$env/static/public";
+import { createAuthClient } from "better-auth/svelte";
 
-export const api = treaty<App>('http://localhost:3000');
-
+// Auth client for client-side OAuth flows (sign in/out)
 export const authClient = createAuthClient({
-	baseURL: 'http://localhost:3000'
+  baseURL: PUBLIC_API_URL,
 });
