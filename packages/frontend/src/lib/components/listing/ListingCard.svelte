@@ -4,14 +4,20 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Card from '$lib/components/ui/card';
 	import { Separator } from '$lib/components/ui/separator';
+	import ReportDialog from '../report/ReportDialog.svelte';
+	import Flag from '@lucide/svelte/icons/flag';
 	import type { TransformedListing } from '$lib/utils/listings';
 
 	interface Props {
 		order: TransformedListing;
 		onContact?: () => void;
+		sessionUserId?: string | null;
 	}
 
-	let { order, onContact }: Props = $props();
+	let { order, onContact, sessionUserId = null }: Props = $props();
+
+	let reportDialogOpen = $state(false);
+	const canReport = $derived(sessionUserId && sessionUserId !== order.author.id);
 
 	const author = $derived(order.author);
 	const requestedItem = $derived(order.requested_item);
@@ -185,7 +191,27 @@
 			<span class="text-xs text-muted-foreground">
 				{timeAgo(order.created_at)}
 			</span>
+			{#if canReport}
+				<Button
+					size="sm"
+					variant="ghost"
+					class="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+					onclick={() => (reportDialogOpen = true)}
+					title="Report listing"
+				>
+					<Flag class="h-4 w-4" />
+				</Button>
+			{/if}
 			<Button size="sm" onclick={onContact}>Contact</Button>
 		</div>
 	</Card.Footer>
 </Card.Root>
+
+{#if canReport}
+	<ReportDialog
+		bind:open={reportDialogOpen}
+		targetType="listing"
+		targetId={order.id}
+		targetLabel="this listing"
+	/>
+{/if}

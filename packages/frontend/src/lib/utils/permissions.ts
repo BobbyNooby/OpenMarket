@@ -30,6 +30,7 @@ export function createPermissionChecker(session: Session) {
 		canAny: (permissions: string[]) => hasAnyPermission(session, permissions),
 		canAll: (permissions: string[]) => hasAllPermissions(session, permissions),
 
+		// shortcuts for common checks
 		get isLoggedIn() {
 			return session?.user !== null;
 		},
@@ -42,8 +43,11 @@ export function createPermissionChecker(session: Session) {
 		get canManageCurrencies() {
 			return hasAnyPermission(session, ['currency:create', 'currency:update', 'currency:delete']);
 		},
+		get canModerateReports() {
+			return hasPermission(session, 'report:moderate');
+		},
 		get canAccessAdmin() {
-			return hasAnyPermission(session, ['admin:users', 'admin:roles']);
+			return hasAnyPermission(session, ['admin:users', 'admin:roles', 'report:moderate']);
 		},
 		get isBanned() {
 			return session?.ban != null;

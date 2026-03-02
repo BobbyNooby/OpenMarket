@@ -23,3 +23,6 @@ export { default as Header } from './layout/Header.svelte';
 
 // Profile Components
 export { default as CommentCard } from './profile/CommentCard.svelte';
+
+// Report Components
+export { default as ReportDialog } from './report/ReportDialog.svelte';

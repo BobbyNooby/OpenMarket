@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { ListingCard, CommentCard } from '$lib/components';
+	import { ListingCard, CommentCard, ReportDialog } from '$lib/components';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import ThumbsUpIcon from '@lucide/svelte/icons/thumbs-up';
 	import ThumbsDownIcon from '@lucide/svelte/icons/thumbs-down';
+	import Flag from '@lucide/svelte/icons/flag';
 	import { invalidateAll } from '$app/navigation';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 
@@ -14,6 +15,7 @@
 	let reviews = $state(profile?.reviews || []);
 
 	const isOwnProfile = $derived(session?.user?.id === profile?.id);
+	let reportDialogOpen = $state(false);
 
 	const listings = $derived(
 		(data.listings || [])
@@ -148,6 +150,17 @@
 							<div class="text-sm text-muted-foreground">
 								({positivePercentage}% positive)
 							</div>
+							{#if session?.user && !isOwnProfile}
+								<Button
+									variant="outline"
+									size="sm"
+									class="text-muted-foreground hover:text-destructive"
+									onclick={() => (reportDialogOpen = true)}
+								>
+									<Flag class="mr-1.5 h-3.5 w-3.5" />
+									Report
+								</Button>
+							{/if}
 						</div>
 					</div>
 				</div>
@@ -285,4 +298,13 @@
 			</div>
 		</div>
 	</div>
+
+	{#if session?.user && !isOwnProfile && profile}
+		<ReportDialog
+			bind:open={reportDialogOpen}
+			targetType="user"
+			targetId={profile.id}
+			targetLabel="@{profile.username}"
+		/>
+	{/if}
 {/if}
