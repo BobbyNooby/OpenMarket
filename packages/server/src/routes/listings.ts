@@ -10,6 +10,7 @@ import {
 	userProfilesTable
 } from '../db/schemas';
 import { eq, desc, sql } from 'drizzle-orm';
+import { authMiddleware } from '../middleware/rbac';
 
 // Alias for requested currency (to distinguish from offered currencies join)
 import { alias } from 'drizzle-orm/pg-core';
@@ -62,6 +63,7 @@ function serializeAuthor(userData: any, profile: any) {
 }
 
 export const listingsRoutes = new Elysia({ prefix: '/listings' })
+	.use(authMiddleware)
 	// Get all listings with full details (author, requested item/currency, offered items/currencies)
 	// Supports pagination with ?limit=N&offset=M
 	.get('/', async ({ query }) => {
@@ -461,7 +463,12 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 	// Create listing
 	.post(
 		'/',
-		async ({ body }) => {
+		async ({ body, session, set }) => {
+			if (session.ban) {
+				set.status = 403;
+				return { success: false, error: 'You are banned from performing this action', ban: session.ban };
+			}
+
 			try {
 				// Validate that exactly one of requested_item_id or requested_currency_id is set
 				if (!body.requested_item_id && !body.requested_currency_id) {
@@ -541,7 +548,12 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 	// Delete listing
 	.delete(
 		'/:id',
-		async ({ params }) => {
+		async ({ params, session, set }) => {
+			if (session.ban) {
+				set.status = 403;
+				return { success: false, error: 'You are banned from performing this action', ban: session.ban };
+			}
+
 			try {
 				const [listing] = await db
 					.delete(listingsTable)

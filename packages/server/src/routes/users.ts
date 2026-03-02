@@ -2,8 +2,10 @@ import { Elysia, t } from 'elysia';
 import { db } from '../db/db';
 import { user, userProfilesTable, usersActivityTable, profileReviewsTable } from '../db/schemas';
 import { eq, and, desc } from 'drizzle-orm';
+import { authMiddleware } from '../middleware/rbac';
 
 export const usersRoutes = new Elysia({ prefix: '/users' })
+	.use(authMiddleware)
 	// Create or update user profile (called after OAuth login)
 	.post(
 		'/profile',
@@ -166,7 +168,12 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 	// Submit a review for a user profile
 	.post(
 		'/profile/:username/reviews',
-		async ({ params, body }) => {
+		async ({ params, body, session, set }) => {
+			if (session.ban) {
+				set.status = 403;
+				return { success: false, error: 'You are banned from performing this action', ban: session.ban };
+			}
+
 			try {
 				// Get the profile being reviewed
 				const profileRows = await db

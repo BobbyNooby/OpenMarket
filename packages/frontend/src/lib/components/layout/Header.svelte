@@ -4,19 +4,10 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { createPermissionChecker } from '$lib/utils/permissions';
+	import { createPermissionChecker, type Session } from '$lib/utils/permissions';
 
 	interface Props {
-		session: {
-			user: {
-				id: string;
-				name: string;
-				email: string;
-				image?: string | null;
-			} | null;
-			permissions: string[];
-			roles: string[];
-		} | null;
+		session: Session;
 	}
 
 	let { session }: Props = $props();

@@ -3,15 +3,26 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Table from '$lib/components/ui/table';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import type { AdminUser } from './admin-api';
+	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import UserCog from '@lucide/svelte/icons/user-cog';
+	import History from '@lucide/svelte/icons/history';
 
 	interface Props {
 		users: AdminUser[];
 		isLoading: boolean;
 		onManageRoles: (user: AdminUser) => void;
+		onBanUser: (user: AdminUser) => void;
+		onUnbanUser: (user: AdminUser) => void;
+		onWarnUser: (user: AdminUser) => void;
+		onViewHistory: (user: AdminUser) => void;
 	}
 
-	let { users, isLoading, onManageRoles }: Props = $props();
+	let { users, isLoading, onManageRoles, onBanUser, onUnbanUser, onWarnUser, onViewHistory }: Props = $props();
 
 	function formatDate(dateString: string): string {
 		return new Date(dateString).toLocaleDateString('en-US', {
@@ -90,9 +101,41 @@
 							{formatDate(user.created_at)}
 						</Table.Cell>
 						<Table.Cell class="text-right">
-							<Button size="sm" variant="outline" onclick={() => onManageRoles(user)}>
-								Manage Roles
-							</Button>
+							<DropdownMenu.Root>
+								<DropdownMenu.Trigger>
+									{#snippet child({ props })}
+										<Button {...props} size="sm" variant="ghost">
+											<Ellipsis class="h-4 w-4" />
+										</Button>
+									{/snippet}
+								</DropdownMenu.Trigger>
+								<DropdownMenu.Content align="end">
+									<DropdownMenu.Item onclick={() => onManageRoles(user)}>
+										<UserCog class="h-4 w-4" />
+										Manage Roles
+									</DropdownMenu.Item>
+									<DropdownMenu.Item onclick={() => onViewHistory(user)}>
+										<History class="h-4 w-4" />
+										View History
+									</DropdownMenu.Item>
+									<DropdownMenu.Separator />
+									<DropdownMenu.Item onclick={() => onWarnUser(user)}>
+										<TriangleAlert class="h-4 w-4" />
+										Warn User
+									</DropdownMenu.Item>
+									{#if user.is_banned}
+										<DropdownMenu.Item onclick={() => onUnbanUser(user)}>
+											<ShieldCheck class="h-4 w-4" />
+											Unban User
+										</DropdownMenu.Item>
+									{:else}
+										<DropdownMenu.Item variant="destructive" onclick={() => onBanUser(user)}>
+											<ShieldAlert class="h-4 w-4" />
+											Ban User
+										</DropdownMenu.Item>
+									{/if}
+								</DropdownMenu.Content>
+							</DropdownMenu.Root>
 						</Table.Cell>
 					</Table.Row>
 				{/each}

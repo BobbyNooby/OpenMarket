@@ -2,9 +2,12 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
-	import { apiFetch, type AdminUser, type Role } from './admin-api';
+	import { apiFetch, unbanUser, type AdminUser, type Role } from './admin-api';
 	import UserTable from './UserTable.svelte';
 	import UserRolesDialog from './UserRolesDialog.svelte';
+	import BanUserDialog from './BanUserDialog.svelte';
+	import WarnUserDialog from './WarnUserDialog.svelte';
+	import UserHistoryDialog from './UserHistoryDialog.svelte';
 
 	interface Props {
 		dataVersion: number;
@@ -23,6 +26,9 @@
 	let isLoading = $state(false);
 
 	let rolesDialogOpen = $state(false);
+	let banDialogOpen = $state(false);
+	let warnDialogOpen = $state(false);
+	let historyDialogOpen = $state(false);
 	let selectedUser = $state<AdminUser | null>(null);
 
 	let searchTimeout: ReturnType<typeof setTimeout>;
@@ -84,7 +90,31 @@
 		rolesDialogOpen = true;
 	}
 
-	function handleRolesChanged() {
+	function openBanDialog(user: AdminUser) {
+		selectedUser = user;
+		banDialogOpen = true;
+	}
+
+	function openWarnDialog(user: AdminUser) {
+		selectedUser = user;
+		warnDialogOpen = true;
+	}
+
+	function openHistoryDialog(user: AdminUser) {
+		selectedUser = user;
+		historyDialogOpen = true;
+	}
+
+	async function handleUnban(user: AdminUser) {
+		if (!confirm(`Unban @${user.username}?`)) return;
+
+		const result = await unbanUser(user.id);
+		if (result.success) {
+			handleDataChanged();
+		}
+	}
+
+	function handleDataChanged() {
 		loadUsers();
 		onDataChanged();
 	}
@@ -130,6 +160,10 @@
 		{users}
 		{isLoading}
 		onManageRoles={openManageRoles}
+		onBanUser={openBanDialog}
+		onUnbanUser={handleUnban}
+		onWarnUser={openWarnDialog}
+		onViewHistory={openHistoryDialog}
 	/>
 
 	<!-- Pagination -->
@@ -153,6 +187,20 @@
 		bind:open={rolesDialogOpen}
 		user={selectedUser}
 		allRoles={roles}
-		onRolesChanged={handleRolesChanged}
+		onRolesChanged={handleDataChanged}
+	/>
+	<BanUserDialog
+		bind:open={banDialogOpen}
+		user={selectedUser}
+		onBanned={handleDataChanged}
+	/>
+	<WarnUserDialog
+		bind:open={warnDialogOpen}
+		user={selectedUser}
+		onWarned={handleDataChanged}
+	/>
+	<UserHistoryDialog
+		bind:open={historyDialogOpen}
+		user={selectedUser}
 	/>
 {/if}

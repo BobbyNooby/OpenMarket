@@ -27,21 +27,34 @@ export async function getUserRoles(userId: string): Promise<string[]> {
   return results.map((r) => r.roleId);
 }
 
-export async function isUserBanned(userId: string): Promise<boolean> {
-  const ban = await db
+export type BanInfo = {
+  reason: string | null;
+  bannedAt: string;
+  expiresAt: string | null;
+  bannedBy: string;
+};
+
+export async function getActiveBan(userId: string): Promise<BanInfo | null> {
+  const bans = await db
     .select()
     .from(userBansTable)
-    .where(eq(userBansTable.userId, userId))
-    .limit(1);
+    .where(eq(userBansTable.userId, userId));
 
-  if (ban.length === 0) return false;
+  const now = new Date();
+  const active = bans.find((b) => !b.expiresAt || b.expiresAt > now);
 
-  const activeBan = ban[0];
-  if (activeBan.expiresAt && activeBan.expiresAt < new Date()) {
-    return false;
-  }
+  if (!active) return null;
 
-  return true;
+  return {
+    reason: active.reason,
+    bannedAt: active.bannedAt.toISOString(),
+    expiresAt: active.expiresAt?.toISOString() ?? null,
+    bannedBy: active.bannedBy,
+  };
+}
+
+export async function isUserBanned(userId: string): Promise<boolean> {
+  return (await getActiveBan(userId)) !== null;
 }
 
 export async function assignRole(userId: string, roleId: string) {
@@ -61,6 +74,7 @@ export type AuthSession = {
   user: { id: string; name: string; email: string; image?: string | null } | null;
   permissions: string[];
   roles: string[];
+  ban: BanInfo | null;
 };
 
 export const authMiddleware = new Elysia({ name: "auth-middleware" })
@@ -69,20 +83,13 @@ export const authMiddleware = new Elysia({ name: "auth-middleware" })
 
     if (!betterAuthSession?.user) {
       return {
-        session: { user: null, permissions: [], roles: [] } as AuthSession,
+        session: { user: null, permissions: [], roles: [], ban: null } as AuthSession,
       };
     }
 
     const userId = betterAuthSession.user.id;
-    const banned = await isUserBanned(userId);
-
-    if (banned) {
-      return {
-        session: { user: null, permissions: [], roles: [] } as AuthSession,
-      };
-    }
-
-    const [permissions, roles] = await Promise.all([
+    const [ban, permissions, roles] = await Promise.all([
+      getActiveBan(userId),
       getUserPermissions(userId),
       getUserRoles(userId),
     ]);
@@ -97,6 +104,7 @@ export const authMiddleware = new Elysia({ name: "auth-middleware" })
         },
         permissions,
         roles,
+        ban,
       } as AuthSession,
     };
   });
@@ -108,6 +116,24 @@ export function requireAuth() {
       if (!session?.user) {
         set.status = 401;
         return { error: "Unauthorized" };
+      }
+    });
+}
+
+export function requireNotBanned() {
+  return new Elysia({ name: "require-not-banned" })
+    .use(authMiddleware)
+    .onBeforeHandle(({ session, set }) => {
+      if (!session?.user) {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
+      if (session.ban) {
+        set.status = 403;
+        return {
+          error: "You are banned from performing this action",
+          ban: session.ban,
+        };
       }
     });
 }

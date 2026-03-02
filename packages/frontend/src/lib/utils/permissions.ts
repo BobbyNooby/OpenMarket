@@ -1,7 +1,15 @@
-type Session = {
+export type BanInfo = {
+	reason: string | null;
+	bannedAt: string;
+	expiresAt: string | null;
+	bannedBy: string;
+};
+
+export type Session = {
 	user: { id: string; name: string; email: string; image?: string | null } | null;
 	permissions: string[];
 	roles: string[];
+	ban: BanInfo | null;
 } | null;
 
 export function hasPermission(session: Session, permission: string): boolean {
@@ -22,7 +30,6 @@ export function createPermissionChecker(session: Session) {
 		canAny: (permissions: string[]) => hasAnyPermission(session, permissions),
 		canAll: (permissions: string[]) => hasAllPermissions(session, permissions),
 
-		// shortcuts for common checks
 		get isLoggedIn() {
 			return session?.user !== null;
 		},
@@ -37,6 +44,9 @@ export function createPermissionChecker(session: Session) {
 		},
 		get canAccessAdmin() {
 			return hasAnyPermission(session, ['admin:users', 'admin:roles']);
+		},
+		get isBanned() {
+			return session?.ban != null;
 		}
 	};
 }

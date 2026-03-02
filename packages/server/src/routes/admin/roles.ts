@@ -1,11 +1,13 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db/db';
 import { rolesTable, permissionsTable, rolePermissionsTable } from '../../db/rbac-schema';
+import { requirePermission } from '../../middleware/rbac';
 import { eq } from 'drizzle-orm';
 
 const DEFAULT_ROLES = ['user', 'moderator', 'database-maintainer', 'admin'];
 
 export const adminRoleRoutes = new Elysia()
+	.use(requirePermission('admin:roles'))
 
 	// Get all available roles
 	.get('/roles', async () => {
