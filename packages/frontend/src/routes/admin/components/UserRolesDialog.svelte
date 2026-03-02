@@ -14,8 +14,16 @@
 
 	let { open = $bindable(), user, allRoles, onRolesChanged }: Props = $props();
 
+	let userRoles = $state<string[]>([]);
 	let saving = $state<string | null>(null);
 	let error = $state<string | null>(null);
+
+	// Sync local state when dialog opens or user changes
+	$effect(() => {
+		if (open) {
+			userRoles = [...user.roles];
+		}
+	});
 
 	async function toggleRole(roleId: string, hasRole: boolean) {
 		saving = roleId;
@@ -24,10 +32,10 @@
 		try {
 			if (hasRole) {
 				await apiFetch(`/admin/users/${user.id}/roles/${roleId}`, { method: 'DELETE' });
-				user.roles = user.roles.filter((r) => r !== roleId);
+				userRoles = userRoles.filter((r) => r !== roleId);
 			} else {
 				await apiJson(`/admin/users/${user.id}/roles`, 'POST', { role: roleId });
-				user.roles = [...user.roles, roleId];
+				userRoles = [...userRoles, roleId];
 			}
 			onRolesChanged();
 		} catch (err: any) {
@@ -55,7 +63,7 @@
 
 		<div class="space-y-3 py-2">
 			{#each allRoles as role}
-				{@const hasRole = user.roles.includes(role.id)}
+				{@const hasRole = userRoles.includes(role.id)}
 				<div class="flex items-start gap-3 rounded-md border border-border p-3">
 					<Checkbox
 						checked={hasRole}

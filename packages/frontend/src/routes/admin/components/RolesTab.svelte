@@ -8,6 +8,13 @@
 	import RoleEditor from './RoleEditor.svelte';
 	import CreateRoleDialog from './CreateRoleDialog.svelte';
 
+	interface Props {
+		dataVersion: number;
+		onDataChanged: () => void;
+	}
+
+	let { dataVersion, onDataChanged }: Props = $props();
+
 	let roles = $state<Role[]>([]);
 	let permissions = $state<Permission[]>([]);
 	let selectedRoleId = $state<string | null>(null);
@@ -80,6 +87,7 @@
 				description: editDescription,
 				permissions: [...checkedPermissions]
 			};
+			onDataChanged();
 		} catch (err: any) {
 			error = err.message || 'An error occurred';
 		} finally {
@@ -101,6 +109,7 @@
 			selectedRoleId = null;
 			roleDetail = null;
 			await loadRoles();
+			onDataChanged();
 		} catch (err: any) {
 			error = err.message || 'An error occurred';
 		} finally {
@@ -118,9 +127,11 @@
 	async function onRoleCreated(roleId: string) {
 		await loadRoles();
 		selectRole(roleId);
+		onDataChanged();
 	}
 
 	$effect(() => {
+		void dataVersion;
 		loadRoles();
 		loadPermissions();
 	});

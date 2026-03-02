@@ -5,6 +5,11 @@
 	import RolesTab from './components/RolesTab.svelte';
 
 	let { data } = $props();
+
+	let dataVersion = $state(0);
+	function onDataChanged() {
+		dataVersion++;
+	}
 </script>
 
 <div class="min-h-screen bg-background text-foreground">
@@ -23,11 +28,11 @@
 			</Tabs.Content>
 
 			<Tabs.Content value="users" class="mt-6">
-				<UsersTab />
+				<UsersTab {dataVersion} {onDataChanged} />
 			</Tabs.Content>
 
 			<Tabs.Content value="roles" class="mt-6">
-				<RolesTab />
+				<RolesTab {dataVersion} {onDataChanged} />
 			</Tabs.Content>
 		</Tabs.Root>
 	</div>

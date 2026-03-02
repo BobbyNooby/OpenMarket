@@ -6,6 +6,13 @@
 	import UserTable from './UserTable.svelte';
 	import UserRolesDialog from './UserRolesDialog.svelte';
 
+	interface Props {
+		dataVersion: number;
+		onDataChanged: () => void;
+	}
+
+	let { dataVersion, onDataChanged }: Props = $props();
+
 	let users = $state<AdminUser[]>([]);
 	let roles = $state<Role[]>([]);
 	let total = $state(0);
@@ -77,7 +84,13 @@
 		rolesDialogOpen = true;
 	}
 
+	function handleRolesChanged() {
+		loadUsers();
+		onDataChanged();
+	}
+
 	$effect(() => {
+		void dataVersion;
 		loadRoles();
 		loadUsers();
 	});
@@ -140,6 +153,6 @@
 		bind:open={rolesDialogOpen}
 		user={selectedUser}
 		allRoles={roles}
-		onRolesChanged={loadUsers}
+		onRolesChanged={handleRolesChanged}
 	/>
 {/if}
