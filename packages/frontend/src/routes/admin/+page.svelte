@@ -129,7 +129,7 @@
 
 		<!-- Dialog for Form -->
 		<Dialog.Root bind:open={showForm}>
-			<Dialog.Content class="max-w-2xl">
+			<Dialog.Content class="sm:max-w-4xl">
 				<Dialog.Header>
 					<Dialog.Title>
 						{editingItem ? 'Edit Item/Currency' : 'Create New Item/Currency'}
