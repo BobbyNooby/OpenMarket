@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import ItemImage from './ItemImage.svelte';
 	import ItemTooltip from './ItemTooltip.svelte';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 
 	interface Props {
 		name: string;
@@ -27,15 +28,6 @@
 		class: className = ''
 	}: Props = $props();
 
-	let showTooltip = $state(false);
-	let tooltipX = $state(0);
-	let tooltipY = $state(0);
-
-	function handleMouseMove(e: MouseEvent) {
-		tooltipX = e.clientX;
-		tooltipY = e.clientY;
-	}
-
 	function handleClick() {
 		if (onclick) {
 			onclick();
@@ -46,16 +38,22 @@
 </script>
 
 <div class="relative inline-block h-16 w-16">
-	<button
-		type="button"
-		class="group h-full w-full rounded-md transition-all hover:scale-105 {className}"
-		onmouseenter={() => (showTooltip = true)}
-		onmouseleave={() => (showTooltip = false)}
-		onmousemove={handleMouseMove}
-		onclick={handleClick}
-	>
-		<ItemImage src={image_url} alt={name} size="md" />
-	</button>
+	<Tooltip.Root>
+		<Tooltip.Trigger
+			class="group h-full w-full rounded-md transition-all hover:scale-105 {className}"
+			onclick={handleClick}
+		>
+			<ItemImage src={image_url} alt={name} size="md" />
+		</Tooltip.Trigger>
+		<Tooltip.Content
+			side="bottom"
+			sideOffset={8}
+			class="border-none bg-transparent p-0 shadow-none"
+			arrowClasses="hidden"
+		>
+			<ItemTooltip {name} {type} {description} />
+		</Tooltip.Content>
+	</Tooltip.Root>
 
 	{#if amount !== undefined && amount > 0}
 		<div
@@ -65,12 +63,3 @@
 		</div>
 	{/if}
 </div>
-
-{#if showTooltip}
-	<div
-		class="pointer-events-none fixed z-[9999]"
-		style="left: {tooltipX + 16}px; top: {tooltipY + 16}px;"
-	>
-		<ItemTooltip {name} {type} {description} />
-	</div>
-{/if}

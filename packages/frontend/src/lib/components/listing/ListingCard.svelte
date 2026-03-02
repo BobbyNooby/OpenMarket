@@ -2,6 +2,8 @@
 	import ItemButton from '../item/ItemButton.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import * as Card from '$lib/components/ui/card';
+	import { Separator } from '$lib/components/ui/separator';
 	import type { TransformedListing } from '$lib/utils/listings';
 
 	interface Props {
@@ -78,24 +80,26 @@
 	}
 </script>
 
-<div class="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-	<!-- Top Row: Item Name + WTB/WTS Badge -->
-	<div class="flex items-center justify-between">
-		<a
-			href="/listings?item={requestedSlug}"
-			class="text-lg font-semibold text-foreground transition-colors hover:text-primary"
-		>
-			{requestedName}
-		</a>
-		{#if order.order_type === 'buy'}
-			<Badge class="bg-green-500 text-white hover:bg-green-500">Buy</Badge>
-		{:else}
-			<Badge class="bg-amber-500 text-white hover:bg-amber-500">Sell</Badge>
-		{/if}
-	</div>
+<Card.Root class="gap-3 py-4">
+	<Card.Header>
+		<Card.Title>
+			<a
+				href="/listings?item={requestedSlug}"
+				class="text-lg font-semibold text-foreground transition-colors hover:text-primary"
+			>
+				{requestedName}
+			</a>
+		</Card.Title>
+		<Card.Action>
+			{#if order.order_type === 'buy'}
+				<Badge class="bg-green-500 text-white hover:bg-green-500">Buy</Badge>
+			{:else}
+				<Badge class="bg-amber-500 text-white hover:bg-amber-500">Sell</Badge>
+			{/if}
+		</Card.Action>
+	</Card.Header>
 
-	<!-- Middle Row: Offered Items -> Wanted Items -->
-	<div class="flex flex-col gap-2">
+	<Card.Content class="space-y-2">
 		<div class="flex items-center gap-4">
 			<ItemButton
 				name={requestedName}
@@ -162,14 +166,15 @@
 				</svg>
 				{order.amount}
 			</span>
-			<span class="rounded bg-background px-1.5 py-0.5 font-medium">
+			<Badge variant="outline" class="text-xs">
 				{order.paying_type === 'each' ? 'each' : 'total'}
-			</span>
+			</Badge>
 		</div>
-	</div>
+	</Card.Content>
 
-	<!-- Bottom Row -->
-	<div class="flex items-center justify-between border-t border-border pt-3">
+	<Separator />
+
+	<Card.Footer class="justify-between">
 		<a
 			href="/profile/{author.username}"
 			class="text-sm text-muted-foreground transition-colors hover:text-primary"
@@ -182,5 +187,5 @@
 			</span>
 			<Button size="sm" onclick={onContact}>Contact</Button>
 		</div>
-	</div>
-</div>
+	</Card.Footer>
+</Card.Root>

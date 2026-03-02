@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { authClient } from '$lib/api/client.js';
 	import { Button } from '$lib/components/ui/button';
+	import * as Avatar from '$lib/components/ui/avatar';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { createPermissionChecker } from '$lib/utils/permissions';
 
 	interface Props {
@@ -47,17 +50,7 @@
 		await authClient.signOut();
 		window.location.href = '/';
 	}
-
-	function toggleDropdown() {
-		dropdownOpen = !dropdownOpen;
-	}
-
-	function closeDropdown() {
-		dropdownOpen = false;
-	}
 </script>
-
-<svelte:window onclick={closeDropdown} />
 
 <header class="sticky top-0 z-40 border-b border-border bg-card shadow-sm">
 	<div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-8">
@@ -88,27 +81,18 @@
 				</a>
 			{/each}
 			{#if session}
-				<div class="relative">
-					<button
-						onclick={(e) => {
-							e.stopPropagation();
-							toggleDropdown();
-						}}
+				<DropdownMenu.Root bind:open={dropdownOpen}>
+					<DropdownMenu.Trigger
 						class="flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-background"
 					>
-						{#if userImage}
-							<img
-								src={userImage}
-								alt={username}
-								class="h-10 w-10 rounded-full border-2 border-border object-cover"
-							/>
-						{:else}
-							<div
-								class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-border bg-primary text-lg font-bold text-primary-foreground"
-							>
+						<Avatar.Root class="size-10 border-2 border-border">
+							{#if userImage}
+								<Avatar.Image src={userImage} alt={username} />
+							{/if}
+							<Avatar.Fallback class="bg-primary text-lg font-bold text-primary-foreground">
 								{username.charAt(0).toUpperCase()}
-							</div>
-						{/if}
+							</Avatar.Fallback>
+						</Avatar.Root>
 						<svg
 							class="h-4 w-4 text-muted-foreground transition-transform {dropdownOpen
 								? 'rotate-180'
@@ -124,37 +108,24 @@
 								d="M19 9l-7 7-7-7"
 							/>
 						</svg>
-					</button>
+					</DropdownMenu.Trigger>
 
-					{#if dropdownOpen}
-						<div
-							class="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-lg border border-border bg-card shadow-lg"
-						>
-							<div class="border-b border-border px-4 py-3">
-								<p class="truncate font-medium text-foreground">
-									{username}
-								</p>
-								<p class="truncate text-sm text-muted-foreground">
-									{session.user?.email}
-								</p>
-							</div>
-							<div class="py-1">
-								<a
-									href="/profile/{username}"
-									class="block px-4 py-2 text-foreground transition-colors hover:bg-background"
-								>
-									View Profile
-								</a>
-								<button
-									onclick={signOut}
-									class="block w-full px-4 py-2 text-left text-destructive transition-colors hover:bg-background"
-								>
-									Sign Out
-								</button>
-							</div>
-						</div>
-					{/if}
-				</div>
+					<DropdownMenu.Content align="end" class="w-48">
+						<DropdownMenu.Label>
+							<p class="font-medium">{username}</p>
+							<p class="text-xs font-normal text-muted-foreground">
+								{session.user?.email}
+							</p>
+						</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item onclick={() => goto(`/profile/${username}`)}>
+							View Profile
+						</DropdownMenu.Item>
+						<DropdownMenu.Item variant="destructive" onclick={signOut}>
+							Sign Out
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
 			{:else}
 				<Button onclick={signInWithDiscord}>Sign In with Discord</Button>
 			{/if}

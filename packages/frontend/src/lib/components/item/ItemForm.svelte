@@ -3,6 +3,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Label } from '$lib/components/ui/label';
+	import * as Select from '$lib/components/ui/select';
 	import ItemImage from './ItemImage.svelte';
 	import ItemTooltip from './ItemTooltip.svelte';
 	import type { ItemFormData } from '$lib/api/types';
@@ -87,16 +88,22 @@
 					{/if}
 				</div>
 				<div class="space-y-2">
-					<Label for="item-type">Type <span class="text-destructive">*</span></Label>
-					<select
-						id="item-type"
-						bind:value={formData.type}
-						class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+					<Label>Type <span class="text-destructive">*</span></Label>
+					<Select.Root
+						type="single"
+						value={formData.type || undefined}
+						onValueChange={(val) => { formData.type = val as typeof formData.type; }}
 					>
-						<option value="" disabled>Select type...</option>
-						<option value="item">Item</option>
-						<option value="currency">Currency</option>
-					</select>
+						<Select.Trigger class="w-full">
+							<span class={formData.type ? '' : 'text-muted-foreground'}>
+								{formData.type === 'item' ? 'Item' : formData.type === 'currency' ? 'Currency' : 'Select type...'}
+							</span>
+						</Select.Trigger>
+						<Select.Content>
+							<Select.Item value="item" label="Item" />
+							<Select.Item value="currency" label="Currency" />
+						</Select.Content>
+					</Select.Root>
 					{#if errors.type}
 						<p class="text-sm text-destructive">{errors.type}</p>
 					{/if}
