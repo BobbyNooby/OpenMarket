@@ -2,6 +2,8 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Badge } from '$lib/components/ui/badge';
+	import ThumbsUpIcon from '@lucide/svelte/icons/thumbs-up';
+	import ThumbsDownIcon from '@lucide/svelte/icons/thumbs-down';
 	import type { ProfileReview, ReviewVoter } from '$lib/api/types';
 
 	interface Props {
@@ -29,7 +31,11 @@
 						<span class="font-semibold text-foreground">{voter.display_name}</span>
 						<span class="text-sm text-muted-foreground">@{voter.username}</span>
 						<Badge variant={review.type === 'upvote' ? 'default' : 'destructive'}>
-							{review.type === 'upvote' ? '👍' : '👎'}
+							{#if review.type === 'upvote'}
+								<ThumbsUpIcon class="size-3.5" />
+							{:else}
+								<ThumbsDownIcon class="size-3.5" />
+							{/if}
 						</Badge>
 					</div>
 					<p class="text-xs text-muted-foreground">

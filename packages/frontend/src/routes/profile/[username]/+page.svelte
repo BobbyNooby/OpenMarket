@@ -2,6 +2,8 @@
 	import { ListingCard, CommentCard } from '$lib/components';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import ThumbsUpIcon from '@lucide/svelte/icons/thumbs-up';
+	import ThumbsDownIcon from '@lucide/svelte/icons/thumbs-down';
 	import { invalidateAll } from '$app/navigation';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 
@@ -136,11 +138,11 @@
 
 						<div class="flex items-center gap-4">
 							<div class="flex items-center gap-2">
-								<span class="text-2xl">👍</span>
+								<ThumbsUpIcon class="size-5 text-green-500" />
 								<span class="font-semibold text-green-500">{upvotes}</span>
 							</div>
 							<div class="flex items-center gap-2">
-								<span class="text-2xl">👎</span>
+								<ThumbsDownIcon class="size-5 text-destructive" />
 								<span class="font-semibold text-destructive">{downvotes}</span>
 							</div>
 							<div class="text-sm text-muted-foreground">
@@ -232,7 +234,7 @@
 								onclick={() => (reviewType = reviewType === 'upvote' ? null : 'upvote')}
 								disabled={submitting}
 							>
-								<span class="text-2xl">👍</span>
+								<ThumbsUpIcon class="size-5" />
 								<span class="font-semibold">Upvote</span>
 							</button>
 
@@ -241,7 +243,7 @@
 								onclick={() => (reviewType = reviewType === 'downvote' ? null : 'downvote')}
 								disabled={submitting}
 							>
-								<span class="text-2xl">👎</span>
+								<ThumbsDownIcon class="size-5" />
 								<span class="font-semibold">Downvote</span>
 							</button>
 						</div>
