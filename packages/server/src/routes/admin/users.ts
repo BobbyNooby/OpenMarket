@@ -1,24 +1,12 @@
 import { Elysia, t } from 'elysia';
-import { db } from '../db/db';
-import { user } from '../db/auth-schema';
-import { userProfilesTable } from '../db/schemas';
-import { rolesTable, userRolesTable, userBansTable } from '../db/rbac-schema';
+import { db } from '../../db/db';
+import { user } from '../../db/auth-schema';
+import { userProfilesTable } from '../../db/schemas';
+import { rolesTable, userRolesTable, userBansTable } from '../../db/rbac-schema';
 import { eq, ilike, or, and, desc, inArray, count, exists } from 'drizzle-orm';
-import { requirePermission, assignRole, removeRole } from '../middleware/rbac';
+import { assignRole, removeRole } from '../../middleware/rbac';
 
-export const adminRoutes = new Elysia({ prefix: '/admin' })
-	.use(requirePermission('admin:roles'))
-
-	// Get all available roles
-	.get('/roles', async () => {
-		try {
-			const roles = await db.select().from(rolesTable);
-			return { success: true, data: roles };
-		} catch (err: any) {
-			console.error('Get roles error:', err);
-			return { success: false, error: err.message, status: 500 };
-		}
-	})
+export const adminUserRoutes = new Elysia()
 
 	// Get paginated user list with search and role filter
 	.get(
@@ -30,7 +18,6 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
 				const search = query.search?.trim() || '';
 				const roleFilter = query.role?.trim() || '';
 
-				// Build WHERE conditions
 				const conditions: ReturnType<typeof eq>[] = [];
 
 				if (search) {
@@ -61,14 +48,12 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
 
 				const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-				// Count query
 				const [{ total }] = await db
 					.select({ total: count() })
 					.from(user)
 					.leftJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
 					.where(whereClause);
 
-				// Data query
 				const users = await db
 					.select({
 						id: user.id,
@@ -87,7 +72,6 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
 
 				const userIds = users.map((u) => u.id);
 
-				// Batch fetch roles and bans for the page of users
 				const allRoles =
 					userIds.length > 0
 						? await db
@@ -104,7 +88,6 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
 								.where(inArray(userBansTable.userId, userIds))
 						: [];
 
-				// Group by userId
 				const rolesMap: Record<string, string[]> = {};
 				for (const r of allRoles) {
 					if (!rolesMap[r.userId]) rolesMap[r.userId] = [];
@@ -117,7 +100,6 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
 					bansMap[b.userId].push(b);
 				}
 
-				// Assemble response
 				const data = users.map((u) => ({
 					id: u.id,
 					name: u.name,
@@ -161,7 +143,6 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
 		'/users/:id/roles',
 		async ({ params, body }) => {
 			try {
-				// Validate role exists
 				const [role] = await db
 					.select()
 					.from(rolesTable)
