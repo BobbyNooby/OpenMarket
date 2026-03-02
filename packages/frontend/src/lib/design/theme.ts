@@ -1,41 +1,31 @@
-import { writable, get, type Writable } from 'svelte/store';
-import { THEME_MAP, type Theme, type ThemeName } from '$lib/design/themes';
+import { writable, get } from 'svelte/store';
 
-const STORAGE_KEY = 'theme';
-const COOKIE_KEY = 'theme';
+type ThemeMode = 'light' | 'dark';
 
-const theme: Writable<Theme> = writable(THEME_MAP.dark);
+const STORAGE_KEY = 'theme-mode';
 
-function writeCookieAndAttr(t: Theme) {
+export const themeMode = writable<ThemeMode>('dark');
+
+function applyTheme(mode: ThemeMode) {
 	if (typeof document === 'undefined') return;
-	document.documentElement.setAttribute('data-theme', t.name);
-	document.cookie = `${COOKIE_KEY}=${encodeURIComponent(t.name)}; Path=/; Max-Age=31536000; SameSite=Lax`;
+	document.documentElement.classList.toggle('dark', mode === 'dark');
 }
 
-function writeLocalStorage(t: Theme) {
-	if (typeof localStorage === 'undefined') return;
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(t));
-	localStorage.setItem('theme-mode', t.name); // sync with cssVariables
-}
-
-export function setTheme(next: Theme) {
-	theme.set(next);
-	writeCookieAndAttr(next);
-	writeLocalStorage(next);
-}
-
-export function toggleTheme() {
-	const current = get(theme);
-	const nextName: ThemeName = current.name === 'dark' ? 'light' : 'dark';
-	setTheme(THEME_MAP[nextName]);
-}
-
-// Call this in +layout.svelte with SSR theme
-export function hydrateThemeFromSSR(ssrTheme: Theme) {
-	theme.set(ssrTheme);
-	if (typeof document !== 'undefined') {
-		document.documentElement.setAttribute('data-theme', ssrTheme.name);
+export function setTheme(mode: ThemeMode) {
+	themeMode.set(mode);
+	applyTheme(mode);
+	if (typeof localStorage !== 'undefined') {
+		localStorage.setItem(STORAGE_KEY, mode);
 	}
 }
 
-export { theme };
+export function toggleTheme() {
+	const current = get(themeMode);
+	setTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+export function initTheme() {
+	if (typeof localStorage === 'undefined') return;
+	const saved = (localStorage.getItem(STORAGE_KEY) as ThemeMode) || 'dark';
+	setTheme(saved);
+}
