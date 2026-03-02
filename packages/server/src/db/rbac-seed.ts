@@ -37,6 +37,10 @@ const permissions = [
   { id: "user:unban", name: "user:unban", description: "Unban users" },
   { id: "user:warn", name: "user:warn", description: "Warn users" },
 
+  // Reports
+  { id: "report:create", name: "report:create", description: "Submit reports" },
+  { id: "report:moderate", name: "report:moderate", description: "Moderate reports" },
+
   // Admin
   { id: "admin:users", name: "admin:users", description: "Manage all users" },
   { id: "admin:roles", name: "admin:roles", description: "Manage roles" },
@@ -55,6 +59,7 @@ const rolePermissionMap: Record<string, string[]> = {
     "review:read", "review:create", "review:update", "review:delete",
     "item:read", "currency:read",
     "profile:read", "profile:update",
+    "report:create",
   ],
   moderator: [
     "listing:read", "listing:create", "listing:update", "listing:delete", "listing:moderate",
@@ -62,6 +67,7 @@ const rolePermissionMap: Record<string, string[]> = {
     "item:read", "currency:read",
     "profile:read", "profile:update",
     "user:ban", "user:unban", "user:warn",
+    "report:create", "report:moderate",
   ],
   "database-maintainer": [
     "listing:read", "listing:create", "listing:update", "listing:delete",

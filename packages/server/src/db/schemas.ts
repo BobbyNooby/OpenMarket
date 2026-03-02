@@ -13,6 +13,8 @@ import { user } from "./auth-schema";
 export const reviewType = pgEnum("review_type", ["upvote", "downvote"]);
 export const orderType = pgEnum("order_type", ["buy", "sell"]);
 export const payingType = pgEnum("paying_type", ["each", "total"]);
+export const reportTargetType = pgEnum("report_target_type", ["listing", "review", "user"]);
+export const reportStatus = pgEnum("report_status", ["pending", "resolved", "dismissed"]);
 
 // Re-export auth user table for convenience
 export { user, session, account, verification } from "./auth-schema";
@@ -132,6 +134,22 @@ export const listingOfferedCurrenciesTable = pgTable(
   },
 );
 
+// --- reports ---
+export const reportsTable = pgTable("reports", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  reporter_id: text("reporter_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  target_type: reportTargetType("target_type").notNull(),
+  target_id: text("target_id").notNull(),
+  reason: text("reason").notNull(),
+  status: reportStatus("status").notNull().default("pending"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  resolved_by: text("resolved_by")
+    .references(() => user.id, { onDelete: "set null", onUpdate: "cascade" }),
+  resolved_at: timestamp("resolved_at"),
+});
+
 // --- Type exports ---
 export type UserProfileInsert = typeof userProfilesTable.$inferInsert;
 export type UserProfileSelect = typeof userProfilesTable.$inferSelect;
@@ -153,3 +171,5 @@ export type ListingOfferedCurrencyInsert =
   typeof listingOfferedCurrenciesTable.$inferInsert;
 export type ListingOfferedCurrencySelect =
   typeof listingOfferedCurrenciesTable.$inferSelect;
+export type ReportInsert = typeof reportsTable.$inferInsert;
+export type ReportSelect = typeof reportsTable.$inferSelect;

@@ -3,6 +3,7 @@ import { cors } from "@elysiajs/cors";
 import { itemsRoutes, currenciesRoutes } from "./routes/items";
 import { listingsRoutes } from "./routes/listings";
 import { usersRoutes } from "./routes/users";
+import { reportsRoutes } from "./routes/reports";
 import { adminRoutes } from "./routes/admin";
 import { auth } from "./auth";
 import { authMiddleware } from "./middleware/rbac";
@@ -11,7 +12,7 @@ const app = new Elysia()
   .use(
     cors({
       origin: ["http://localhost:5173", "http://localhost:4173"],
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       credentials: true,
     }),
   )
@@ -24,6 +25,7 @@ const app = new Elysia()
   .use(currenciesRoutes)
   .use(listingsRoutes)
   .use(usersRoutes)
+  .use(reportsRoutes)
   .use(adminRoutes)
   .listen(process.env.API_PORT || 3000);
 
