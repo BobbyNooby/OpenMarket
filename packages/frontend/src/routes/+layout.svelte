@@ -2,7 +2,8 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { toggleTheme, themeMode, initTheme } from '$lib/design/theme';
-	import { Header, Button } from '$lib/shared/components';
+	import { Header } from '$lib/components';
+	import { Button } from '$lib/components/ui/button';
 	import { onMount } from 'svelte';
 
 	let { children, data } = $props();
@@ -20,7 +21,7 @@
 	<Header session={data.session} />
 
 	<div class="fixed right-4 top-4 z-50">
-		<Button variant="secondary" size="sm" onclick={() => toggleTheme()}>
+		<Button variant="outline" size="sm" onclick={() => toggleTheme()}>
 			{$themeMode === 'dark' ? '☀️' : '🌙'}
 		</Button>
 	</div>

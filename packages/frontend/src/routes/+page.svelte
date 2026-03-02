@@ -1,19 +1,18 @@
 <script lang="ts">
-	import { ListingCard, Input } from '$lib/shared/components';
+	import { ListingCard } from '$lib/components';
+	import { Input } from '$lib/components/ui/input';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 	import { onMount } from 'svelte';
 
 	let { data } = $props();
 	let searchQuery = $state('');
 
-	// All loaded listings - use $derived for initial data from props
 	let allListings = $state<any[]>([]);
 	let loading = $state(false);
 	let hasMore = $state(false);
 	let offset = $state(0);
 	const limit = 12;
 
-	// Initialize from data prop
 	$effect(() => {
 		if (data.listings) {
 			allListings = data.listings;
@@ -26,11 +25,9 @@
 		(allListings || []).map(transformListing).filter((l): l is TransformedListing => l !== null)
 	);
 
-	// Filter orders by type
 	const buyOrders = $derived(listings.filter((o) => o.order_type === 'buy'));
 	const sellOrders = $derived(listings.filter((o) => o.order_type === 'sell'));
 
-	// Load more listings
 	async function loadMore() {
 		if (loading || !hasMore) return;
 
@@ -40,7 +37,6 @@
 			const result = await res.json();
 
 			if (result.success && result.data) {
-				// Deduplicate by id to prevent key conflicts
 				const existingIds = new Set(allListings.map((l: any) => l.id));
 				const newListings = result.data.filter((l: any) => !existingIds.has(l.id));
 				allListings = [...allListings, ...newListings];
@@ -54,7 +50,6 @@
 		}
 	}
 
-	// Intersection observer for infinite scroll
 	let sentinelRef = $state<HTMLDivElement | null>(null);
 
 	onMount(() => {
@@ -74,19 +69,17 @@
 		return () => observer.disconnect();
 	});
 
-	// Handle contact click
 	function handleContact(order: TransformedListing) {
 		alert(`Contact ${order.author.display_name} (@${order.author.username}) about this order!`);
 	}
 </script>
 
-<div class="min-h-screen text-[var(--color-text)]">
-	<!-- Header Section with lighter background -->
-	<div class="bg-[var(--color-surface)] py-32 shadow-[var(--shadow-sm)]">
+<div class="min-h-screen text-foreground">
+	<div class="bg-card py-32 shadow-sm">
 		<div class="mx-auto max-w-7xl px-8">
 			<div class="text-center">
-				<h1 class="mb-6 text-7xl font-bold text-[var(--color-primary)]">OpenMarket</h1>
-				<p class="mb-8 text-xl text-[var(--color-textSecondary)]">
+				<h1 class="mb-6 text-7xl font-bold text-primary">OpenMarket</h1>
+				<p class="mb-8 text-xl text-muted-foreground">
 					The marketplace for trading game items and currencies
 				</p>
 				<div class="mx-auto max-w-2xl">
@@ -101,26 +94,22 @@
 		</div>
 	</div>
 
-	<!-- Latest Orders Section -->
 	<div class="px-8 py-12">
 		<div class="mx-auto max-w-7xl">
-			<h2 class="mb-8 text-3xl font-bold text-[var(--color-text)]">Latest Orders</h2>
+			<h2 class="mb-8 text-3xl font-bold text-foreground">Latest Orders</h2>
 
 			{#if data.error}
-				<div class="rounded-lg bg-red-100 p-4 text-red-700">
+				<div class="rounded-lg bg-destructive/10 p-4 text-destructive">
 					Error loading listings: {data.error}
 				</div>
 			{:else if listings.length === 0}
 				<div class="py-12 text-center">
-					<p class="text-lg text-[var(--color-textSecondary)]">No listings found.</p>
+					<p class="text-lg text-muted-foreground">No listings found.</p>
 				</div>
 			{:else}
 				<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-					<!-- Buy Orders Column -->
 					<div>
-						<h3
-							class="mb-4 rounded-t-[var(--radius-lg)] bg-[var(--color-success)] p-3 text-center text-xl font-semibold text-white"
-						>
+						<h3 class="mb-4 rounded-t-lg bg-green-500 p-3 text-center text-xl font-semibold text-white">
 							🛒 Buy Orders ({buyOrders.length})
 						</h3>
 						<div class="space-y-4">
@@ -128,16 +117,13 @@
 								<ListingCard {order} onContact={() => handleContact(order)} />
 							{/each}
 							{#if buyOrders.length === 0}
-								<p class="py-4 text-center text-[var(--color-textSecondary)]">No buy orders</p>
+								<p class="py-4 text-center text-muted-foreground">No buy orders</p>
 							{/if}
 						</div>
 					</div>
 
-					<!-- Sell Orders Column -->
 					<div>
-						<h3
-							class="mb-4 rounded-t-[var(--radius-lg)] bg-[var(--color-warning)] p-3 text-center text-xl font-semibold text-white"
-						>
+						<h3 class="mb-4 rounded-t-lg bg-amber-500 p-3 text-center text-xl font-semibold text-white">
 							💰 Sell Orders ({sellOrders.length})
 						</h3>
 						<div class="space-y-4">
@@ -145,36 +131,23 @@
 								<ListingCard {order} onContact={() => handleContact(order)} />
 							{/each}
 							{#if sellOrders.length === 0}
-								<p class="py-4 text-center text-[var(--color-textSecondary)]">No sell orders</p>
+								<p class="py-4 text-center text-muted-foreground">No sell orders</p>
 							{/if}
 						</div>
 					</div>
 				</div>
 
-				<!-- Load more sentinel / Loading indicator -->
 				<div bind:this={sentinelRef} class="mt-8 flex justify-center">
 					{#if loading}
-						<div class="flex items-center gap-2 text-[var(--color-textSecondary)]">
+						<div class="flex items-center gap-2 text-muted-foreground">
 							<svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24">
-								<circle
-									class="opacity-25"
-									cx="12"
-									cy="12"
-									r="10"
-									stroke="currentColor"
-									stroke-width="4"
-									fill="none"
-								/>
-								<path
-									class="opacity-75"
-									fill="currentColor"
-									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-								/>
+								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
 							</svg>
 							<span>Loading more...</span>
 						</div>
 					{:else if !hasMore && listings.length > 0}
-						<p class="text-[var(--color-textSecondary)]">No more listings</p>
+						<p class="text-muted-foreground">No more listings</p>
 					{/if}
 				</div>
 			{/if}

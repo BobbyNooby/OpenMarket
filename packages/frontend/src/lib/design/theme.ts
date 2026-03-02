@@ -17,6 +17,9 @@ export function setTheme(mode: ThemeMode) {
 	if (typeof localStorage !== 'undefined') {
 		localStorage.setItem(STORAGE_KEY, mode);
 	}
+	if (typeof document !== 'undefined') {
+		document.cookie = `${STORAGE_KEY}=${mode}; Path=/; Max-Age=31536000; SameSite=Lax`;
+	}
 }
 
 export function toggleTheme() {

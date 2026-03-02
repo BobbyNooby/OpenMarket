@@ -37,7 +37,6 @@
 	}
 
 	function handleClick() {
-		console.log('ItemButton clicked:', { name, type, item_id, slug });
 		if (onclick) {
 			onclick();
 		} else if (slug) {
@@ -49,7 +48,7 @@
 <div class="relative inline-block h-16 w-16">
 	<button
 		type="button"
-		class="group h-full w-full rounded-[var(--radius-md)] transition-all hover:scale-105 {className}"
+		class="group h-full w-full rounded-md transition-all hover:scale-105 {className}"
 		onmouseenter={() => (showTooltip = true)}
 		onmouseleave={() => (showTooltip = false)}
 		onmousemove={handleMouseMove}
@@ -60,7 +59,7 @@
 
 	{#if amount !== undefined && amount > 0}
 		<div
-			class="pointer-events-none absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold text-white shadow-[var(--shadow-md)]"
+			class="pointer-events-none absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-md"
 		>
 			{amount}
 		</div>

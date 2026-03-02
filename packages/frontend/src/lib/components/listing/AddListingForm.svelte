@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import Button from '../ui/Button.svelte';
-	import Select from '../ui/Select.svelte';
-	import Input from '../ui/Input.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
 	import ItemButton from '../item/ItemButton.svelte';
 	import type { Item, Currency } from '$lib/api/types';
 
@@ -31,7 +31,6 @@
 	let showItemPicker = $state(false);
 	let showCurrencyPicker = $state(false);
 
-	// Get selected item/currency details
 	const selectedRequested = $derived(() => {
 		if (requestType === 'item') {
 			return items.find((i) => i.id === selectedRequestedId);
@@ -40,7 +39,6 @@
 		}
 	});
 
-	// Options for select
 	const itemOptions = $derived(
 		items.map((item) => ({
 			value: item.id,
@@ -55,7 +53,6 @@
 		}))
 	);
 
-	// Get item/currency by id
 	function getItem(id: string) {
 		return items.find((i) => i.id === id);
 	}
@@ -64,7 +61,6 @@
 		return currencies.find((c) => c.id === id);
 	}
 
-	// Add offered item
 	function addOfferedItem(itemId: string) {
 		if (!offeredItems.some((o) => o.id === itemId)) {
 			offeredItems = [...offeredItems, { id: itemId, amount: 1 }];
@@ -72,7 +68,6 @@
 		showItemPicker = false;
 	}
 
-	// Add offered currency
 	function addOfferedCurrency(currencyId: string) {
 		if (!offeredCurrencies.some((o) => o.id === currencyId)) {
 			offeredCurrencies = [...offeredCurrencies, { id: currencyId, amount: 1000 }];
@@ -80,29 +75,24 @@
 		showCurrencyPicker = false;
 	}
 
-	// Remove offered item
 	function removeOfferedItem(itemId: string) {
 		offeredItems = offeredItems.filter((o) => o.id !== itemId);
 	}
 
-	// Remove offered currency
 	function removeOfferedCurrency(currencyId: string) {
 		offeredCurrencies = offeredCurrencies.filter((o) => o.id !== currencyId);
 	}
 
-	// Update offered item amount
 	function updateOfferedItemAmount(itemId: string, newAmount: number) {
 		offeredItems = offeredItems.map((o) => (o.id === itemId ? { ...o, amount: newAmount } : o));
 	}
 
-	// Update offered currency amount
 	function updateOfferedCurrencyAmount(currencyId: string, newAmount: number) {
 		offeredCurrencies = offeredCurrencies.map((o) =>
 			o.id === currencyId ? { ...o, amount: newAmount } : o
 		);
 	}
 
-	// Submit form
 	async function handleSubmit() {
 		if (!selectedRequestedId) {
 			error = 'Please select what you want to trade';
@@ -137,7 +127,6 @@
 				body: formData
 			});
 
-			// Check for redirect (success case)
 			if (res.redirected) {
 				goto(res.url);
 				return;
@@ -159,37 +148,25 @@
 
 <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-6">
 	{#if error}
-		<div class="rounded-[var(--radius-md)] bg-[var(--color-error)] bg-opacity-10 p-4 text-[var(--color-error)]">
+		<div class="rounded-md bg-destructive/10 p-4 text-destructive">
 			{error}
 		</div>
 	{/if}
 
 	<!-- Order Type -->
 	<div>
-		<span class="mb-2 block text-sm font-semibold text-[var(--color-text)]">Order Type</span>
+		<span class="mb-2 block text-sm font-semibold text-foreground">Order Type</span>
 		<div class="flex gap-2">
 			<button
 				type="button"
-				class="flex-1 rounded-[var(--radius-md)] px-4 py-3 text-sm font-medium transition-colors"
-				class:bg-[var(--color-success)]={orderType === 'buy'}
-				class:text-white={orderType === 'buy'}
-				class:bg-[var(--color-surface)]={orderType !== 'buy'}
-				class:text-[var(--color-text)]={orderType !== 'buy'}
-				class:border={orderType !== 'buy'}
-				class:border-[var(--color-border)]={orderType !== 'buy'}
+				class="flex-1 rounded-md px-4 py-3 text-sm font-medium transition-colors {orderType === 'buy' ? 'bg-green-500 text-white' : 'border border-border bg-card text-foreground'}"
 				onclick={() => (orderType = 'buy')}
 			>
 				Buying
 			</button>
 			<button
 				type="button"
-				class="flex-1 rounded-[var(--radius-md)] px-4 py-3 text-sm font-medium transition-colors"
-				class:bg-[var(--color-warning)]={orderType === 'sell'}
-				class:text-white={orderType === 'sell'}
-				class:bg-[var(--color-surface)]={orderType !== 'sell'}
-				class:text-[var(--color-text)]={orderType !== 'sell'}
-				class:border={orderType !== 'sell'}
-				class:border-[var(--color-border)]={orderType !== 'sell'}
+				class="flex-1 rounded-md px-4 py-3 text-sm font-medium transition-colors {orderType === 'sell' ? 'bg-amber-500 text-white' : 'border border-border bg-card text-foreground'}"
 				onclick={() => (orderType = 'sell')}
 			>
 				Selling
@@ -198,22 +175,18 @@
 	</div>
 
 	<!-- What you want -->
-	<div class="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-		<h3 class="mb-4 text-lg font-semibold text-[var(--color-text)]">
+	<div class="rounded-lg border border-border bg-card p-4">
+		<h3 class="mb-4 text-lg font-semibold text-foreground">
 			What you want to {orderType === 'buy' ? 'buy' : 'sell'}
 		</h3>
 
 		<!-- Request type toggle -->
 		<div class="mb-4">
-			<span class="mb-2 block text-sm font-semibold text-[var(--color-text)]">Type</span>
+			<span class="mb-2 block text-sm font-semibold text-foreground">Type</span>
 			<div class="flex gap-2">
 				<button
 					type="button"
-					class="flex-1 rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors"
-					class:bg-[var(--color-primary)]={requestType === 'item'}
-					class:text-white={requestType === 'item'}
-					class:bg-[var(--color-background)]={requestType !== 'item'}
-					class:text-[var(--color-text)]={requestType !== 'item'}
+					class="flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors {requestType === 'item' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground'}"
 					onclick={() => {
 						requestType = 'item';
 						selectedRequestedId = '';
@@ -223,11 +196,7 @@
 				</button>
 				<button
 					type="button"
-					class="flex-1 rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors"
-					class:bg-[var(--color-primary)]={requestType === 'currency'}
-					class:text-white={requestType === 'currency'}
-					class:bg-[var(--color-background)]={requestType !== 'currency'}
-					class:text-[var(--color-text)]={requestType !== 'currency'}
+					class="flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors {requestType === 'currency' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground'}"
 					onclick={() => {
 						requestType = 'currency';
 						selectedRequestedId = '';
@@ -239,59 +208,45 @@
 		</div>
 
 		<!-- Select item/currency -->
-		<div class="mb-4">
-			{#if requestType === 'item'}
-				<Select
-					label="Select Item"
-					options={itemOptions}
-					bind:value={selectedRequestedId}
-					placeholder="Choose an item..."
-					required
-				/>
-			{:else}
-				<Select
-					label="Select Currency"
-					options={currencyOptions}
-					bind:value={selectedRequestedId}
-					placeholder="Choose a currency..."
-					required
-				/>
-			{/if}
+		<div class="mb-4 space-y-2">
+			<Label for="request-select">Select {requestType === 'item' ? 'Item' : 'Currency'}</Label>
+			<select
+				id="request-select"
+				bind:value={selectedRequestedId}
+				class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+			>
+				<option value="">Choose {requestType === 'item' ? 'an item' : 'a currency'}...</option>
+				{#each requestType === 'item' ? itemOptions : currencyOptions as opt}
+					<option value={opt.value}>{opt.label}</option>
+				{/each}
+			</select>
 		</div>
 
 		<!-- Amount -->
-		<div class="mb-4">
+		<div class="mb-4 space-y-2">
+			<Label for="amount">Amount</Label>
 			<Input
+				id="amount"
 				type="number"
-				label="Amount"
 				bind:value={amount}
 				min={1}
-				required
 			/>
 		</div>
 
 		<!-- Paying type -->
 		<div>
-			<span class="mb-2 block text-sm font-semibold text-[var(--color-text)]">Price Type</span>
+			<span class="mb-2 block text-sm font-semibold text-foreground">Price Type</span>
 			<div class="flex gap-2">
 				<button
 					type="button"
-					class="flex-1 rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors"
-					class:bg-[var(--color-primary)]={payingType === 'each'}
-					class:text-white={payingType === 'each'}
-					class:bg-[var(--color-background)]={payingType !== 'each'}
-					class:text-[var(--color-text)]={payingType !== 'each'}
+					class="flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors {payingType === 'each' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground'}"
 					onclick={() => (payingType = 'each')}
 				>
 					Per Item
 				</button>
 				<button
 					type="button"
-					class="flex-1 rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors"
-					class:bg-[var(--color-primary)]={payingType === 'total'}
-					class:text-white={payingType === 'total'}
-					class:bg-[var(--color-background)]={payingType !== 'total'}
-					class:text-[var(--color-text)]={payingType !== 'total'}
+					class="flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors {payingType === 'total' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground'}"
 					onclick={() => (payingType = 'total')}
 				>
 					Total
@@ -301,7 +256,7 @@
 
 		<!-- Preview of selected item -->
 		{#if selectedRequested()}
-			<div class="mt-4 flex items-center gap-3 rounded-[var(--radius-md)] bg-[var(--color-background)] p-3">
+			<div class="mt-4 flex items-center gap-3 rounded-md bg-background p-3">
 				<ItemButton
 					name={selectedRequested()!.name}
 					type={requestType}
@@ -310,26 +265,26 @@
 					amount={amount}
 				/>
 				<div>
-					<p class="font-semibold text-[var(--color-text)]">{amount}x {selectedRequested()!.name}</p>
-					<p class="text-sm text-[var(--color-textSecondary)]">{requestType}</p>
+					<p class="font-semibold text-foreground">{amount}x {selectedRequested()!.name}</p>
+					<p class="text-sm text-muted-foreground">{requestType}</p>
 				</div>
 			</div>
 		{/if}
 	</div>
 
 	<!-- What you're offering -->
-	<div class="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-		<h3 class="mb-4 text-lg font-semibold text-[var(--color-text)]">
+	<div class="rounded-lg border border-border bg-card p-4">
+		<h3 class="mb-4 text-lg font-semibold text-foreground">
 			What you're offering in return
 		</h3>
 
 		<!-- Offered items grid -->
 		<div class="mb-4">
 			<div class="mb-2 flex items-center justify-between">
-				<span class="text-sm font-semibold text-[var(--color-text)]">Items</span>
+				<span class="text-sm font-semibold text-foreground">Items</span>
 				<Button
 					type="button"
-					variant="secondary"
+					variant="outline"
 					size="sm"
 					onclick={() => (showItemPicker = !showItemPicker)}
 				>
@@ -338,12 +293,12 @@
 			</div>
 
 			{#if showItemPicker}
-				<div class="mb-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+				<div class="mb-3 rounded-md border border-border bg-background p-3">
 					<div class="grid max-h-48 grid-cols-6 gap-2 overflow-y-auto">
 						{#each items as item}
 							<button
 								type="button"
-								class="rounded-[var(--radius-md)] p-1 transition-colors hover:bg-[var(--color-surface)]"
+								class="rounded-md p-1 transition-colors hover:bg-card"
 								class:opacity-50={offeredItems.some((o) => o.id === item.id) || item.id === selectedRequestedId}
 								disabled={offeredItems.some((o) => o.id === item.id) || item.id === selectedRequestedId}
 								onclick={() => addOfferedItem(item.id)}
@@ -365,7 +320,7 @@
 					{#each offeredItems as offered}
 						{@const item = getItem(offered.id)}
 						{#if item}
-							<div class="flex items-center gap-3 rounded-[var(--radius-md)] bg-[var(--color-background)] p-2">
+							<div class="flex items-center gap-3 rounded-md bg-background p-2">
 								<ItemButton
 									name={item.name}
 									type="item"
@@ -374,18 +329,18 @@
 									amount={offered.amount}
 								/>
 								<div class="flex-1">
-									<p class="text-sm font-medium text-[var(--color-text)]">{item.name}</p>
+									<p class="text-sm font-medium text-foreground">{item.name}</p>
 								</div>
 								<input
 									type="number"
 									min="1"
 									value={offered.amount}
 									onchange={(e) => updateOfferedItemAmount(offered.id, parseInt(e.currentTarget.value) || 1)}
-									class="w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm text-[var(--color-text)]"
+									class="w-20 rounded-md border border-input bg-transparent px-2 py-1 text-sm"
 								/>
 								<button
 									type="button"
-									class="text-[var(--color-error)] hover:text-[var(--color-error)]"
+									class="text-destructive hover:text-destructive/80"
 									onclick={() => removeOfferedItem(offered.id)}
 								>
 									&times;
@@ -395,17 +350,17 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="text-sm text-[var(--color-textTertiary)]">No items added yet</p>
+				<p class="text-sm text-muted-foreground">No items added yet</p>
 			{/if}
 		</div>
 
 		<!-- Offered currencies -->
 		<div>
 			<div class="mb-2 flex items-center justify-between">
-				<span class="text-sm font-semibold text-[var(--color-text)]">Currencies</span>
+				<span class="text-sm font-semibold text-foreground">Currencies</span>
 				<Button
 					type="button"
-					variant="secondary"
+					variant="outline"
 					size="sm"
 					onclick={() => (showCurrencyPicker = !showCurrencyPicker)}
 				>
@@ -414,12 +369,12 @@
 			</div>
 
 			{#if showCurrencyPicker}
-				<div class="mb-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+				<div class="mb-3 rounded-md border border-border bg-background p-3">
 					<div class="grid max-h-48 grid-cols-6 gap-2 overflow-y-auto">
 						{#each currencies as currency}
 							<button
 								type="button"
-								class="rounded-[var(--radius-md)] p-1 transition-colors hover:bg-[var(--color-surface)]"
+								class="rounded-md p-1 transition-colors hover:bg-card"
 								class:opacity-50={offeredCurrencies.some((o) => o.id === currency.id) || currency.id === selectedRequestedId}
 								disabled={offeredCurrencies.some((o) => o.id === currency.id) || currency.id === selectedRequestedId}
 								onclick={() => addOfferedCurrency(currency.id)}
@@ -441,7 +396,7 @@
 					{#each offeredCurrencies as offered}
 						{@const currency = getCurrency(offered.id)}
 						{#if currency}
-							<div class="flex items-center gap-3 rounded-[var(--radius-md)] bg-[var(--color-background)] p-2">
+							<div class="flex items-center gap-3 rounded-md bg-background p-2">
 								<ItemButton
 									name={currency.name}
 									type="currency"
@@ -450,18 +405,18 @@
 									amount={offered.amount}
 								/>
 								<div class="flex-1">
-									<p class="text-sm font-medium text-[var(--color-text)]">{currency.name}</p>
+									<p class="text-sm font-medium text-foreground">{currency.name}</p>
 								</div>
 								<input
 									type="number"
 									min="1"
 									value={offered.amount}
 									onchange={(e) => updateOfferedCurrencyAmount(offered.id, parseInt(e.currentTarget.value) || 1)}
-									class="w-24 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm text-[var(--color-text)]"
+									class="w-24 rounded-md border border-input bg-transparent px-2 py-1 text-sm"
 								/>
 								<button
 									type="button"
-									class="text-[var(--color-error)] hover:text-[var(--color-error)]"
+									class="text-destructive hover:text-destructive/80"
 									onclick={() => removeOfferedCurrency(offered.id)}
 								>
 									&times;
@@ -471,17 +426,17 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="text-sm text-[var(--color-textTertiary)]">No currencies added yet</p>
+				<p class="text-sm text-muted-foreground">No currencies added yet</p>
 			{/if}
 		</div>
 	</div>
 
 	<!-- Submit -->
 	<div class="flex gap-3">
-		<Button type="button" variant="secondary" class="flex-1" onclick={() => goto('/listings')}>
+		<Button type="button" variant="outline" class="flex-1" onclick={() => goto('/listings')}>
 			Cancel
 		</Button>
-		<Button type="submit" variant="primary" class="flex-1" disabled={isSubmitting}>
+		<Button type="submit" class="flex-1" disabled={isSubmitting}>
 			{isSubmitting ? 'Creating...' : 'Create Listing'}
 		</Button>
 	</div>

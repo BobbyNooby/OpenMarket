@@ -12,10 +12,9 @@
 
 <a
 	href="/profile/{voter.username}"
-	class="block rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-background)] p-4 transition-all hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-md)]"
+	class="block rounded-lg border border-border bg-background p-4 transition-all hover:border-primary hover:shadow-md"
 >
 	<div class="mb-3 flex items-center gap-3">
-		<!-- Voter Avatar -->
 		{#if voter.avatar_url}
 			<img
 				src={voter.avatar_url}
@@ -24,7 +23,7 @@
 			/>
 		{:else}
 			<div
-				class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary)] text-sm font-bold text-white"
+				class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
 			>
 				{voter.display_name.charAt(0).toUpperCase()}
 			</div>
@@ -32,19 +31,19 @@
 
 		<div class="flex-1">
 			<div class="flex items-center gap-2">
-				<span class="font-semibold text-[var(--color-text)]">{voter.display_name}</span>
-				<span class="text-sm text-[var(--color-textSecondary)]">@{voter.username}</span>
+				<span class="font-semibold text-foreground">{voter.display_name}</span>
+				<span class="text-sm text-muted-foreground">@{voter.username}</span>
 				<span class="text-2xl">
 					{review.type === 'upvote' ? '👍' : '👎'}
 				</span>
 			</div>
-			<p class="text-xs text-[var(--color-textTertiary)]">
+			<p class="text-xs text-muted-foreground">
 				{formatDate(review.created_at)}
 			</p>
 		</div>
 	</div>
 
 	{#if review.comment}
-		<p class="text-sm text-[var(--color-text)]">{review.comment}</p>
+		<p class="text-sm text-foreground">{review.comment}</p>
 	{/if}
 </a>

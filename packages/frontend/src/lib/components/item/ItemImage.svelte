@@ -24,7 +24,7 @@
 </script>
 
 <div
-	class="flex aspect-square items-center justify-center overflow-hidden rounded-[var(--radius-md)] border-2 border-[var(--color-border)] bg-[var(--color-surface)] {sizeMap[
+	class="flex aspect-square items-center justify-center overflow-hidden rounded-md border-2 border-border bg-card {sizeMap[
 		size
 	]} {className}"
 >
@@ -32,7 +32,7 @@
 		<img {src} {alt} class="h-full w-full object-cover" onerror={() => (imageError = true)} />
 	{:else}
 		<span
-			class="line-clamp-3 break-words px-1 text-center text-[8px] font-bold leading-tight text-[var(--color-textSecondary)]"
+			class="line-clamp-3 break-words px-1 text-center text-[8px] font-bold leading-tight text-muted-foreground"
 		>
 			{displayName()}
 		</span>

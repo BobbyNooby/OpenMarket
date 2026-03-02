@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { ItemForm, Modal, Button, ItemButton } from '$lib/shared/components';
+	import { ItemForm, ItemButton } from '$lib/components';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import type { ItemFormData, GenericItem } from '$lib/api/types';
 	import { invalidateAll } from '$app/navigation';
 
 	let { data } = $props();
 
-	// Initialize with items from API (combine items and currencies with type field)
 	let allItems = $derived<GenericItem[]>([
 		...(data.items || []).map((item: any) => ({ ...item, type: 'item' as const })),
 		...(data.currencies || []).map((currency: any) => ({ ...currency, type: 'currency' as const }))
@@ -16,7 +17,6 @@
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 
-	// Helper to submit form actions
 	async function submitFormAction(action: string, formData: FormData) {
 		const res = await fetch(`?/${action}`, {
 			method: 'POST',
@@ -29,7 +29,6 @@
 		return result;
 	}
 
-	// Handle form submission
 	async function handleSubmit(formDataInput: ItemFormData) {
 		isLoading = true;
 		error = null;
@@ -56,10 +55,8 @@
 				}
 			}
 
-			// Refresh data from server
 			await invalidateAll();
 
-			// Reset form
 			showForm = false;
 			editingItem = null;
 		} catch (err: any) {
@@ -99,7 +96,6 @@
 				await submitFormAction('deleteCurrency', formData);
 			}
 
-			// Refresh data from server
 			await invalidateAll();
 		} catch (err: any) {
 			error = err.message || 'An error occurred';
@@ -116,55 +112,59 @@
 	}
 </script>
 
-<div class="min-h-screen bg-[var(--color-background)] text-[var(--color-text)]">
+<div class="min-h-screen bg-background text-foreground">
 	<div class="mx-auto max-w-7xl px-8 py-12">
 		<!-- Header -->
 		<div class="mb-8 flex items-center justify-between">
 			<div>
-				<h1 class="text-4xl font-bold text-[var(--color-text)]">Admin Panel</h1>
-				<p class="mt-2 text-[var(--color-textSecondary)]">
+				<h1 class="text-4xl font-bold text-foreground">Admin Panel</h1>
+				<p class="mt-2 text-muted-foreground">
 					Manage items and currencies
 				</p>
 			</div>
-			<Button variant="primary" onclick={handleCreate} disabled={isLoading}>
+			<Button onclick={handleCreate} disabled={isLoading}>
 				+ Create Item/Currency
 			</Button>
 		</div>
 
-		<!-- Modal for Form -->
-		<Modal bind:open={showForm} onClose={handleCancel} size="lg">
-			<h2 class="mb-6 text-2xl font-semibold text-[var(--color-text)]">
-				{editingItem ? 'Edit Item/Currency' : 'Create New Item/Currency'}
-			</h2>
-			{#if error}
-				<div class="mb-4 rounded-md bg-red-500/10 p-3 text-sm text-red-500">
-					{error}
-				</div>
-			{/if}
-			<ItemForm
-				data={editingItem}
-				mode={editingItem ? 'edit' : 'create'}
-				onSubmit={handleSubmit}
-				onCancel={handleCancel}
-			/>
-			{#if isLoading}
-				<div class="absolute inset-0 flex items-center justify-center bg-black/20">
-					<div class="text-[var(--color-text)]">Saving...</div>
-				</div>
-			{/if}
-		</Modal>
+		<!-- Dialog for Form -->
+		<Dialog.Root bind:open={showForm}>
+			<Dialog.Content class="max-w-2xl">
+				<Dialog.Header>
+					<Dialog.Title>
+						{editingItem ? 'Edit Item/Currency' : 'Create New Item/Currency'}
+					</Dialog.Title>
+				</Dialog.Header>
+				{#if error}
+					<div class="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+						{error}
+					</div>
+				{/if}
+				<ItemForm
+					data={editingItem}
+					mode={editingItem ? 'edit' : 'create'}
+					onSubmit={handleSubmit}
+					onCancel={handleCancel}
+				/>
+				{#if isLoading}
+					<div class="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
+						<div class="text-foreground">Saving...</div>
+					</div>
+				{/if}
+			</Dialog.Content>
+		</Dialog.Root>
 
 		<!-- Items Section -->
-		<div class="mb-8 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-md)]">
-			<div class="border-b border-[var(--color-border)] p-6">
-				<h2 class="text-2xl font-semibold text-[var(--color-text)]">
+		<div class="mb-8 rounded-lg border border-border bg-card shadow-md">
+			<div class="border-b border-border p-6">
+				<h2 class="text-2xl font-semibold text-foreground">
 					Items ({data.items?.length || 0})
 				</h2>
 			</div>
 
 			{#if !data.items?.length}
 				<div class="p-12 text-center">
-					<p class="text-lg text-[var(--color-textSecondary)]">
+					<p class="text-lg text-muted-foreground">
 						No items yet. Create one to get started!
 					</p>
 				</div>
@@ -181,21 +181,21 @@
 									amount={1}
 								/>
 								<div class="space-y-1">
-									<p class="truncate text-sm font-semibold text-[var(--color-text)]">
+									<p class="truncate text-sm font-semibold text-foreground">
 										{item.name}
 									</p>
 									<div class="flex gap-2">
 										<button
 											onclick={() => handleEdit(item)}
 											disabled={isLoading}
-											class="text-xs text-[var(--color-primary)] hover:underline disabled:opacity-50"
+											class="text-xs text-primary hover:underline disabled:opacity-50"
 										>
 											Edit
 										</button>
 										<button
 											onclick={() => handleDelete(item)}
 											disabled={isLoading}
-											class="text-xs text-[var(--color-danger)] hover:underline disabled:opacity-50"
+											class="text-xs text-destructive hover:underline disabled:opacity-50"
 										>
 											Delete
 										</button>
@@ -209,16 +209,16 @@
 		</div>
 
 		<!-- Currencies Section -->
-		<div class="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-md)]">
-			<div class="border-b border-[var(--color-border)] p-6">
-				<h2 class="text-2xl font-semibold text-[var(--color-text)]">
+		<div class="rounded-lg border border-border bg-card shadow-md">
+			<div class="border-b border-border p-6">
+				<h2 class="text-2xl font-semibold text-foreground">
 					Currencies ({data.currencies?.length || 0})
 				</h2>
 			</div>
 
 			{#if !data.currencies?.length}
 				<div class="p-12 text-center">
-					<p class="text-lg text-[var(--color-textSecondary)]">
+					<p class="text-lg text-muted-foreground">
 						No currencies yet. Create one to get started!
 					</p>
 				</div>
@@ -235,21 +235,21 @@
 									amount={1}
 								/>
 								<div class="space-y-1">
-									<p class="truncate text-sm font-semibold text-[var(--color-text)]">
+									<p class="truncate text-sm font-semibold text-foreground">
 										{currency.name}
 									</p>
 									<div class="flex gap-2">
 										<button
 											onclick={() => handleEdit(currency)}
 											disabled={isLoading}
-											class="text-xs text-[var(--color-primary)] hover:underline disabled:opacity-50"
+											class="text-xs text-primary hover:underline disabled:opacity-50"
 										>
 											Edit
 										</button>
 										<button
 											onclick={() => handleDelete(currency)}
 											disabled={isLoading}
-											class="text-xs text-[var(--color-danger)] hover:underline disabled:opacity-50"
+											class="text-xs text-destructive hover:underline disabled:opacity-50"
 										>
 											Delete
 										</button>

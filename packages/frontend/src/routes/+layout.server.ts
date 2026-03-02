@@ -1,10 +1,7 @@
 import type { LayoutServerLoad } from "./$types";
-import { THEME_MAP } from "$lib/design/themes";
 import { PUBLIC_API_URL } from "$env/static/public";
 
-export const load: LayoutServerLoad = async ({ locals, fetch, cookies }) => {
-  const theme = THEME_MAP[locals.themeName ?? "dark"];
-
+export const load: LayoutServerLoad = async ({ fetch, cookies }) => {
   let session = null;
   try {
     const sessionToken = cookies.get("better-auth.session_token");
@@ -25,5 +22,5 @@ export const load: LayoutServerLoad = async ({ locals, fetch, cookies }) => {
     // not logged in
   }
 
-  return { theme, session };
+  return { session };
 };

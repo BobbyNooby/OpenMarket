@@ -1,12 +1,12 @@
-// UI Primitives
-export { default as Button } from './ui/Button.svelte';
-export { default as Input } from './ui/Input.svelte';
-export { default as Textarea } from './ui/Textarea.svelte';
-export { default as Select } from './ui/Select.svelte';
-export { default as Checkbox } from './ui/Checkbox.svelte';
-export { default as Radio } from './ui/Radio.svelte';
-export { default as Toggle } from './ui/Toggle.svelte';
-export { default as Modal } from './ui/Modal.svelte';
+// UI (shadcn)
+export { Button } from './ui/button';
+export { Input } from './ui/input';
+export { Textarea } from './ui/textarea';
+export { Label } from './ui/label';
+export { Badge } from './ui/badge';
+export { Checkbox } from './ui/checkbox';
+export { Toggle } from './ui/toggle';
+export { Separator } from './ui/separator';
 
 // Item Components
 export { default as ItemImage } from './item/ItemImage.svelte';
