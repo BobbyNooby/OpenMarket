@@ -6,6 +6,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
 	import { banUser, type AdminUser } from './admin-api';
+	import { toast } from 'svelte-sonner';
 
 	interface Props {
 		open: boolean;
@@ -48,11 +49,12 @@
 				throw new Error(result.error || 'Failed to ban user');
 			}
 
+			toast.success(`@${user.username} has been banned`);
 			onBanned();
 			resetForm();
 			open = false;
 		} catch (err: any) {
-			error = err.message || 'An error occurred';
+			toast.error(err.message || 'Failed to ban user');
 		} finally {
 			saving = false;
 		}

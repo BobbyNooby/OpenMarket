@@ -11,6 +11,7 @@
 		type AdminReport,
 		type ModerationEvent
 	} from './admin-api';
+	import { toast } from 'svelte-sonner';
 	import Check from '@lucide/svelte/icons/check';
 	import X from '@lucide/svelte/icons/x';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
@@ -83,18 +84,24 @@
 	async function handleResolve(report: AdminReport) {
 		const result = await updateReportStatus(report.id, 'resolved');
 		if (result.success) {
+			toast.success('Report resolved');
 			loadReports();
 			loadLog();
 			onDataChanged();
+		} else {
+			toast.error(result.error || 'Failed to resolve report');
 		}
 	}
 
 	async function handleDismiss(report: AdminReport) {
 		const result = await updateReportStatus(report.id, 'dismissed');
 		if (result.success) {
+			toast.success('Report dismissed');
 			loadReports();
 			loadLog();
 			onDataChanged();
+		} else {
+			toast.error(result.error || 'Failed to dismiss report');
 		}
 	}
 

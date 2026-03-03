@@ -4,6 +4,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
 	import { PUBLIC_API_URL } from '$env/static/public';
+	import { toast } from 'svelte-sonner';
 
 	interface Props {
 		open: boolean;
@@ -17,12 +18,10 @@
 	let reason = $state('');
 	let saving = $state(false);
 	let error = $state<string | null>(null);
-	let success = $state(false);
 
 	function resetForm() {
 		reason = '';
 		error = null;
-		success = false;
 	}
 
 	async function handleSubmit() {
@@ -51,12 +50,10 @@
 				throw new Error(result.error || 'Failed to submit report');
 			}
 
-			success = true;
-			setTimeout(() => {
-				open = false;
-			}, 1500);
+			toast.success('Report submitted — a moderator will review it shortly');
+			open = false;
 		} catch (err: any) {
-			error = err.message || 'An error occurred';
+			toast.error(err.message || 'Failed to submit report');
 		} finally {
 			saving = false;
 		}
@@ -77,36 +74,30 @@
 			</Dialog.Description>
 		</Dialog.Header>
 
-		{#if success}
-			<div class="rounded-md bg-green-500/10 p-3 text-sm text-green-600">
-				Report submitted successfully. A moderator will review it shortly.
+		{#if error}
+			<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+				{error}
 			</div>
-		{:else}
-			{#if error}
-				<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-					{error}
-				</div>
-			{/if}
-
-			<div class="space-y-4 py-2">
-				<div class="space-y-2">
-					<Label>Reason <span class="text-destructive">*</span></Label>
-					<Textarea
-						bind:value={reason}
-						placeholder="Describe why you are reporting this content..."
-						rows={4}
-					/>
-				</div>
-			</div>
-
-			<Dialog.Footer>
-				<Button variant="outline" onclick={() => (open = false)} disabled={saving}>
-					Cancel
-				</Button>
-				<Button variant="destructive" onclick={handleSubmit} disabled={saving || !reason.trim()}>
-					{saving ? 'Submitting...' : 'Submit Report'}
-				</Button>
-			</Dialog.Footer>
 		{/if}
+
+		<div class="space-y-4 py-2">
+			<div class="space-y-2">
+				<Label>Reason <span class="text-destructive">*</span></Label>
+				<Textarea
+					bind:value={reason}
+					placeholder="Describe why you are reporting this content..."
+					rows={4}
+				/>
+			</div>
+		</div>
+
+		<Dialog.Footer>
+			<Button variant="outline" onclick={() => (open = false)} disabled={saving}>
+				Cancel
+			</Button>
+			<Button variant="destructive" onclick={handleSubmit} disabled={saving || !reason.trim()}>
+				{saving ? 'Submitting...' : 'Submit Report'}
+			</Button>
+		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

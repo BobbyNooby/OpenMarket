@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
 	import { apiFetch, unbanUser, type AdminUser, type Role } from './admin-api';
+	import { toast } from 'svelte-sonner';
 	import UserTable from './UserTable.svelte';
 	import UserRolesDialog from './UserRolesDialog.svelte';
 	import BanUserDialog from './BanUserDialog.svelte';
@@ -110,7 +111,10 @@
 
 		const result = await unbanUser(user.id);
 		if (result.success) {
+			toast.success(`@${user.username} has been unbanned`);
 			handleDataChanged();
+		} else {
+			toast.error(result.error || 'Failed to unban user');
 		}
 	}
 

@@ -4,6 +4,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
 	import { warnUser, type AdminUser } from './admin-api';
+	import { toast } from 'svelte-sonner';
 
 	interface Props {
 		open: boolean;
@@ -38,11 +39,12 @@
 				throw new Error(result.error || 'Failed to warn user');
 			}
 
+			toast.success(`Warning issued to @${user.username}`);
 			onWarned();
 			resetForm();
 			open = false;
 		} catch (err: any) {
-			error = err.message || 'An error occurred';
+			toast.error(err.message || 'Failed to warn user');
 		} finally {
 			saving = false;
 		}

@@ -3,6 +3,7 @@
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import { apiFetch, apiJson, DEFAULT_ROLES, type Role, type Permission, type RoleDetail } from './admin-api';
+	import { toast } from 'svelte-sonner';
 
 	const EVERYONE_ID = '@everyone';
 	import RoleEditor from './RoleEditor.svelte';
@@ -87,9 +88,10 @@
 				description: editDescription,
 				permissions: [...checkedPermissions]
 			};
+			toast.success('Role saved');
 			onDataChanged();
 		} catch (err: any) {
-			error = err.message || 'An error occurred';
+			toast.error(err.message || 'Failed to save role');
 		} finally {
 			isSaving = false;
 		}
@@ -109,9 +111,10 @@
 			selectedRoleId = null;
 			roleDetail = null;
 			await loadRoles();
+			toast.success('Role deleted');
 			onDataChanged();
 		} catch (err: any) {
-			error = err.message || 'An error occurred';
+			toast.error(err.message || 'Failed to delete role');
 		} finally {
 			isSaving = false;
 		}

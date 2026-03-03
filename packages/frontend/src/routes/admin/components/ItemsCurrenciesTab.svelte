@@ -4,6 +4,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import type { ItemFormData, GenericItem } from '$lib/api/types';
 	import { invalidateAll } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
 
 	interface Props {
 		data: {
@@ -65,10 +66,12 @@
 
 			await invalidateAll();
 
+			toast.success(editingItem ? `"${formDataInput.name}" updated` : `"${formDataInput.name}" created`);
 			showForm = false;
 			editingItem = null;
 		} catch (err: any) {
 			error = err.message || 'An error occurred';
+			toast.error(error!);
 		} finally {
 			isLoading = false;
 		}
@@ -105,9 +108,10 @@
 			}
 
 			await invalidateAll();
+			toast.success(`"${item.name}" deleted`);
 		} catch (err: any) {
 			error = err.message || 'An error occurred';
-			alert(`Error: ${error}`);
+			toast.error(error!);
 		} finally {
 			isLoading = false;
 		}

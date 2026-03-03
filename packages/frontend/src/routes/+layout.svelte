@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import Toaster from '$lib/components/ui/sonner/sonner.svelte';
 	import { onMount } from 'svelte';
 
 	let { children, data } = $props();
@@ -54,4 +55,5 @@
 
 		{@render children?.()}
 	</div>
+	<Toaster richColors />
 </Tooltip.Provider>

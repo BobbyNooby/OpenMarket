@@ -7,6 +7,7 @@
 	import Flag from '@lucide/svelte/icons/flag';
 	import { invalidateAll } from '$app/navigation';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
+	import { toast } from 'svelte-sonner';
 
 	let { data } = $props();
 
@@ -83,7 +84,9 @@
 
 			if (result.type === 'failure') {
 				submitError = result.data?.error || 'Failed to submit review';
+				toast.error(submitError!);
 			} else {
+				toast.success('Review submitted');
 				await invalidateAll();
 				reviews = data.profile?.reviews || [];
 				reviewType = null;
@@ -92,6 +95,7 @@
 		} catch (err: any) {
 			console.error('Failed to submit review:', err);
 			submitError = err.message || 'Failed to submit review';
+			toast.error(submitError!);
 		} finally {
 			submitting = false;
 		}

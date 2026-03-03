@@ -5,6 +5,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
 	import { apiJson } from './admin-api';
+	import { toast } from 'svelte-sonner';
 
 	interface Props {
 		open: boolean;
@@ -37,12 +38,13 @@
 				throw new Error(result.error || 'Failed to create role');
 			}
 
+			toast.success(`Role "${name.trim()}" created`);
 			onRoleCreated(result.data.id);
 			name = '';
 			description = '';
 			open = false;
 		} catch (err: any) {
-			error = err.message || 'An error occurred';
+			toast.error(err.message || 'Failed to create role');
 		} finally {
 			isSaving = false;
 		}

@@ -4,6 +4,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import { apiFetch, apiJson, type AdminUser, type Role } from './admin-api';
+	import { toast } from 'svelte-sonner';
 
 	interface Props {
 		open: boolean;
@@ -30,16 +31,19 @@
 		error = null;
 
 		try {
+			const roleName = allRoles.find((r) => r.id === roleId)?.name ?? roleId;
 			if (hasRole) {
 				await apiFetch(`/admin/users/${user.id}/roles/${roleId}`, { method: 'DELETE' });
 				userRoles = userRoles.filter((r) => r !== roleId);
+				toast.success(`Removed ${roleName} from @${user.username}`);
 			} else {
 				await apiJson(`/admin/users/${user.id}/roles`, 'POST', { role: roleId });
 				userRoles = [...userRoles, roleId];
+				toast.success(`Added ${roleName} to @${user.username}`);
 			}
 			onRolesChanged();
 		} catch (err: any) {
-			error = err.message || 'Failed to update role';
+			toast.error(err.message || 'Failed to update role');
 		} finally {
 			saving = null;
 		}

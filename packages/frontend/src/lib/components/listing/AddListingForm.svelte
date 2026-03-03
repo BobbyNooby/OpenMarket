@@ -8,6 +8,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import ItemButton from '../item/ItemButton.svelte';
 	import type { Item, Currency } from '$lib/api/types';
+	import { toast } from 'svelte-sonner';
 
 	interface Props {
 		items: Item[];
@@ -138,11 +139,14 @@
 			const result = await res.json();
 			if (result.type === 'failure') {
 				error = result.data?.error || 'Failed to create listing';
+				toast.error(error!);
 			} else {
+				toast.success('Listing created');
 				goto('/listings');
 			}
 		} catch (err: any) {
 			error = err.message || 'An error occurred';
+			toast.error(error!);
 		} finally {
 			isSubmitting = false;
 		}
