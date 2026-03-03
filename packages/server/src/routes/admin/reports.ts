@@ -1,9 +1,9 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db/db';
-import { reportsTable, userProfilesTable } from '../../db/schemas';
+import { reportsTable, userProfilesTable, listingsTable, profileReviewsTable } from '../../db/schemas';
 import { userBansTable, userWarningsTable } from '../../db/rbac-schema';
 import { user } from '../../db/auth-schema';
-import { eq, desc, count, and, sql } from 'drizzle-orm';
+import { eq, desc, count, and, sql, inArray } from 'drizzle-orm';
 import { authMiddleware } from '../../middleware/rbac';
 
 export const adminReportRoutes = new Elysia()
@@ -81,6 +81,54 @@ export const adminReportRoutes = new Elysia()
 					targetReportCounts[`${target.type}:${target.id}`] = cnt;
 				}
 
+				// Resolve target user info for each report
+				const targetInfo: Record<string, { id: string; name: string; username: string; image?: string }> = {};
+
+				// Group targets by type for efficient lookups
+				const userTargetIds = uniqueTargets.filter(t => t.type === 'user').map(t => t.id);
+				const listingTargetIds = uniqueTargets.filter(t => t.type === 'listing').map(t => t.id);
+				const reviewTargetIds = uniqueTargets.filter(t => t.type === 'review').map(t => t.id);
+
+				// Direct user targets
+				if (userTargetIds.length > 0) {
+					const rows = await db
+						.select({ id: user.id, name: user.name, image: user.image, username: userProfilesTable.username })
+						.from(user)
+						.leftJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
+						.where(inArray(user.id, userTargetIds));
+					for (const row of rows) {
+						targetInfo[`user:${row.id}`] = { id: row.id, name: row.name, username: row.username ?? row.name, image: row.image ?? undefined };
+					}
+				}
+
+				// Listing targets → look up author
+				if (listingTargetIds.length > 0) {
+					const rows = await db.execute(sql`
+						SELECT l.id as listing_id, u.id as user_id, u.name, u.image, up.username
+						FROM listings l
+						INNER JOIN "user" u ON l.author_id = u.id
+						LEFT JOIN user_profiles up ON u.id = up.user_id
+						WHERE l.id = ANY(ARRAY[${sql.join(listingTargetIds.map(id => sql`${id}`), sql`, `)}]::uuid[])
+					`) as unknown as { listing_id: string; user_id: string; name: string; image: string | null; username: string | null }[];
+					for (const row of rows) {
+						targetInfo[`listing:${row.listing_id}`] = { id: row.user_id, name: row.name, username: row.username ?? row.name, image: row.image ?? undefined };
+					}
+				}
+
+				// Review targets → look up voter (reviewer)
+				if (reviewTargetIds.length > 0) {
+					const rows = await db.execute(sql`
+						SELECT pr.id as review_id, u.id as user_id, u.name, u.image, up.username
+						FROM profile_reviews pr
+						INNER JOIN "user" u ON pr.voter_user_id = u.id
+						LEFT JOIN user_profiles up ON u.id = up.user_id
+						WHERE pr.id = ANY(ARRAY[${sql.join(reviewTargetIds.map(id => sql`${id}`), sql`, `)}]::uuid[])
+					`) as unknown as { review_id: string; user_id: string; name: string; image: string | null; username: string | null }[];
+					for (const row of rows) {
+						targetInfo[`review:${row.review_id}`] = { id: row.user_id, name: row.name, username: row.username ?? row.name, image: row.image ?? undefined };
+					}
+				}
+
 				// Get resolver info for resolved reports
 				const resolvedReportIds = reports
 					.filter((r) => r.resolved_by)
@@ -121,6 +169,7 @@ export const adminReportRoutes = new Elysia()
 						image: r.reporter_image ?? undefined,
 						username: r.reporter_username ?? r.reporter_name,
 					},
+					target: targetInfo[`${r.target_type}:${r.target_id}`] ?? null,
 					resolved_by: resolverInfo[r.id] ?? null,
 					report_count: targetReportCounts[`${r.target_type}:${r.target_id}`] ?? 1,
 				}));
@@ -221,14 +270,25 @@ export const adminReportRoutes = new Elysia()
 							u_actor.image as actor_image,
 							r.target_type,
 							r.target_id,
-							NULL as target_name,
-							NULL as target_username,
+							COALESCE(u_target_direct.name, u_target_listing.name, u_target_review.name) as target_name,
+							COALESCE(up_target_direct.username, up_target_listing.username, up_target_review.username) as target_username,
 							r.resolved_by,
 							r.resolved_at,
 							NULL as expires_at
 						FROM reports r
 						INNER JOIN "user" u_actor ON r.reporter_id = u_actor.id
 						LEFT JOIN user_profiles up_actor ON u_actor.id = up_actor.user_id
+						-- target user (direct user reports)
+						LEFT JOIN "user" u_target_direct ON r.target_type = 'user' AND r.target_id = u_target_direct.id
+						LEFT JOIN user_profiles up_target_direct ON u_target_direct.id = up_target_direct.user_id
+						-- target user (listing reports → author)
+						LEFT JOIN listings l_target ON r.target_type = 'listing' AND r.target_id = l_target.id::text
+						LEFT JOIN "user" u_target_listing ON l_target.author_id = u_target_listing.id
+						LEFT JOIN user_profiles up_target_listing ON u_target_listing.id = up_target_listing.user_id
+						-- target user (review reports → voter)
+						LEFT JOIN profile_reviews pr_target ON r.target_type = 'review' AND r.target_id = pr_target.id::text
+						LEFT JOIN "user" u_target_review ON pr_target.voter_user_id = u_target_review.id
+						LEFT JOIN user_profiles up_target_review ON u_target_review.id = up_target_review.user_id
 						${typeFilter && typeFilter !== 'report' ? sql`WHERE 1=0` : sql``}
 
 						UNION ALL
