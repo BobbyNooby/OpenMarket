@@ -11,8 +11,9 @@
 		type AdminReport,
 		type ModerationEvent
 	} from './admin-api';
+	import ResolveReportDialog from './ResolveReportDialog.svelte';
 	import { toast } from 'svelte-sonner';
-	import Check from '@lucide/svelte/icons/check';
+	import Search from '@lucide/svelte/icons/search';
 	import X from '@lucide/svelte/icons/x';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -32,6 +33,21 @@
 	let reportsOffset = $state(0);
 	let statusFilter = $state('pending');
 	let reportsLoading = $state(false);
+
+	// Resolve dialog state
+	let selectedReport = $state<AdminReport | null>(null);
+	let resolveDialogOpen = $state(false);
+
+	function openResolveDialog(report: AdminReport) {
+		selectedReport = report;
+		resolveDialogOpen = true;
+	}
+
+	function handleResolved() {
+		loadReports();
+		loadLog();
+		onDataChanged();
+	}
 
 	// Moderation log state
 	let logEvents = $state<ModerationEvent[]>([]);
@@ -79,18 +95,6 @@
 		logTypeFilter = value === '__all__' ? '' : value;
 		logOffset = 0;
 		loadLog();
-	}
-
-	async function handleResolve(report: AdminReport) {
-		const result = await updateReportStatus(report.id, 'resolved');
-		if (result.success) {
-			toast.success('Report resolved');
-			loadReports();
-			loadLog();
-			onDataChanged();
-		} else {
-			toast.error(result.error || 'Failed to resolve report');
-		}
 	}
 
 	async function handleDismiss(report: AdminReport) {
@@ -194,6 +198,7 @@
 				<Table.Header>
 					<Table.Row>
 						<Table.Head>Reporter</Table.Head>
+						<Table.Head>Target</Table.Head>
 						<Table.Head>Type</Table.Head>
 						<Table.Head>Reason</Table.Head>
 						<Table.Head>Reports</Table.Head>
@@ -221,6 +226,27 @@
 										@{report.reporter.username}
 									</a>
 								</div>
+							</Table.Cell>
+							<Table.Cell>
+								{#if report.target}
+									<div class="flex items-center gap-2">
+										{#if report.target.image}
+											<img
+												src={report.target.image}
+												alt={report.target.name}
+												class="h-6 w-6 rounded-full"
+											/>
+										{/if}
+										<a
+											href="/profile/{report.target.username}"
+											class="text-sm font-medium hover:text-primary"
+										>
+											@{report.target.username}
+										</a>
+									</div>
+								{:else}
+									<span class="text-xs text-muted-foreground italic">Unknown</span>
+								{/if}
 							</Table.Cell>
 							<Table.Cell>
 								<Badge variant="outline">{targetLabel(report)}</Badge>
@@ -257,22 +283,21 @@
 										<Button
 											size="sm"
 											variant="outline"
-											class="h-8 text-green-600 hover:bg-green-50 hover:text-green-700"
-											onclick={() => handleResolve(report)}
-											title="Resolve"
+											class="h-8"
+											onclick={() => openResolveDialog(report)}
+											title="Review"
 										>
-											<Check class="mr-1 h-3.5 w-3.5" />
-											Resolve
+											<Search class="mr-1 h-3.5 w-3.5" />
+											Review
 										</Button>
 										<Button
 											size="sm"
 											variant="outline"
 											class="h-8 text-muted-foreground hover:text-foreground"
 											onclick={() => handleDismiss(report)}
-											title="Dismiss"
+											title="Quick dismiss"
 										>
-											<X class="mr-1 h-3.5 w-3.5" />
-											Dismiss
+											<X class="h-3.5 w-3.5" />
 										</Button>
 									</div>
 								{:else if report.resolved_by}
@@ -422,3 +447,11 @@
 		</div>
 	</div>
 </div>
+
+{#if selectedReport}
+	<ResolveReportDialog
+		bind:open={resolveDialogOpen}
+		report={selectedReport}
+		onResolved={handleResolved}
+	/>
+{/if}

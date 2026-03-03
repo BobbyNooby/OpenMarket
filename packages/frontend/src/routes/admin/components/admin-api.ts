@@ -111,6 +111,12 @@ export interface AdminReport {
 		image?: string;
 		username: string;
 	};
+	target: {
+		id: string;
+		name: string;
+		username: string;
+		image?: string;
+	} | null;
 	resolved_by: {
 		id: string;
 		name: string;
