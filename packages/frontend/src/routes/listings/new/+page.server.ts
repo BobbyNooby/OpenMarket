@@ -26,7 +26,6 @@ export const actions: Actions = {
 		const formData = await request.formData();
 
 		const body: any = {
-			author_id: formData.get('author_id') as string,
 			amount: parseInt(formData.get('amount') as string),
 			order_type: formData.get('order_type') as 'buy' | 'sell',
 			paying_type: formData.get('paying_type') as 'each' | 'total',
@@ -44,7 +43,9 @@ export const actions: Actions = {
 			body.requested_currency_id = requested_currency_id;
 		}
 
-		const result = await api.listings.post(body);
+		const result = await api.listings.post(body, {
+			headers: { cookie: request.headers.get('cookie') || '' }
+		});
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to create listing' });

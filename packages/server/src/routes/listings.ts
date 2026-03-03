@@ -464,6 +464,8 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 	.post(
 		'/',
 		async ({ body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+			if (!session.permissions.includes('listing:create')) { set.status = 403; return { success: false, error: 'Forbidden' }; }
 			try {
 				// Validate that exactly one of requested_item_id or requested_currency_id is set
 				if (!body.requested_item_id && !body.requested_currency_id) {
@@ -476,7 +478,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 				const [listing] = await db
 					.insert(listingsTable)
 					.values({
-						author_id: body.author_id,
+						author_id: session.user.id,
 						requested_item_id: body.requested_item_id,
 						requested_currency_id: body.requested_currency_id,
 						amount: body.amount,
@@ -515,7 +517,6 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 		},
 		{
 			body: t.Object({
-				author_id: t.String(),
 				requested_item_id: t.Optional(t.String()),
 				requested_currency_id: t.Optional(t.String()),
 				amount: t.Number(),
@@ -544,15 +545,28 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 	.delete(
 		'/:id',
 		async ({ params, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
 			try {
+				// Fetch listing to check ownership
+				const [existing] = await db
+					.select({ id: listingsTable.id, author_id: listingsTable.author_id })
+					.from(listingsTable)
+					.where(eq(listingsTable.id, params.id));
+
+				if (!existing) {
+					set.status = 404;
+					return { success: false, error: 'Listing not found' };
+				}
+
+				if (existing.author_id !== session.user.id && !session.permissions.includes('listing:moderate')) {
+					set.status = 403;
+					return { success: false, error: 'Forbidden' };
+				}
+
 				const [listing] = await db
 					.delete(listingsTable)
 					.where(eq(listingsTable.id, params.id))
 					.returning();
-
-				if (!listing) {
-					return { success: false, error: 'Listing not found', status: 404 };
-				}
 
 				return { success: true, data: listing };
 			} catch (err: any) {

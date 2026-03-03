@@ -9,14 +9,16 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 	// Create or update user profile (called after OAuth login)
 	.post(
 		'/profile',
-		async ({ body }) => {
+		async ({ body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
 			try {
+				const userId = session.user.id;
 				const result = await db.transaction(async (tx) => {
 					// Upsert user profile
 					const [profile] = await tx
 						.insert(userProfilesTable)
 						.values({
-							userId: body.user_id,
+							userId,
 							username: body.username,
 							description: body.description
 						})
@@ -33,7 +35,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 					await tx
 						.insert(usersActivityTable)
 						.values({
-							user_id: body.user_id,
+							user_id: userId,
 							is_active: true,
 							last_activity_at: new Date()
 						})
@@ -63,7 +65,6 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 		},
 		{
 			body: t.Object({
-				user_id: t.String(),
 				username: t.String(),
 				description: t.Optional(t.String())
 			})
@@ -168,7 +169,9 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 	// Submit a review for a user profile
 	.post(
 		'/profile/:username/reviews',
-		async ({ params, body }) => {
+		async ({ params, body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+			if (!session.permissions.includes('review:create')) { set.status = 403; return { success: false, error: 'Forbidden' }; }
 			try {
 				// Get the profile being reviewed
 				const profileRows = await db
@@ -187,7 +190,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 				const profileUser = profileRows[0];
 
 				// Check if user is trying to review themselves
-				if (profileUser.id === body.voter_user_id) {
+				if (profileUser.id === session.user!.id) {
 					return { success: false, error: 'You cannot review yourself', status: 400 };
 				}
 
@@ -198,7 +201,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 					.where(
 						and(
 							eq(profileReviewsTable.profile_user_id, profileUser.id),
-							eq(profileReviewsTable.voter_user_id, body.voter_user_id)
+							eq(profileReviewsTable.voter_user_id, session.user!.id)
 						)
 					);
 
@@ -221,7 +224,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 					.insert(profileReviewsTable)
 					.values({
 						profile_user_id: profileUser.id,
-						voter_user_id: body.voter_user_id,
+						voter_user_id: session.user!.id,
 						type: body.type,
 						comment: body.comment || null
 					})
@@ -238,7 +241,6 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 				username: t.String()
 			}),
 			body: t.Object({
-				voter_user_id: t.String(),
 				type: t.Union([t.Literal('upvote'), t.Literal('downvote')]),
 				comment: t.Optional(t.String())
 			})

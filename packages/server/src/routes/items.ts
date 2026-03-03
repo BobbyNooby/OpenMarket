@@ -2,6 +2,7 @@ import { Elysia, t } from 'elysia';
 import { db } from '../db/db';
 import { itemsTable, currenciesTable } from '../db/schemas';
 import { eq, and, ne } from 'drizzle-orm';
+import { authMiddleware } from '../middleware/rbac';
 
 // Generate URL-friendly slug from name
 function generateSlug(name: string): string {
@@ -15,6 +16,7 @@ function generateSlug(name: string): string {
 }
 
 export const itemsRoutes = new Elysia({ prefix: '/items' })
+	.use(authMiddleware)
 	// Get all items
 	.get('/', async () => {
 		try {
@@ -61,7 +63,9 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 	// Create item
 	.post(
 		'/',
-		async ({ body }) => {
+		async ({ body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+			if (!session.permissions.includes('item:create')) { set.status = 403; return { success: false, error: 'Forbidden' }; }
 			try {
 				// Check for duplicate name
 				const [existing] = await db
@@ -106,7 +110,9 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 	// Update item
 	.put(
 		'/:id',
-		async ({ params, body }) => {
+		async ({ params, body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+			if (!session.permissions.includes('item:update')) { set.status = 403; return { success: false, error: 'Forbidden' }; }
 			try {
 				// Check for duplicate name (excluding current item)
 				const [existing] = await db
@@ -158,7 +164,9 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 	// Delete item
 	.delete(
 		'/:id',
-		async ({ params }) => {
+		async ({ params, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+			if (!session.permissions.includes('item:delete')) { set.status = 403; return { success: false, error: 'Forbidden' }; }
 			try {
 				const [item] = await db
 					.delete(itemsTable)
@@ -183,6 +191,7 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 	);
 
 export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
+	.use(authMiddleware)
 	// Get all currencies
 	.get('/', async () => {
 		try {
@@ -229,7 +238,9 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 	// Create currency
 	.post(
 		'/',
-		async ({ body }) => {
+		async ({ body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+			if (!session.permissions.includes('currency:create')) { set.status = 403; return { success: false, error: 'Forbidden' }; }
 			try {
 				// Check for duplicate name
 				const [existing] = await db
@@ -274,7 +285,9 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 	// Update currency
 	.put(
 		'/:id',
-		async ({ params, body }) => {
+		async ({ params, body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+			if (!session.permissions.includes('currency:update')) { set.status = 403; return { success: false, error: 'Forbidden' }; }
 			try {
 				// Check for duplicate name (excluding current currency)
 				const [existing] = await db
@@ -326,7 +339,9 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 	// Delete currency
 	.delete(
 		'/:id',
-		async ({ params }) => {
+		async ({ params, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+			if (!session.permissions.includes('currency:delete')) { set.status = 403; return { success: false, error: 'Forbidden' }; }
 			try {
 				const [currency] = await db
 					.delete(currenciesTable)

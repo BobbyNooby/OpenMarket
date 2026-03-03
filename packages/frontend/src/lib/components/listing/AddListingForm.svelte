@@ -13,10 +13,9 @@
 	interface Props {
 		items: Item[];
 		currencies: Currency[];
-		authorId: string;
 	}
 
-	let { items, currencies, authorId }: Props = $props();
+	let { items, currencies }: Props = $props();
 
 	// Form state
 	let requestType = $state<'item' | 'currency'>('item');
@@ -113,7 +112,6 @@
 
 		try {
 			const formData = new FormData();
-			formData.set('author_id', authorId);
 			formData.set('amount', String(amount));
 			formData.set('order_type', orderType);
 			formData.set('paying_type', payingType);

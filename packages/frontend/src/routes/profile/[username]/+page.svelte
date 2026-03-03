@@ -72,7 +72,6 @@
 
 		try {
 			const formData = new FormData();
-			formData.set('voter_user_id', session.user.id);
 			formData.set('type', reviewType);
 			if (reviewComment) formData.set('comment', reviewComment);
 

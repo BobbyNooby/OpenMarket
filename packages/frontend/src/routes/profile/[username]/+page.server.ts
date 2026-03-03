@@ -39,7 +39,6 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 export const actions: Actions = {
 	submitReview: async ({ request, params }) => {
 		const formData = await request.formData();
-		const voter_user_id = formData.get('voter_user_id') as string;
 		const type = formData.get('type') as 'upvote' | 'downvote';
 		const comment = formData.get('comment') as string | null;
 		const { username } = params;
@@ -49,10 +48,9 @@ export const actions: Actions = {
 		}
 
 		const result = await api.users.profile({ username }).reviews.post({
-			voter_user_id,
 			type,
 			comment: comment || undefined
-		});
+		}, { headers: { cookie: request.headers.get('cookie') || '' } });
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to submit review' });

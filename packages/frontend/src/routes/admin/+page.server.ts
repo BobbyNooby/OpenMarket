@@ -2,6 +2,10 @@ import type { PageServerLoad, Actions } from './$types';
 import { api } from '$lib/api/server';
 import { fail } from '@sveltejs/kit';
 
+function authHeaders(request: Request) {
+	return { headers: { cookie: request.headers.get('cookie') || '' } };
+}
+
 export const load: PageServerLoad = async () => {
 	const [itemsResult, currenciesResult] = await Promise.all([
 		api.items.get(),
@@ -27,7 +31,7 @@ export const actions: Actions = {
 			description: description || undefined,
 			wiki_link: wiki_link || undefined,
 			image_url: image_url || undefined
-		});
+		}, authHeaders(request));
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to create item' });
@@ -48,7 +52,7 @@ export const actions: Actions = {
 			description: description || undefined,
 			wiki_link: wiki_link || undefined,
 			image_url: image_url || undefined
-		});
+		}, authHeaders(request));
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to create currency' });
@@ -71,7 +75,7 @@ export const actions: Actions = {
 			description: description || undefined,
 			wiki_link: wiki_link || undefined,
 			image_url: image_url || undefined
-		});
+		}, authHeaders(request));
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to update item' });
@@ -94,7 +98,7 @@ export const actions: Actions = {
 			description: description || undefined,
 			wiki_link: wiki_link || undefined,
 			image_url: image_url || undefined
-		});
+		}, authHeaders(request));
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to update currency' });
@@ -108,7 +112,7 @@ export const actions: Actions = {
 		const id = formData.get('id') as string;
 
 		// @ts-expect-error - Eden treaty type inference issue with dynamic routes
-		const result = await api.items({ id }).delete();
+		const result = await api.items({ id }).delete(null, authHeaders(request));
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to delete item' });
@@ -122,7 +126,7 @@ export const actions: Actions = {
 		const id = formData.get('id') as string;
 
 		// @ts-expect-error - Eden treaty type inference issue with dynamic routes
-		const result = await api.currencies({ id }).delete();
+		const result = await api.currencies({ id }).delete(null, authHeaders(request));
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to delete currency' });

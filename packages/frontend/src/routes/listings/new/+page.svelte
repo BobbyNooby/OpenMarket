@@ -46,7 +46,7 @@
 				</p>
 			</div>
 		{:else}
-			<AddListingForm {items} {currencies} authorId={session.user.id} />
+			<AddListingForm {items} {currencies} />
 		{/if}
 	</div>
 </div>
