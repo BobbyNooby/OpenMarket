@@ -22,6 +22,9 @@ export const auth = betterAuth({
     discord: {
       clientId: process.env.DISCORD_CLIENT_ID!,
       clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+      mapProfileToUser: (profile) => ({
+        name: profile.username, // Discord handle (e.g. "rudytf"), not display name
+      }),
     },
   },
   trustedOrigins: ["http://localhost:5173", "http://localhost:4173"],

@@ -36,6 +36,15 @@
 				</p>
 				<Button onclick={signInWithDiscord}>Sign In with Discord</Button>
 			</div>
+		{:else if session.ban}
+			<div class="text-center py-12">
+				<p class="text-lg text-destructive font-semibold mb-2">
+					You cannot create listings while banned
+				</p>
+				<p class="text-sm text-muted-foreground">
+					{session.ban.reason ? `Reason: ${session.ban.reason}` : 'Contact support if you believe this is a mistake.'}
+				</p>
+			</div>
 		{:else}
 			<AddListingForm {items} {currencies} authorId={session.user.id} />
 		{/if}
