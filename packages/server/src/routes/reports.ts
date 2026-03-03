@@ -15,11 +15,6 @@ export const reportsRoutes = new Elysia({ prefix: '/reports' })
 				return { success: false, error: 'Unauthorized' };
 			}
 
-			if (session.ban) {
-				set.status = 403;
-				return { success: false, error: 'You are banned from performing this action', ban: session.ban };
-			}
-
 			if (!session.permissions.includes('report:create')) {
 				set.status = 403;
 				return { success: false, error: 'Forbidden' };

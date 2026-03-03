@@ -33,23 +33,48 @@ const app = new Elysia()
 
       if (!existing) {
         await Promise.all([
-          db.insert(userProfilesTable).values({
-            userId: session.user.id,
-            username: session.user.name,
-          }).onConflictDoNothing(),
-          db.insert(usersActivityTable).values({
-            user_id: session.user.id,
-            is_active: true,
-            last_activity_at: new Date(),
-          }).onConflictDoNothing(),
-          db.insert(userRolesTable).values({
-            userId: session.user.id,
-            roleId: "user",
-          }).onConflictDoNothing(),
+          db
+            .insert(userProfilesTable)
+            .values({
+              userId: session.user.id,
+              username: session.user.name,
+            })
+            .onConflictDoNothing(),
+          db
+            .insert(usersActivityTable)
+            .values({
+              user_id: session.user.id,
+              is_active: true,
+              last_activity_at: new Date(),
+            })
+            .onConflictDoNothing(),
+          db
+            .insert(userRolesTable)
+            .values({
+              userId: session.user.id,
+              roleId: "user",
+            })
+            .onConflictDoNothing(),
         ]);
       }
     }
     return session;
+  })
+  // Global ban guard — blocks all write, update, delete operations for banned users
+  .onBeforeHandle(({ session, set, request }) => {
+    if (
+      request.method !== "GET" &&
+      !new URL(request.url).pathname.startsWith("/api/auth") &&
+      session?.user &&
+      session?.ban
+    ) {
+      set.status = 403;
+      return {
+        success: false,
+        error: "You are banned from performing this action",
+        ban: session.ban,
+      };
+    }
   })
   .all("/api/auth/*", ({ request }) => auth.handler(request))
   .use(itemsRoutes)

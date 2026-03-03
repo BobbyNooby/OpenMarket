@@ -464,11 +464,6 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 	.post(
 		'/',
 		async ({ body, session, set }) => {
-			if (session.ban) {
-				set.status = 403;
-				return { success: false, error: 'You are banned from performing this action', ban: session.ban };
-			}
-
 			try {
 				// Validate that exactly one of requested_item_id or requested_currency_id is set
 				if (!body.requested_item_id && !body.requested_currency_id) {
@@ -549,11 +544,6 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 	.delete(
 		'/:id',
 		async ({ params, session, set }) => {
-			if (session.ban) {
-				set.status = 403;
-				return { success: false, error: 'You are banned from performing this action', ban: session.ban };
-			}
-
 			try {
 				const [listing] = await db
 					.delete(listingsTable)

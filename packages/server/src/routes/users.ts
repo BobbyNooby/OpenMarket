@@ -168,12 +168,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 	// Submit a review for a user profile
 	.post(
 		'/profile/:username/reviews',
-		async ({ params, body, session, set }) => {
-			if (session.ban) {
-				set.status = 403;
-				return { success: false, error: 'You are banned from performing this action', ban: session.ban };
-			}
-
+		async ({ params, body }) => {
 			try {
 				// Get the profile being reviewed
 				const profileRows = await db
