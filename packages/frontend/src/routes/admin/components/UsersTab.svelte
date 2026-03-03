@@ -9,6 +9,7 @@
 	import BanUserDialog from './BanUserDialog.svelte';
 	import WarnUserDialog from './WarnUserDialog.svelte';
 	import UserHistoryDialog from './UserHistoryDialog.svelte';
+	import DeleteUserDialog from './DeleteUserDialog.svelte';
 
 	interface Props {
 		dataVersion: number;
@@ -30,6 +31,7 @@
 	let banDialogOpen = $state(false);
 	let warnDialogOpen = $state(false);
 	let historyDialogOpen = $state(false);
+	let deleteDialogOpen = $state(false);
 	let selectedUser = $state<AdminUser | null>(null);
 
 	let searchTimeout: ReturnType<typeof setTimeout>;
@@ -106,6 +108,11 @@
 		historyDialogOpen = true;
 	}
 
+	function openDeleteDialog(user: AdminUser) {
+		selectedUser = user;
+		deleteDialogOpen = true;
+	}
+
 	async function handleUnban(user: AdminUser) {
 		if (!confirm(`Unban @${user.username}?`)) return;
 
@@ -168,6 +175,7 @@
 		onUnbanUser={handleUnban}
 		onWarnUser={openWarnDialog}
 		onViewHistory={openHistoryDialog}
+		onDeleteUser={openDeleteDialog}
 	/>
 
 	<!-- Pagination -->
@@ -206,5 +214,10 @@
 	<UserHistoryDialog
 		bind:open={historyDialogOpen}
 		user={selectedUser}
+	/>
+	<DeleteUserDialog
+		bind:open={deleteDialogOpen}
+		user={selectedUser}
+		onDeleted={handleDataChanged}
 	/>
 {/if}

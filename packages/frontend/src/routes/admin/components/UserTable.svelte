@@ -11,6 +11,7 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import UserCog from '@lucide/svelte/icons/user-cog';
 	import History from '@lucide/svelte/icons/history';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
 
 	interface Props {
 		users: AdminUser[];
@@ -20,9 +21,10 @@
 		onUnbanUser: (user: AdminUser) => void;
 		onWarnUser: (user: AdminUser) => void;
 		onViewHistory: (user: AdminUser) => void;
+		onDeleteUser: (user: AdminUser) => void;
 	}
 
-	let { users, isLoading, onManageRoles, onBanUser, onUnbanUser, onWarnUser, onViewHistory }: Props = $props();
+	let { users, isLoading, onManageRoles, onBanUser, onUnbanUser, onWarnUser, onViewHistory, onDeleteUser }: Props = $props();
 
 	function formatDate(dateString: string): string {
 		return new Date(dateString).toLocaleDateString('en-US', {
@@ -134,6 +136,11 @@
 											Ban User
 										</DropdownMenu.Item>
 									{/if}
+									<DropdownMenu.Separator />
+									<DropdownMenu.Item variant="destructive" onclick={() => onDeleteUser(user)}>
+										<Trash2 class="h-4 w-4" />
+										Delete User
+									</DropdownMenu.Item>
 								</DropdownMenu.Content>
 							</DropdownMenu.Root>
 						</Table.Cell>

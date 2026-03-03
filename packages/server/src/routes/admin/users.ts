@@ -406,4 +406,45 @@ export const adminUserRoutes = new Elysia()
 		{
 			params: t.Object({ id: t.String() })
 		}
+	)
+
+	// Delete a user permanently
+	.delete(
+		'/users/:id',
+		async ({ params, session, set }) => {
+			if (!session.permissions.includes('user:delete')) {
+				set.status = 403;
+				return { success: false, error: 'Forbidden' };
+			}
+
+			if (params.id === session.user!.id) {
+				set.status = 400;
+				return { success: false, error: 'You cannot delete your own account' };
+			}
+
+			try {
+				const [targetUser] = await db
+					.select({ id: user.id, name: user.name })
+					.from(user)
+					.where(eq(user.id, params.id));
+
+				if (!targetUser) {
+					set.status = 404;
+					return { success: false, error: 'User not found' };
+				}
+
+				await db.delete(user).where(eq(user.id, params.id));
+
+				return {
+					success: true,
+					message: `User "${targetUser.name}" has been permanently deleted`
+				};
+			} catch (err: any) {
+				console.error('Delete user error:', err);
+				return { success: false, error: err.message, status: 500 };
+			}
+		},
+		{
+			params: t.Object({ id: t.String() })
+		}
 	);

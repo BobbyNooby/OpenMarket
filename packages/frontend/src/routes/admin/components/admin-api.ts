@@ -92,6 +92,10 @@ export async function getUserHistory(userId: string): Promise<{ success: boolean
 	return apiFetch(`/admin/users/${userId}/history`);
 }
 
+export async function deleteUser(userId: string) {
+	return apiJson(`/admin/users/${userId}`, 'DELETE');
+}
+
 // Report types
 export interface AdminReport {
 	id: string;

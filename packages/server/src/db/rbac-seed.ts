@@ -36,6 +36,7 @@ const permissions = [
   { id: "user:ban", name: "user:ban", description: "Ban users" },
   { id: "user:unban", name: "user:unban", description: "Unban users" },
   { id: "user:warn", name: "user:warn", description: "Warn users" },
+  { id: "user:delete", name: "user:delete", description: "Delete users permanently" },
 
   // Reports
   { id: "report:create", name: "report:create", description: "Submit reports" },
