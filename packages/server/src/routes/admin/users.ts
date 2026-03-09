@@ -3,7 +3,7 @@ import { db } from '../../db/db';
 import { user } from '../../db/auth-schema';
 import { userProfilesTable } from '../../db/schemas';
 import { rolesTable, userRolesTable, userBansTable, userWarningsTable } from '../../db/rbac-schema';
-import { eq, ilike, or, and, desc, inArray, count, exists, sql } from 'drizzle-orm';
+import { eq, ilike, or, and, desc, inArray, count, exists } from 'drizzle-orm';
 import { assignRole, removeRole, authMiddleware } from '../../middleware/rbac';
 
 export const adminUserRoutes = new Elysia()
@@ -349,10 +349,6 @@ export const adminUserRoutes = new Elysia()
 			}
 
 			try {
-				const bannedByUser = db.$with('banned_by_user').as(
-					db.select({ id: user.id, name: user.name }).from(user)
-				);
-
 				const bans = await db
 					.select({
 						id: userBansTable.id,
@@ -367,14 +363,18 @@ export const adminUserRoutes = new Elysia()
 					.where(eq(userBansTable.userId, params.id))
 					.orderBy(desc(userBansTable.bannedAt));
 
-				const warningRows = await db.execute(sql`
-					SELECT w.id, w.reason, w.created_at, w.warned_by,
-						u.name as warned_by_name
-					FROM user_warnings w
-					INNER JOIN "user" u ON w.warned_by = u.id
-					WHERE w.user_id = ${params.id}
-					ORDER BY w.created_at DESC
-				`) as unknown as { id: string; reason: string; created_at: string; warned_by: string; warned_by_name: string }[];
+				const warnings = await db
+					.select({
+						id: userWarningsTable.id,
+						reason: userWarningsTable.reason,
+						createdAt: userWarningsTable.createdAt,
+						warnedById: userWarningsTable.warnedBy,
+						warnedByName: user.name,
+					})
+					.from(userWarningsTable)
+					.innerJoin(user, eq(userWarningsTable.warnedBy, user.id))
+					.where(eq(userWarningsTable.userId, params.id))
+					.orderBy(desc(userWarningsTable.createdAt));
 
 				const now = new Date();
 				return {
@@ -389,12 +389,12 @@ export const adminUserRoutes = new Elysia()
 							issuedBy: { id: b.bannedById, name: b.bannedByName },
 							isActive: !b.expiresAt || b.expiresAt > now,
 						})),
-						warnings: warningRows.map((w) => ({
+						warnings: warnings.map((w) => ({
 							id: w.id,
 							type: 'warning' as const,
 							reason: w.reason,
-							createdAt: new Date(w.created_at).toISOString(),
-							issuedBy: { id: w.warned_by, name: w.warned_by_name },
+							createdAt: w.createdAt.toISOString(),
+							issuedBy: { id: w.warnedById, name: w.warnedByName },
 						})),
 					},
 				};

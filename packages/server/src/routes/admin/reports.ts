@@ -3,8 +3,17 @@ import { db } from '../../db/db';
 import { reportsTable, userProfilesTable, listingsTable, profileReviewsTable } from '../../db/schemas';
 import { userBansTable, userWarningsTable } from '../../db/rbac-schema';
 import { user } from '../../db/auth-schema';
-import { eq, desc, count, and, sql, inArray } from 'drizzle-orm';
+import { eq, desc, count, and, inArray, isNotNull } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { authMiddleware } from '../../middleware/rbac';
+
+// Aliases for joining the user table multiple times
+const resolverUser = alias(user, 'resolver_user');
+const resolverProfile = alias(userProfilesTable, 'resolver_profile');
+const targetUser = alias(user, 'target_user');
+const targetProfile = alias(userProfilesTable, 'target_profile');
+const actorUser = alias(user, 'actor_user');
+const actorProfile = alias(userProfilesTable, 'actor_profile');
 
 export const adminReportRoutes = new Elysia()
 	.use(authMiddleware)
@@ -92,10 +101,10 @@ export const adminReportRoutes = new Elysia()
 				// Direct user targets
 				if (userTargetIds.length > 0) {
 					const rows = await db
-						.select({ id: user.id, name: user.name, image: user.image, username: userProfilesTable.username })
-						.from(user)
-						.leftJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
-						.where(inArray(user.id, userTargetIds));
+						.select({ id: targetUser.id, name: targetUser.name, image: targetUser.image, username: targetProfile.username })
+						.from(targetUser)
+						.leftJoin(targetProfile, eq(targetUser.id, targetProfile.userId))
+						.where(inArray(targetUser.id, userTargetIds));
 					for (const row of rows) {
 						targetInfo[`user:${row.id}`] = { id: row.id, name: row.name, username: row.username ?? row.name, image: row.image ?? undefined };
 					}
@@ -103,29 +112,39 @@ export const adminReportRoutes = new Elysia()
 
 				// Listing targets → look up author
 				if (listingTargetIds.length > 0) {
-					const rows = await db.execute(sql`
-						SELECT l.id as listing_id, u.id as user_id, u.name, u.image, up.username
-						FROM listings l
-						INNER JOIN "user" u ON l.author_id = u.id
-						LEFT JOIN user_profiles up ON u.id = up.user_id
-						WHERE l.id = ANY(ARRAY[${sql.join(listingTargetIds.map(id => sql`${id}`), sql`, `)}]::uuid[])
-					`) as unknown as { listing_id: string; user_id: string; name: string; image: string | null; username: string | null }[];
+					const rows = await db
+						.select({
+							listingId: listingsTable.id,
+							userId: targetUser.id,
+							name: targetUser.name,
+							image: targetUser.image,
+							username: targetProfile.username,
+						})
+						.from(listingsTable)
+						.innerJoin(targetUser, eq(listingsTable.author_id, targetUser.id))
+						.leftJoin(targetProfile, eq(targetUser.id, targetProfile.userId))
+						.where(inArray(listingsTable.id, listingTargetIds));
 					for (const row of rows) {
-						targetInfo[`listing:${row.listing_id}`] = { id: row.user_id, name: row.name, username: row.username ?? row.name, image: row.image ?? undefined };
+						targetInfo[`listing:${row.listingId}`] = { id: row.userId, name: row.name, username: row.username ?? row.name, image: row.image ?? undefined };
 					}
 				}
 
 				// Review targets → look up voter (reviewer)
 				if (reviewTargetIds.length > 0) {
-					const rows = await db.execute(sql`
-						SELECT pr.id as review_id, u.id as user_id, u.name, u.image, up.username
-						FROM profile_reviews pr
-						INNER JOIN "user" u ON pr.voter_user_id = u.id
-						LEFT JOIN user_profiles up ON u.id = up.user_id
-						WHERE pr.id = ANY(ARRAY[${sql.join(reviewTargetIds.map(id => sql`${id}`), sql`, `)}]::uuid[])
-					`) as unknown as { review_id: string; user_id: string; name: string; image: string | null; username: string | null }[];
+					const rows = await db
+						.select({
+							reviewId: profileReviewsTable.id,
+							userId: targetUser.id,
+							name: targetUser.name,
+							image: targetUser.image,
+							username: targetProfile.username,
+						})
+						.from(profileReviewsTable)
+						.innerJoin(targetUser, eq(profileReviewsTable.voter_user_id, targetUser.id))
+						.leftJoin(targetProfile, eq(targetUser.id, targetProfile.userId))
+						.where(inArray(profileReviewsTable.id, reviewTargetIds));
 					for (const row of rows) {
-						targetInfo[`review:${row.review_id}`] = { id: row.user_id, name: row.name, username: row.username ?? row.name, image: row.image ?? undefined };
+						targetInfo[`review:${row.reviewId}`] = { id: row.userId, name: row.name, username: row.username ?? row.name, image: row.image ?? undefined };
 					}
 				}
 
@@ -136,21 +155,26 @@ export const adminReportRoutes = new Elysia()
 
 				const resolverInfo: Record<string, { id: string; name: string; username: string | null }> = {};
 				if (resolvedReportIds.length > 0) {
-					const resolverRows = await db.execute(sql`
-						SELECT r.id as report_id, u.id as resolver_id, u.name as resolver_name,
-							up.username as resolver_username
-						FROM reports r
-						INNER JOIN "user" u ON r.resolved_by = u.id
-						LEFT JOIN user_profiles up ON u.id = up.user_id
-						WHERE r.resolved_by IS NOT NULL
-						AND r.id = ANY(ARRAY[${sql.join(resolvedReportIds.map(id => sql`${id}`), sql`, `)}]::uuid[])
-					`) as unknown as { report_id: string; resolver_id: string; resolver_name: string; resolver_username: string | null }[];
+					const resolverRows = await db
+						.select({
+							reportId: reportsTable.id,
+							resolverId: resolverUser.id,
+							resolverName: resolverUser.name,
+							resolverUsername: resolverProfile.username,
+						})
+						.from(reportsTable)
+						.innerJoin(resolverUser, eq(reportsTable.resolved_by, resolverUser.id))
+						.leftJoin(resolverProfile, eq(resolverUser.id, resolverProfile.userId))
+						.where(and(
+							isNotNull(reportsTable.resolved_by),
+							inArray(reportsTable.id, resolvedReportIds)
+						));
 
 					for (const row of resolverRows) {
-						resolverInfo[row.report_id] = {
-							id: row.resolver_id,
-							name: row.resolver_name,
-							username: row.resolver_username,
+						resolverInfo[row.reportId] = {
+							id: row.resolverId,
+							name: row.resolverName,
+							username: row.resolverUsername,
 						};
 					}
 				}
@@ -256,147 +280,207 @@ export const adminReportRoutes = new Elysia()
 				const offset = Math.max(parseInt(query.offset || '0', 10), 0);
 				const typeFilter = query.type?.trim() || '';
 
-				const rows = await db.execute(sql`
-					SELECT * FROM (
-						SELECT
-							r.id,
-							'report' as event_type,
-							r.reason,
-							r.created_at,
-							r.status::text as status,
-							r.reporter_id as actor_id,
-							u_actor.name as actor_name,
-							up_actor.username as actor_username,
-							u_actor.image as actor_image,
-							r.target_type,
-							r.target_id,
-							COALESCE(u_target_direct.name, u_target_listing.name, u_target_review.name) as target_name,
-							COALESCE(up_target_direct.username, up_target_listing.username, up_target_review.username) as target_username,
-							r.resolved_by,
-							r.resolved_at,
-							NULL as expires_at
-						FROM reports r
-						INNER JOIN "user" u_actor ON r.reporter_id = u_actor.id
-						LEFT JOIN user_profiles up_actor ON u_actor.id = up_actor.user_id
-						-- target user (direct user reports)
-						LEFT JOIN "user" u_target_direct ON r.target_type = 'user' AND r.target_id = u_target_direct.id
-						LEFT JOIN user_profiles up_target_direct ON u_target_direct.id = up_target_direct.user_id
-						-- target user (listing reports → author)
-						LEFT JOIN listings l_target ON r.target_type = 'listing' AND r.target_id = l_target.id::text
-						LEFT JOIN "user" u_target_listing ON l_target.author_id = u_target_listing.id
-						LEFT JOIN user_profiles up_target_listing ON u_target_listing.id = up_target_listing.user_id
-						-- target user (review reports → voter)
-						LEFT JOIN profile_reviews pr_target ON r.target_type = 'review' AND r.target_id = pr_target.id::text
-						LEFT JOIN "user" u_target_review ON pr_target.voter_user_id = u_target_review.id
-						LEFT JOIN user_profiles up_target_review ON u_target_review.id = up_target_review.user_id
-						${typeFilter && typeFilter !== 'report' ? sql`WHERE 1=0` : sql``}
-
-						UNION ALL
-
-						SELECT
-							b.id,
-							'ban' as event_type,
-							b.reason,
-							b.banned_at as created_at,
-							CASE WHEN b.expires_at IS NOT NULL AND b.expires_at <= NOW() THEN 'expired' ELSE 'active' END as status,
-							b.banned_by as actor_id,
-							u_actor.name as actor_name,
-							up_actor.username as actor_username,
-							u_actor.image as actor_image,
-							'user' as target_type,
-							b.user_id as target_id,
-							u_target.name as target_name,
-							up_target.username as target_username,
-							NULL as resolved_by,
-							NULL as resolved_at,
-							b.expires_at
-						FROM user_bans b
-						INNER JOIN "user" u_actor ON b.banned_by = u_actor.id
-						LEFT JOIN user_profiles up_actor ON u_actor.id = up_actor.user_id
-						INNER JOIN "user" u_target ON b.user_id = u_target.id
-						LEFT JOIN user_profiles up_target ON u_target.id = up_target.user_id
-						${typeFilter && typeFilter !== 'ban' ? sql`WHERE 1=0` : sql``}
-
-						UNION ALL
-
-						SELECT
-							w.id,
-							'warning' as event_type,
-							w.reason,
-							w.created_at,
-							NULL as status,
-							w.warned_by as actor_id,
-							u_actor.name as actor_name,
-							up_actor.username as actor_username,
-							u_actor.image as actor_image,
-							'user' as target_type,
-							w.user_id as target_id,
-							u_target.name as target_name,
-							up_target.username as target_username,
-							NULL as resolved_by,
-							NULL as resolved_at,
-							NULL as expires_at
-						FROM user_warnings w
-						INNER JOIN "user" u_actor ON w.warned_by = u_actor.id
-						LEFT JOIN user_profiles up_actor ON u_actor.id = up_actor.user_id
-						INNER JOIN "user" u_target ON w.user_id = u_target.id
-						LEFT JOIN user_profiles up_target ON u_target.id = up_target.user_id
-						${typeFilter && typeFilter !== 'warning' ? sql`WHERE 1=0` : sql``}
-					) combined
-					ORDER BY created_at DESC
-					LIMIT ${limit} OFFSET ${offset}
-				`) as unknown as {
+				type ModerationEvent = {
 					id: string;
 					event_type: 'report' | 'ban' | 'warning';
 					reason: string | null;
-					created_at: string;
+					created_at: Date;
 					status: string | null;
-					actor_id: string;
-					actor_name: string;
-					actor_username: string | null;
-					actor_image: string | null;
+					actor: { id: string; name: string; username: string; image?: string };
 					target_type: string;
 					target_id: string;
-					target_name: string | null;
-					target_username: string | null;
-					resolved_by: string | null;
-					resolved_at: string | null;
-					expires_at: string | null;
-				}[];
+					target_name: string;
+					expires_at: Date | null;
+				};
 
-				// Get total count
-				const countResult = await db.execute(sql`
-					SELECT (
-						${typeFilter === '' || typeFilter === 'report' ? sql`(SELECT COUNT(*) FROM reports)` : sql`0`}
-						+ ${typeFilter === '' || typeFilter === 'ban' ? sql`(SELECT COUNT(*) FROM user_bans)` : sql`0`}
-						+ ${typeFilter === '' || typeFilter === 'warning' ? sql`(SELECT COUNT(*) FROM user_warnings)` : sql`0`}
-					) as total
-				`) as unknown as { total: string }[];
+				const events: ModerationEvent[] = [];
 
-				const total = parseInt(countResult[0]?.total || '0', 10);
+				// Fetch reports
+				if (!typeFilter || typeFilter === 'report') {
+					const reportRows = await db
+						.select({
+							id: reportsTable.id,
+							reason: reportsTable.reason,
+							created_at: reportsTable.created_at,
+							status: reportsTable.status,
+							actor_id: reportsTable.reporter_id,
+							actor_name: actorUser.name,
+							actor_username: actorProfile.username,
+							actor_image: actorUser.image,
+							target_type: reportsTable.target_type,
+							target_id: reportsTable.target_id,
+						})
+						.from(reportsTable)
+						.innerJoin(actorUser, eq(reportsTable.reporter_id, actorUser.id))
+						.leftJoin(actorProfile, eq(actorUser.id, actorProfile.userId))
+						.orderBy(desc(reportsTable.created_at));
 
-				const data = rows.map((r) => ({
+					// Resolve target names for reports
+					const reportTargetIds = [...new Set(reportRows.map(r => `${r.target_type}:${r.target_id}`))];
+					const reportTargetNames: Record<string, string> = {};
+
+					const userIds = reportRows.filter(r => r.target_type === 'user').map(r => r.target_id);
+					const listingIds = reportRows.filter(r => r.target_type === 'listing').map(r => r.target_id);
+					const reviewIds = reportRows.filter(r => r.target_type === 'review').map(r => r.target_id);
+
+					if (userIds.length > 0) {
+						const rows = await db
+							.select({ id: targetUser.id, username: targetProfile.username, name: targetUser.name })
+							.from(targetUser)
+							.leftJoin(targetProfile, eq(targetUser.id, targetProfile.userId))
+							.where(inArray(targetUser.id, userIds));
+						for (const r of rows) reportTargetNames[`user:${r.id}`] = r.username ?? r.name;
+					}
+					if (listingIds.length > 0) {
+						const rows = await db
+							.select({ listingId: listingsTable.id, username: targetProfile.username, name: targetUser.name })
+							.from(listingsTable)
+							.innerJoin(targetUser, eq(listingsTable.author_id, targetUser.id))
+							.leftJoin(targetProfile, eq(targetUser.id, targetProfile.userId))
+							.where(inArray(listingsTable.id, listingIds));
+						for (const r of rows) reportTargetNames[`listing:${r.listingId}`] = r.username ?? r.name;
+					}
+					if (reviewIds.length > 0) {
+						const rows = await db
+							.select({ reviewId: profileReviewsTable.id, username: targetProfile.username, name: targetUser.name })
+							.from(profileReviewsTable)
+							.innerJoin(targetUser, eq(profileReviewsTable.voter_user_id, targetUser.id))
+							.leftJoin(targetProfile, eq(targetUser.id, targetProfile.userId))
+							.where(inArray(profileReviewsTable.id, reviewIds));
+						for (const r of rows) reportTargetNames[`review:${r.reviewId}`] = r.username ?? r.name;
+					}
+
+					for (const r of reportRows) {
+						events.push({
+							id: r.id,
+							event_type: 'report',
+							reason: r.reason,
+							created_at: r.created_at,
+							status: r.status,
+							actor: {
+								id: r.actor_id,
+								name: r.actor_name,
+								username: r.actor_username ?? r.actor_name,
+								image: r.actor_image ?? undefined,
+							},
+							target_type: r.target_type,
+							target_id: r.target_id,
+							target_name: reportTargetNames[`${r.target_type}:${r.target_id}`] ?? r.target_id,
+							expires_at: null,
+						});
+					}
+				}
+
+				// Fetch bans
+				if (!typeFilter || typeFilter === 'ban') {
+					const banRows = await db
+						.select({
+							id: userBansTable.id,
+							reason: userBansTable.reason,
+							created_at: userBansTable.bannedAt,
+							expires_at: userBansTable.expiresAt,
+							actor_id: userBansTable.bannedBy,
+							actor_name: actorUser.name,
+							actor_username: actorProfile.username,
+							actor_image: actorUser.image,
+							target_id: userBansTable.userId,
+							target_name: targetUser.name,
+							target_username: targetProfile.username,
+						})
+						.from(userBansTable)
+						.innerJoin(actorUser, eq(userBansTable.bannedBy, actorUser.id))
+						.leftJoin(actorProfile, eq(actorUser.id, actorProfile.userId))
+						.innerJoin(targetUser, eq(userBansTable.userId, targetUser.id))
+						.leftJoin(targetProfile, eq(targetUser.id, targetProfile.userId))
+						.orderBy(desc(userBansTable.bannedAt));
+
+					const now = new Date();
+					for (const b of banRows) {
+						events.push({
+							id: b.id,
+							event_type: 'ban',
+							reason: b.reason,
+							created_at: b.created_at,
+							status: b.expires_at && b.expires_at <= now ? 'expired' : 'active',
+							actor: {
+								id: b.actor_id,
+								name: b.actor_name,
+								username: b.actor_username ?? b.actor_name,
+								image: b.actor_image ?? undefined,
+							},
+							target_type: 'user',
+							target_id: b.target_id,
+							target_name: b.target_username ?? b.target_name,
+							expires_at: b.expires_at,
+						});
+					}
+				}
+
+				// Fetch warnings
+				if (!typeFilter || typeFilter === 'warning') {
+					const warningRows = await db
+						.select({
+							id: userWarningsTable.id,
+							reason: userWarningsTable.reason,
+							created_at: userWarningsTable.createdAt,
+							actor_id: userWarningsTable.warnedBy,
+							actor_name: actorUser.name,
+							actor_username: actorProfile.username,
+							actor_image: actorUser.image,
+							target_id: userWarningsTable.userId,
+							target_name: targetUser.name,
+							target_username: targetProfile.username,
+						})
+						.from(userWarningsTable)
+						.innerJoin(actorUser, eq(userWarningsTable.warnedBy, actorUser.id))
+						.leftJoin(actorProfile, eq(actorUser.id, actorProfile.userId))
+						.innerJoin(targetUser, eq(userWarningsTable.userId, targetUser.id))
+						.leftJoin(targetProfile, eq(targetUser.id, targetProfile.userId))
+						.orderBy(desc(userWarningsTable.createdAt));
+
+					for (const w of warningRows) {
+						events.push({
+							id: w.id,
+							event_type: 'warning',
+							reason: w.reason,
+							created_at: w.created_at,
+							status: null,
+							actor: {
+								id: w.actor_id,
+								name: w.actor_name,
+								username: w.actor_username ?? w.actor_name,
+								image: w.actor_image ?? undefined,
+							},
+							target_type: 'user',
+							target_id: w.target_id,
+							target_name: w.target_username ?? w.target_name,
+							expires_at: null,
+						});
+					}
+				}
+
+				// Sort by created_at desc, then paginate
+				events.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+				const total = events.length;
+				const paged = events.slice(offset, offset + limit);
+
+				const data = paged.map((r) => ({
 					id: r.id,
 					event_type: r.event_type,
 					reason: r.reason,
-					created_at: typeof r.created_at === 'string' ? r.created_at : new Date(r.created_at).toISOString(),
+					created_at: r.created_at.toISOString(),
 					status: r.status,
-					actor: {
-						id: r.actor_id,
-						name: r.actor_name,
-						username: r.actor_username ?? r.actor_name,
-						image: r.actor_image ?? undefined,
-					},
+					actor: r.actor,
 					target_type: r.target_type,
 					target_id: r.target_id,
-					target_name: r.target_username ?? r.target_name ?? r.target_id,
-					expires_at: r.expires_at ? (typeof r.expires_at === 'string' ? r.expires_at : new Date(r.expires_at).toISOString()) : null,
+					target_name: r.target_name,
+					expires_at: r.expires_at?.toISOString() ?? null,
 				}));
 
 				return {
 					success: true,
 					data,
-					pagination: { total, limit, offset, hasMore: offset + rows.length < total },
+					pagination: { total, limit, offset, hasMore: offset + paged.length < total },
 				};
 			} catch (err: any) {
 				console.error('Get moderation log error:', err);
