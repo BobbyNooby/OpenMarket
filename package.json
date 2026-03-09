@@ -11,7 +11,8 @@
     "dev:frontend": "pnpm --filter @openmarket/frontend dev",
     "build": "pnpm run -r build",
     "check": "pnpm run -r check",
-    "setup": "pnpm install && pnpm docker:dev"
+    "setup": "pnpm install && pnpm docker:dev",
+    "db:studio": "pnpm --filter @openmarket/server db:studio"
   },
   "devDependencies": {
     "turbo": "^2",
