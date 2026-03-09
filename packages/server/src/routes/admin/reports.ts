@@ -6,6 +6,7 @@ import { user } from '../../db/auth-schema';
 import { eq, desc, count, and, inArray, isNotNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { authMiddleware } from '../../middleware/rbac';
+import { logAuditEvent } from '../../services/audit';
 
 // Aliases for joining the user table multiple times
 const resolverUser = alias(user, 'resolver_user');
@@ -251,6 +252,12 @@ export const adminReportRoutes = new Elysia()
 					})
 					.where(eq(reportsTable.id, params.id))
 					.returning();
+
+				await logAuditEvent(session.user!.id, 'report.resolve', 'report', params.id, {
+					status: body.status,
+					targetType: existing.target_type,
+					targetId: existing.target_id,
+				});
 
 				return { success: true, data: updated };
 			} catch (err: any) {

@@ -5,6 +5,7 @@ import { userProfilesTable } from '../../db/schemas';
 import { rolesTable, userRolesTable, userBansTable, userWarningsTable } from '../../db/rbac-schema';
 import { eq, ilike, or, and, desc, inArray, count, exists } from 'drizzle-orm';
 import { assignRole, removeRole, authMiddleware } from '../../middleware/rbac';
+import { logAuditEvent } from '../../services/audit';
 
 export const adminUserRoutes = new Elysia()
 	.use(authMiddleware)
@@ -164,6 +165,7 @@ export const adminUserRoutes = new Elysia()
 				}
 
 				await assignRole(params.id, body.role);
+				await logAuditEvent(session.user!.id, 'role.assign', 'user', params.id, { role: body.role });
 				return {
 					success: true,
 					message: `Role "${body.role}" assigned to user ${params.id}`
@@ -190,6 +192,7 @@ export const adminUserRoutes = new Elysia()
 
 			try {
 				await removeRole(params.id, params.role);
+				await logAuditEvent(session.user!.id, 'role.remove', 'user', params.id, { role: params.role });
 				return {
 					success: true,
 					message: `Role "${params.role}" removed from user ${params.id}`
@@ -250,6 +253,11 @@ export const adminUserRoutes = new Elysia()
 					})
 					.returning();
 
+				await logAuditEvent(session.user!.id, 'user.ban', 'user', params.id, {
+					reason: body.reason,
+					expiresAt: body.expiresAt ?? null,
+				});
+
 				return { success: true, data: ban };
 			} catch (err: any) {
 				console.error('Ban user error:', err);
@@ -284,6 +292,10 @@ export const adminUserRoutes = new Elysia()
 					set.status = 404;
 					return { success: false, error: 'No bans found for this user' };
 				}
+
+				await logAuditEvent(session.user!.id, 'user.unban', 'user', params.id, {
+					bansRemoved: deleted.length,
+				});
 
 				return { success: true, message: `Removed ${deleted.length} ban(s) for user ${params.id}` };
 			} catch (err: any) {
@@ -324,6 +336,10 @@ export const adminUserRoutes = new Elysia()
 						reason: body.reason,
 					})
 					.returning();
+
+				await logAuditEvent(session.user!.id, 'user.warn', 'user', params.id, {
+					reason: body.reason,
+				});
 
 				return { success: true, data: warning };
 			} catch (err: any) {
@@ -432,6 +448,11 @@ export const adminUserRoutes = new Elysia()
 					set.status = 404;
 					return { success: false, error: 'User not found' };
 				}
+
+				// Log before delete since cascade will remove the actor reference target
+				await logAuditEvent(session.user!.id, 'user.delete', 'user', params.id, {
+					deletedUserName: targetUser.name,
+				});
 
 				await db.delete(user).where(eq(user.id, params.id));
 
