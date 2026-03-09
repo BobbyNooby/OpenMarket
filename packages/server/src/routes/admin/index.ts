@@ -3,9 +3,11 @@ import { requireAuth } from '../../middleware/rbac';
 import { adminUserRoutes } from './users';
 import { adminRoleRoutes } from './roles';
 import { adminReportRoutes } from './reports';
+import { adminAuditRoutes } from './audit';
 
 export const adminRoutes = new Elysia({ prefix: '/admin' })
 	.use(requireAuth())
 	.use(adminUserRoutes)
 	.use(adminRoleRoutes)
-	.use(adminReportRoutes);
+	.use(adminReportRoutes)
+	.use(adminAuditRoutes);

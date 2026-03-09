@@ -4,6 +4,7 @@
 	import UsersTab from './components/UsersTab.svelte';
 	import RolesTab from './components/RolesTab.svelte';
 	import ReportsTab from './components/ReportsTab.svelte';
+	import AuditLogTab from './components/AuditLogTab.svelte';
 
 	let { data } = $props();
 
@@ -23,6 +24,7 @@
 				<Tabs.Trigger value="users">Users</Tabs.Trigger>
 				<Tabs.Trigger value="roles">Roles</Tabs.Trigger>
 				<Tabs.Trigger value="reports">Reports</Tabs.Trigger>
+				<Tabs.Trigger value="audit">Audit Log</Tabs.Trigger>
 			</Tabs.List>
 
 			<Tabs.Content value="items" class="mt-6">
@@ -39,6 +41,10 @@
 
 			<Tabs.Content value="reports" class="mt-6">
 				<ReportsTab {dataVersion} {onDataChanged} />
+			</Tabs.Content>
+
+			<Tabs.Content value="audit" class="mt-6">
+				<AuditLogTab {dataVersion} />
 			</Tabs.Content>
 		</Tabs.Root>
 	</div>

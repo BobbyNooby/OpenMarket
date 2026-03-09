@@ -164,3 +164,41 @@ export async function getModerationLog(params: { limit?: number; offset?: number
 	if (params.type) searchParams.set('type', params.type);
 	return apiFetch(`/admin/moderation-log?${searchParams}`);
 }
+
+// Audit log types
+export interface AuditLogEntry {
+	id: string;
+	action: string;
+	target_type: string;
+	target_id: string;
+	target: {
+		id: string;
+		name: string;
+		username: string;
+		image?: string;
+	} | null;
+	metadata: Record<string, unknown> | null;
+	created_at: string;
+	actor: {
+		id: string;
+		name: string;
+		username: string;
+		image?: string;
+	};
+}
+
+export async function getAuditLogs(params: {
+	limit?: number;
+	offset?: number;
+	action?: string;
+	actor?: string;
+	target_type?: string;
+}) {
+	const searchParams = new URLSearchParams();
+	if (params.limit) searchParams.set('limit', params.limit.toString());
+	if (params.offset !== undefined) searchParams.set('offset', params.offset.toString());
+	if (params.action) searchParams.set('action', params.action);
+	if (params.actor) searchParams.set('actor', params.actor);
+	if (params.target_type) searchParams.set('target_type', params.target_type);
+	return apiFetch(`/admin/audit-logs?${searchParams}`);
+}
