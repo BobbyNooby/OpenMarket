@@ -5,6 +5,8 @@
 	import ThumbsUpIcon from '@lucide/svelte/icons/thumbs-up';
 	import ThumbsDownIcon from '@lucide/svelte/icons/thumbs-down';
 	import Flag from '@lucide/svelte/icons/flag';
+	import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
+	import Coins from '@lucide/svelte/icons/coins';
 	import { invalidateAll } from '$app/navigation';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 	import { toast } from 'svelte-sonner';
@@ -183,11 +185,11 @@
 					<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 						<div>
 							<h3 class="mb-4 rounded-t-lg bg-green-500 p-3 text-center text-xl font-semibold text-white">
-								🛒 Buy Orders ({buyOrders.length})
+								<ShoppingCart class="inline h-5 w-5" /> Buy Orders ({buyOrders.length})
 							</h3>
 							<div class="space-y-4">
 								{#each buyOrders as order}
-									<ListingCard {order} onContact={() => handleContact(order)} />
+									<ListingCard {order} onContact={() => handleContact(order)} sessionUserId={data.session?.user?.id} />
 								{/each}
 								{#if buyOrders.length === 0}
 									<p class="py-4 text-center text-muted-foreground">No buy orders</p>
@@ -197,11 +199,11 @@
 
 						<div>
 							<h3 class="mb-4 rounded-t-lg bg-amber-500 p-3 text-center text-xl font-semibold text-white">
-								💰 Sell Orders ({sellOrders.length})
+								<Coins class="inline h-5 w-5" /> Sell Orders ({sellOrders.length})
 							</h3>
 							<div class="space-y-4">
 								{#each sellOrders as order}
-									<ListingCard {order} onContact={() => handleContact(order)} />
+									<ListingCard {order} onContact={() => handleContact(order)} sessionUserId={data.session?.user?.id} />
 								{/each}
 								{#if sellOrders.length === 0}
 									<p class="py-4 text-center text-muted-foreground">No sell orders</p>

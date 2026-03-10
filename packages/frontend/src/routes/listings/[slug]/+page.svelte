@@ -150,7 +150,7 @@
 		{:else}
 			<div class="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
 				{#each filteredListings as order (order.id)}
-					<ListingCard {order} onContact={() => handleContact(order)} />
+					<ListingCard {order} onContact={() => handleContact(order)} sessionUserId={data.session?.user?.id} />
 				{/each}
 			</div>
 		{/if}
