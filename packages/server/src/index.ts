@@ -12,7 +12,39 @@ import { db } from "./db/db";
 import { userProfilesTable, usersActivityTable } from "./db/schemas";
 import { userRolesTable } from "./db/rbac-schema";
 
+const methodColors: Record<string, string> = {
+  GET: "\x1b[32m",     // green
+  POST: "\x1b[34m",    // blue
+  PUT: "\x1b[33m",     // yellow
+  PATCH: "\x1b[33m",   // yellow
+  DELETE: "\x1b[31m",  // red
+  OPTIONS: "\x1b[90m", // gray
+};
+const reset = "\x1b[0m";
+const dim = "\x1b[90m";
+
 const app = new Elysia()
+  .derive(({ request }) => {
+    return { startTime: performance.now(), ip: request.headers.get("x-forwarded-for") || "local" };
+  })
+  .onAfterResponse(({ request, startTime, ip, set }) => {
+    const ms = (performance.now() - startTime).toFixed(1);
+    const url = new URL(request.url);
+    const method = request.method;
+    const color = methodColors[method] || reset;
+    const status = set.status || 200;
+    const statusColor = status >= 400 ? "\x1b[31m" : status >= 300 ? "\x1b[36m" : "\x1b[32m";
+    console.log(
+      `${color}${method.padEnd(7)}${reset} ${url.pathname}${dim}${url.search || ""}${reset} ${statusColor}${status}${reset} ${dim}${ms}ms${reset} ${dim}[${ip}]${reset}`
+    );
+  })
+  .onError(({ request, error, startTime, ip }) => {
+    const ms = (performance.now() - startTime).toFixed(1);
+    const url = new URL(request.url);
+    console.error(
+      `\x1b[31mERROR${reset}   ${url.pathname} \x1b[31m${error.message}${reset} ${dim}${ms}ms${reset} ${dim}[${ip}]${reset}`
+    );
+  })
   .use(
     cors({
       origin: ["http://localhost:5173", "http://localhost:4173"],
