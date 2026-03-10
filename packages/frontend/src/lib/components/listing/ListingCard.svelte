@@ -5,8 +5,15 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Separator } from '$lib/components/ui/separator';
 	import ReportDialog from '../report/ReportDialog.svelte';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import Flag from '@lucide/svelte/icons/flag';
 	import Pencil from '@lucide/svelte/icons/pencil';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import CirclePause from '@lucide/svelte/icons/circle-pause';
+	import CirclePlay from '@lucide/svelte/icons/circle-play';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import { PUBLIC_API_URL } from '$env/static/public';
+	import { toast } from 'svelte-sonner';
 	import type { TransformedListing } from '$lib/utils/listings';
 
 	interface Props {
@@ -18,8 +25,68 @@
 	let { order, onContact, sessionUserId = null }: Props = $props();
 
 	let reportDialogOpen = $state(false);
+	let soldDialogOpen = $state(false);
+	let deleteDialogOpen = $state(false);
+	let statusUpdating = $state(false);
+	let deleted = $state(false);
+	let currentStatus = $state(order.status);
 	const canReport = $derived(sessionUserId && sessionUserId !== order.author.id);
 	const canEdit = $derived(sessionUserId && sessionUserId === order.author.id);
+
+	const statusConfig: Record<string, { label: string; class: string }> = {
+		active: { label: 'Active', class: 'bg-green-500 text-white hover:bg-green-500' },
+		sold: { label: 'Sold', class: 'bg-red-500 text-white hover:bg-red-500' },
+		paused: { label: 'Paused', class: 'bg-yellow-500 text-white hover:bg-yellow-500' },
+		expired: { label: 'Expired', class: 'bg-gray-500 text-white hover:bg-gray-500' },
+	};
+
+	async function updateStatus(newStatus: 'active' | 'paused') {
+		statusUpdating = true;
+		try {
+			const res = await fetch(`${PUBLIC_API_URL}/listings/${order.id}/status`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({ status: newStatus }),
+			});
+			const result = await res.json();
+			if (result.success) {
+				currentStatus = newStatus;
+				toast.success(`Listing marked as ${newStatus}`);
+			} else {
+				toast.error(result.error || 'Failed to update status');
+			}
+		} catch {
+			toast.error('Failed to update status');
+		} finally {
+			statusUpdating = false;
+		}
+	}
+
+	async function deleteListing() {
+		statusUpdating = true;
+		try {
+			const res = await fetch(`${PUBLIC_API_URL}/listings/${order.id}`, {
+				method: 'DELETE',
+				credentials: 'include',
+			});
+			const result = await res.json();
+			if (result.success) {
+				deleted = true;
+				toast.success('Listing deleted');
+			} else {
+				toast.error(result.error || 'Failed to delete listing');
+			}
+		} catch {
+			toast.error('Failed to delete listing');
+		} finally {
+			statusUpdating = false;
+		}
+	}
+
+	async function markAsSold() {
+		await deleteListing();
+	}
 
 	const author = $derived(order.author);
 	const requestedItem = $derived(order.requested_item);
@@ -88,6 +155,7 @@
 	}
 </script>
 
+{#if !deleted}
 <Card.Root class="gap-3 py-4">
 	<Card.Header>
 		<Card.Title>
@@ -99,11 +167,16 @@
 			</a>
 		</Card.Title>
 		<Card.Action>
-			{#if order.order_type === 'buy'}
-				<Badge class="bg-green-500 text-white hover:bg-green-500">Buy</Badge>
-			{:else}
-				<Badge class="bg-amber-500 text-white hover:bg-amber-500">Sell</Badge>
-			{/if}
+			<div class="flex items-center gap-1.5">
+				{#if currentStatus !== 'active'}
+					<Badge class={statusConfig[currentStatus]?.class}>{statusConfig[currentStatus]?.label}</Badge>
+				{/if}
+				{#if order.order_type === 'buy'}
+					<Badge class="bg-green-500 text-white hover:bg-green-500">Buy</Badge>
+				{:else}
+					<Badge class="bg-amber-500 text-white hover:bg-amber-500">Sell</Badge>
+				{/if}
+			</div>
 		</Card.Action>
 	</Card.Header>
 
@@ -194,14 +267,59 @@
 				{timeAgo(order.created_at)}
 			</span>
 			{#if canEdit}
+				{#if currentStatus === 'active'}
+					<Button
+						size="sm"
+						variant="ghost"
+						class="h-8 w-8 p-0 text-muted-foreground hover:text-yellow-500"
+						onclick={() => updateStatus('paused')}
+						disabled={statusUpdating}
+						title="Pause listing"
+					>
+						<CirclePause class="h-4 w-4" />
+					</Button>
+					<Button
+						size="sm"
+						variant="ghost"
+						class="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
+						onclick={() => (soldDialogOpen = true)}
+						disabled={statusUpdating}
+						title="Mark as sold"
+					>
+						<CircleCheck class="h-4 w-4" />
+					</Button>
+				{:else if currentStatus === 'paused' || currentStatus === 'expired'}
+					<Button
+						size="sm"
+						variant="ghost"
+						class="h-8 w-8 p-0 text-muted-foreground hover:text-green-500"
+						onclick={() => updateStatus('active')}
+						disabled={statusUpdating}
+						title="Reactivate listing"
+					>
+						<CirclePlay class="h-4 w-4" />
+					</Button>
+				{/if}
+				{#if currentStatus !== 'sold'}
+					<Button
+						size="sm"
+						variant="ghost"
+						class="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+						href="/listings/{order.id}/edit"
+						title="Edit listing"
+					>
+						<Pencil class="h-4 w-4" />
+					</Button>
+				{/if}
 				<Button
 					size="sm"
 					variant="ghost"
-					class="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
-					href="/listings/{order.id}/edit"
-					title="Edit listing"
+					class="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+					onclick={() => (deleteDialogOpen = true)}
+					disabled={statusUpdating}
+					title="Delete listing"
 				>
-					<Pencil class="h-4 w-4" />
+					<Trash2 class="h-4 w-4" />
 				</Button>
 			{/if}
 			{#if canReport}
@@ -227,4 +345,47 @@
 		targetId={order.id}
 		targetLabel="this listing"
 	/>
+{/if}
+
+{#if canEdit}
+	<AlertDialog.Root bind:open={soldDialogOpen}>
+		<AlertDialog.Content>
+			<AlertDialog.Header>
+				<AlertDialog.Title>Mark as Sold</AlertDialog.Title>
+				<AlertDialog.Description>
+					Marking this listing as sold will permanently delete it from the marketplace. This action cannot be undone.
+				</AlertDialog.Description>
+			</AlertDialog.Header>
+			<AlertDialog.Footer>
+				<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+				<AlertDialog.Action
+					class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+					onclick={markAsSold}
+				>
+					Mark as Sold
+				</AlertDialog.Action>
+			</AlertDialog.Footer>
+		</AlertDialog.Content>
+	</AlertDialog.Root>
+
+	<AlertDialog.Root bind:open={deleteDialogOpen}>
+		<AlertDialog.Content>
+			<AlertDialog.Header>
+				<AlertDialog.Title>Delete Listing</AlertDialog.Title>
+				<AlertDialog.Description>
+					Are you sure you want to delete this listing? This action cannot be undone.
+				</AlertDialog.Description>
+			</AlertDialog.Header>
+			<AlertDialog.Footer>
+				<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+				<AlertDialog.Action
+					class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+					onclick={deleteListing}
+				>
+					Delete
+				</AlertDialog.Action>
+			</AlertDialog.Footer>
+		</AlertDialog.Content>
+	</AlertDialog.Root>
+{/if}
 {/if}

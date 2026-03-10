@@ -12,7 +12,7 @@ export interface TransformedListing {
 	amount: number;
 	order_type: 'buy' | 'sell';
 	paying_type: 'each' | 'total';
-	is_active: boolean;
+	status: 'active' | 'sold' | 'paused' | 'expired';
 	offered_items: OfferedItem[];
 	offered_currencies: OfferedCurrency[];
 	author: User;
@@ -37,7 +37,7 @@ export function transformListing(listing: any): TransformedListing | null {
 		amount: listing.amount,
 		order_type: listing.order_type,
 		paying_type: listing.paying_type,
-		is_active: listing.is_active ?? true,
+		status: listing.status ?? 'active',
 		offered_items: listing.offered_items ?? [],
 		offered_currencies: listing.offered_currencies ?? [],
 		author: listing.author,
