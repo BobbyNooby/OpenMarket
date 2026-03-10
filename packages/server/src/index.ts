@@ -33,17 +33,18 @@ const app = new Elysia()
     const url = new URL(request.url);
     const method = request.method;
     const color = methodColors[method] || reset;
-    const status = set.status || 200;
+    const status = Number(set.status) || 200;
     const statusColor = status >= 400 ? "\x1b[31m" : status >= 300 ? "\x1b[36m" : "\x1b[32m";
     console.log(
       `${color}${method.padEnd(7)}${reset} ${url.pathname}${dim}${url.search || ""}${reset} ${statusColor}${status}${reset} ${dim}${ms}ms${reset} ${dim}[${ip}]${reset}`
     );
   })
   .onError(({ request, error, startTime, ip }) => {
-    const ms = (performance.now() - startTime).toFixed(1);
+    const ms = startTime ? (performance.now() - startTime).toFixed(1) : "?";
     const url = new URL(request.url);
+    const msg = "message" in error ? error.message : String(error);
     console.error(
-      `\x1b[31mERROR${reset}   ${url.pathname} \x1b[31m${error.message}${reset} ${dim}${ms}ms${reset} ${dim}[${ip}]${reset}`
+      `\x1b[31mERROR${reset}   ${url.pathname} \x1b[31m${msg}${reset} ${dim}${ms}ms${reset} ${dim}[${ip}]${reset}`
     );
   })
   .use(
