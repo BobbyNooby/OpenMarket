@@ -6,6 +6,7 @@ import {
   timestamp,
   boolean,
   integer,
+  index,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 
@@ -72,7 +73,10 @@ export const profileReviewsTable = pgTable("profile_reviews", {
     .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
   type: reviewType("type").notNull(),
   comment: text("comment"),
-});
+}, (t) => [
+  index("idx_reviews_profile_user").on(t.profile_user_id),
+  index("idx_reviews_voter_user").on(t.voter_user_id),
+]);
 
 // --- listings (market orders) ---
 // A listing can request either an item OR a currency (one must be set, the other null)
@@ -95,7 +99,13 @@ export const listingsTable = pgTable("listings", {
   paying_type: payingType("paying_type").notNull().default("each"),
   status: listingStatus("status").notNull().default("active"),
   expires_at: timestamp("expires_at"),
-});
+}, (t) => [
+  index("idx_listings_status_created").on(t.status, t.created_at),
+  index("idx_listings_status_expires").on(t.status, t.expires_at),
+  index("idx_listings_author").on(t.author_id),
+  index("idx_listings_requested_item").on(t.requested_item_id),
+  index("idx_listings_requested_currency").on(t.requested_currency_id),
+]);
 
 // --- listing offered items (many-to-many) ---
 export const listingOfferedItemsTable = pgTable("listing_offered_items", {
@@ -113,7 +123,9 @@ export const listingOfferedItemsTable = pgTable("listing_offered_items", {
       onUpdate: "cascade",
     }),
   amount: integer("amount").notNull().default(1),
-});
+}, (t) => [
+  index("idx_offered_items_listing").on(t.listing_id),
+]);
 
 // --- listing offered currencies (many-to-many) ---
 export const listingOfferedCurrenciesTable = pgTable(
@@ -134,6 +146,9 @@ export const listingOfferedCurrenciesTable = pgTable(
       }),
     amount: integer("amount").notNull().default(1),
   },
+  (t) => [
+    index("idx_offered_currencies_listing").on(t.listing_id),
+  ],
 );
 
 // --- reports ---
@@ -150,7 +165,10 @@ export const reportsTable = pgTable("reports", {
   resolved_by: text("resolved_by")
     .references(() => user.id, { onDelete: "set null", onUpdate: "cascade" }),
   resolved_at: timestamp("resolved_at"),
-});
+}, (t) => [
+  index("idx_reports_status").on(t.status),
+  index("idx_reports_target").on(t.target_type, t.target_id),
+]);
 
 // --- Type exports ---
 export type UserProfileInsert = typeof userProfilesTable.$inferInsert;
