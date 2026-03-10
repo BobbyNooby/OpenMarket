@@ -94,6 +94,7 @@ export const listingsTable = pgTable("listings", {
   order_type: orderType("order_type").notNull(),
   paying_type: payingType("paying_type").notNull().default("each"),
   status: listingStatus("status").notNull().default("active"),
+  expires_at: timestamp("expires_at"),
 });
 
 // --- listing offered items (many-to-many) ---

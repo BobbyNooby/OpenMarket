@@ -88,6 +88,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 					order_type: listingsTable.order_type,
 					paying_type: listingsTable.paying_type,
 					status: listingsTable.status,
+					expires_at: listingsTable.expires_at,
 					author: {
 						id: user.id,
 						name: user.name,
@@ -179,6 +180,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						order_type: listing.order_type,
 						paying_type: listing.paying_type,
 						status: listing.status,
+						expires_at: listing.expires_at?.toISOString() ?? null,
 						author: serializeAuthor(listing.author, listing.authorProfile),
 						requested_item: serializeItemOrNull(listing.requested_item),
 						requested_currency: serializeCurrencyOrNull(listing.requested_currency),
@@ -222,6 +224,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						order_type: listingsTable.order_type,
 						paying_type: listingsTable.paying_type,
 						status: listingsTable.status,
+						expires_at: listingsTable.expires_at,
 						author: {
 							id: user.id,
 							name: user.name,
@@ -349,6 +352,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						order_type: listingsTable.order_type,
 						paying_type: listingsTable.paying_type,
 						status: listingsTable.status,
+						expires_at: listingsTable.expires_at,
 						author: {
 							id: user.id,
 							name: user.name,
@@ -440,6 +444,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						order_type: listing.order_type,
 						paying_type: listing.paying_type,
 						status: listing.status,
+						expires_at: listing.expires_at?.toISOString() ?? null,
 						author: serializeAuthor(listing.author, listing.authorProfile),
 						requested_item: serializeItemOrNull(listing.requested_item),
 						requested_currency: serializeCurrencyOrNull(listing.requested_currency),
@@ -479,6 +484,8 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 					return { success: false, error: 'Only one of requested_item_id or requested_currency_id can be set', status: 400 };
 				}
 
+				const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
 				const [listing] = await db
 					.insert(listingsTable)
 					.values({
@@ -487,7 +494,8 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						requested_currency_id: body.requested_currency_id,
 						amount: body.amount,
 						order_type: body.order_type,
-						paying_type: body.paying_type
+						paying_type: body.paying_type,
+						expires_at: expiresAt
 					})
 					.returning();
 
@@ -695,6 +703,51 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 			body: t.Object({
 				status: t.Union([t.Literal('active'), t.Literal('sold'), t.Literal('paused'), t.Literal('expired')])
 			})
+		}
+	)
+	// Renew listing (reset expiry to 30 days from now)
+	.patch(
+		'/:id/renew',
+		async ({ params, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+
+			try {
+				const [existing] = await db
+					.select({ id: listingsTable.id, author_id: listingsTable.author_id, status: listingsTable.status })
+					.from(listingsTable)
+					.where(eq(listingsTable.id, params.id));
+
+				if (!existing) {
+					set.status = 404;
+					return { success: false, error: 'Listing not found' };
+				}
+
+				if (existing.author_id !== session.user.id) {
+					set.status = 403;
+					return { success: false, error: 'You can only renew your own listings' };
+				}
+
+				if (existing.status !== 'active' && existing.status !== 'expired') {
+					set.status = 400;
+					return { success: false, error: 'Only active or expired listings can be renewed' };
+				}
+
+				const newExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+				const [updated] = await db
+					.update(listingsTable)
+					.set({ expires_at: newExpiresAt, status: 'active' })
+					.where(eq(listingsTable.id, params.id))
+					.returning();
+
+				return { success: true, data: updated };
+			} catch (err: any) {
+				console.error('Renew listing error:', err);
+				return { success: false, error: err.message, status: 500 };
+			}
+		},
+		{
+			params: t.Object({ id: t.String() })
 		}
 	)
 	// Delete listing

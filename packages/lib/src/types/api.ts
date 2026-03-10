@@ -106,6 +106,7 @@ export interface ListingBase {
   order_type: "buy" | "sell";
   paying_type: "each" | "total";
   status?: 'active' | 'paused' | 'expired';
+  expires_at?: string | null;
   offered_items?: OfferedItemBase[];
   offered_currencies?: OfferedCurrencyBase[];
 }
@@ -121,6 +122,7 @@ export interface Listing {
   order_type: "buy" | "sell";
   paying_type: "each" | "total";
   status: 'active' | 'paused' | 'expired';
+  expires_at: string | null;
   author: User;
   requested_item?: Item;
   requested_currency?: Currency;

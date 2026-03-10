@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 import { db } from "./db/db";
 import { userProfilesTable, usersActivityTable } from "./db/schemas";
 import { userRolesTable } from "./db/rbac-schema";
+import { startExpiryJob } from "./jobs/expiry";
 
 const methodColors: Record<string, string> = {
   GET: "\x1b[32m",     // green
@@ -120,5 +121,7 @@ const app = new Elysia()
 console.log(
   `Server running at http://${app.server?.hostname}:${app.server?.port}`,
 );
+
+startExpiryJob();
 
 export type App = typeof app;
