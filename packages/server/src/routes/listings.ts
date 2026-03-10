@@ -541,6 +541,111 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 			})
 		}
 	)
+	// Update listing
+	.put(
+		'/:id',
+		async ({ params, body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+			if (!session.permissions.includes('listing:update')) { set.status = 403; return { success: false, error: 'Forbidden' }; }
+
+			try {
+				const [existing] = await db
+					.select({ id: listingsTable.id, author_id: listingsTable.author_id })
+					.from(listingsTable)
+					.where(eq(listingsTable.id, params.id));
+
+				if (!existing) {
+					set.status = 404;
+					return { success: false, error: 'Listing not found' };
+				}
+
+				if (existing.author_id !== session.user.id) {
+					set.status = 403;
+					return { success: false, error: 'You can only edit your own listings' };
+				}
+
+				// Validate that exactly one of requested_item_id or requested_currency_id is set
+				if (!body.requested_item_id && !body.requested_currency_id) {
+					return { success: false, error: 'Either requested_item_id or requested_currency_id must be provided', status: 400 };
+				}
+				if (body.requested_item_id && body.requested_currency_id) {
+					return { success: false, error: 'Only one of requested_item_id or requested_currency_id can be set', status: 400 };
+				}
+
+				const updated = await db.transaction(async (tx) => {
+					// Update listing fields
+					const [listing] = await tx
+						.update(listingsTable)
+						.set({
+							requested_item_id: body.requested_item_id ?? null,
+							requested_currency_id: body.requested_currency_id ?? null,
+							amount: body.amount,
+							order_type: body.order_type,
+							paying_type: body.paying_type,
+						})
+						.where(eq(listingsTable.id, params.id))
+						.returning();
+
+					// Replace offered items
+					await tx.delete(listingOfferedItemsTable).where(eq(listingOfferedItemsTable.listing_id, params.id));
+					if (body.offered_items && body.offered_items.length > 0) {
+						await tx.insert(listingOfferedItemsTable).values(
+							body.offered_items.map((item) => ({
+								listing_id: params.id,
+								item_id: item.item_id,
+								amount: item.amount,
+							}))
+						);
+					}
+
+					// Replace offered currencies
+					await tx.delete(listingOfferedCurrenciesTable).where(eq(listingOfferedCurrenciesTable.listing_id, params.id));
+					if (body.offered_currencies && body.offered_currencies.length > 0) {
+						await tx.insert(listingOfferedCurrenciesTable).values(
+							body.offered_currencies.map((currency) => ({
+								listing_id: params.id,
+								currency_id: currency.currency_id,
+								amount: currency.amount,
+							}))
+						);
+					}
+
+					return listing;
+				});
+
+				return { success: true, data: updated };
+			} catch (err: any) {
+				console.error('Update listing error:', err);
+				return { success: false, error: err.message, status: 500 };
+			}
+		},
+		{
+			params: t.Object({ id: t.String() }),
+			body: t.Object({
+				requested_item_id: t.Optional(t.String()),
+				requested_currency_id: t.Optional(t.String()),
+				amount: t.Number(),
+				order_type: t.Union([t.Literal('buy'), t.Literal('sell')]),
+				paying_type: t.Union([t.Literal('each'), t.Literal('total')]),
+				offered_items: t.Optional(
+					t.Array(
+						t.Object({
+							item_id: t.String(),
+							amount: t.Number()
+						})
+					)
+				),
+				offered_currencies: t.Optional(
+					t.Array(
+						t.Object({
+							currency_id: t.String(),
+							amount: t.Number()
+						})
+					)
+				)
+			})
+		}
+	)
 	// Delete listing
 	.delete(
 		'/:id',
