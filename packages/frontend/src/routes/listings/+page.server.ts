@@ -4,7 +4,7 @@ import { api } from '$lib/api/server';
 export const load: PageServerLoad = async () => {
 	const limit = 20;
 	const [listingsResult, itemsResult, currenciesResult] = await Promise.all([
-		api.listings.get({ query: { limit: String(limit), offset: '0' } }),
+		api.listings.get({ query: { limit: String(limit), offset: '0', status: 'active' } }),
 		api.items.get(),
 		api.currencies.get()
 	]);

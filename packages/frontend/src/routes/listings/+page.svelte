@@ -19,6 +19,7 @@
 
 	let searchQuery = $state('');
 	let orderTypeFilter = $state<'all' | 'buy' | 'sell'>('all');
+	let statusFilter = $state<'active' | 'sold' | 'paused' | 'expired' | 'all'>('active');
 	let selectedItemId = $state<string | null>(null);
 
 	const listings = $derived(
@@ -55,7 +56,7 @@
 
 		loading = true;
 		try {
-			const res = await fetch(`/api/listings?limit=${limit}&offset=${offset}`);
+			const res = await fetch(`/api/listings?limit=${limit}&offset=${offset}&status=${statusFilter}`);
 			const result = await res.json();
 
 			if (result.success && result.data) {
@@ -98,7 +99,12 @@
 	function clearFilters() {
 		searchQuery = '';
 		orderTypeFilter = 'all';
+		statusFilter = 'active';
 		selectedItemId = null;
+		allListings = [];
+		offset = 0;
+		hasMore = true;
+		loadMore();
 	}
 </script>
 
@@ -169,6 +175,33 @@
 							>
 								Sell
 							</button>
+						</div>
+					</div>
+
+					<!-- Status Filter -->
+					<div class="mb-6">
+						<span class="mb-2 block text-sm font-semibold">Status</span>
+						<div class="flex flex-wrap gap-2" role="group" aria-label="Status filter">
+							{#each ['active', 'paused', 'sold', 'expired', 'all'] as s}
+								<button
+									class="rounded-md px-3 py-1.5 text-xs font-medium transition-colors {statusFilter === s
+										? s === 'active' ? 'bg-green-500 text-white'
+										: s === 'sold' ? 'bg-red-500 text-white'
+										: s === 'paused' ? 'bg-yellow-500 text-white'
+										: s === 'expired' ? 'bg-gray-500 text-white'
+										: 'bg-primary text-primary-foreground'
+										: 'bg-background text-foreground'}"
+									onclick={() => {
+										statusFilter = s as any;
+										allListings = [];
+										offset = 0;
+										hasMore = true;
+										loadMore();
+									}}
+								>
+									{s.charAt(0).toUpperCase() + s.slice(1)}
+								</button>
+							{/each}
 						</div>
 					</div>
 
