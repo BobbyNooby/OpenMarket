@@ -3,6 +3,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 	import { onMount } from 'svelte';
+	import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
+	import Coins from '@lucide/svelte/icons/coins';
 
 	let { data } = $props();
 	let searchQuery = $state('');
@@ -109,8 +111,9 @@
 			{:else}
 				<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 					<div>
-						<h3 class="mb-4 rounded-t-lg bg-green-500 p-3 text-center text-xl font-semibold text-white">
-							🛒 Buy Orders ({buyOrders.length})
+						<h3 class="mb-4 flex items-center justify-center gap-2 rounded-t-lg bg-green-500 p-3 text-xl font-semibold text-white">
+							<ShoppingCart class="h-5 w-5" />
+							Buy Orders ({buyOrders.length})
 						</h3>
 						<div class="space-y-4">
 							{#each buyOrders as order (order.id)}
@@ -123,8 +126,9 @@
 					</div>
 
 					<div>
-						<h3 class="mb-4 rounded-t-lg bg-amber-500 p-3 text-center text-xl font-semibold text-white">
-							💰 Sell Orders ({sellOrders.length})
+						<h3 class="mb-4 flex items-center justify-center gap-2 rounded-t-lg bg-amber-500 p-3 text-xl font-semibold text-white">
+							<Coins class="h-5 w-5" />
+							Sell Orders ({sellOrders.length})
 						</h3>
 						<div class="space-y-4">
 							{#each sellOrders as order (order.id)}
