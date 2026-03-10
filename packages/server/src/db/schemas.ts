@@ -13,6 +13,7 @@ import { user } from "./auth-schema";
 export const reviewType = pgEnum("review_type", ["upvote", "downvote"]);
 export const orderType = pgEnum("order_type", ["buy", "sell"]);
 export const payingType = pgEnum("paying_type", ["each", "total"]);
+export const listingStatus = pgEnum("listing_status", ["active", "sold", "paused", "expired"]);
 export const reportTargetType = pgEnum("report_target_type", ["listing", "review", "user"]);
 export const reportStatus = pgEnum("report_status", ["pending", "resolved", "dismissed"]);
 
@@ -92,7 +93,7 @@ export const listingsTable = pgTable("listings", {
   amount: integer("amount").notNull().default(1),
   order_type: orderType("order_type").notNull(),
   paying_type: payingType("paying_type").notNull().default("each"),
-  is_active: boolean("is_active").notNull().default(true),
+  status: listingStatus("status").notNull().default("active"),
 });
 
 // --- listing offered items (many-to-many) ---

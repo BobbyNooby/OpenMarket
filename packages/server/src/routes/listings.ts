@@ -9,7 +9,7 @@ import {
 	user,
 	userProfilesTable
 } from '../db/schemas';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/rbac';
 
 // Alias for requested currency (to distinguish from offered currencies join)
@@ -70,11 +70,14 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 		try {
 			const limit = Math.min(Math.max(parseInt(query.limit || '20', 10), 1), 100);
 			const offset = Math.max(parseInt(query.offset || '0', 10), 0);
+			const statusFilter = query.status || 'active';
+			const statusCondition = statusFilter === 'all' ? undefined : eq(listingsTable.status, statusFilter as any);
 
 			// Get total count for pagination info
 			const [{ count: totalCount }] = await db
 				.select({ count: sql<number>`count(*)::int` })
-				.from(listingsTable);
+				.from(listingsTable)
+				.where(statusCondition);
 
 			// Get all listings with author and requested item OR currency (one will be null)
 			const listings = await db
@@ -84,7 +87,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 					amount: listingsTable.amount,
 					order_type: listingsTable.order_type,
 					paying_type: listingsTable.paying_type,
-					is_active: listingsTable.is_active,
+					status: listingsTable.status,
 					author: {
 						id: user.id,
 						name: user.name,
@@ -119,6 +122,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 				.leftJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
 				.leftJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
 				.leftJoin(requestedCurrencyTable, eq(listingsTable.requested_currency_id, requestedCurrencyTable.id))
+				.where(statusCondition)
 				.orderBy(desc(listingsTable.created_at))
 				.limit(limit)
 				.offset(offset);
@@ -174,7 +178,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						amount: listing.amount,
 						order_type: listing.order_type,
 						paying_type: listing.paying_type,
-						is_active: listing.is_active,
+						status: listing.status,
 						author: serializeAuthor(listing.author, listing.authorProfile),
 						requested_item: serializeItemOrNull(listing.requested_item),
 						requested_currency: serializeCurrencyOrNull(listing.requested_currency),
@@ -217,7 +221,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						amount: listingsTable.amount,
 						order_type: listingsTable.order_type,
 						paying_type: listingsTable.paying_type,
-						is_active: listingsTable.is_active,
+						status: listingsTable.status,
 						author: {
 							id: user.id,
 							name: user.name,
@@ -304,7 +308,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 							amount: listing.amount,
 							order_type: listing.order_type,
 							paying_type: listing.paying_type,
-							is_active: listing.is_active,
+							status: listing.status,
 							author: serializeAuthor(listing.author, listing.authorProfile),
 							requested_item: serializeItemOrNull(listing.requested_item),
 							requested_currency: serializeCurrencyOrNull(listing.requested_currency),
@@ -344,7 +348,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						amount: listingsTable.amount,
 						order_type: listingsTable.order_type,
 						paying_type: listingsTable.paying_type,
-						is_active: listingsTable.is_active,
+						status: listingsTable.status,
 						author: {
 							id: user.id,
 							name: user.name,
@@ -435,7 +439,7 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						amount: listing.amount,
 						order_type: listing.order_type,
 						paying_type: listing.paying_type,
-						is_active: listing.is_active,
+						status: listing.status,
 						author: serializeAuthor(listing.author, listing.authorProfile),
 						requested_item: serializeItemOrNull(listing.requested_item),
 						requested_currency: serializeCurrencyOrNull(listing.requested_currency),
@@ -643,6 +647,53 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 						})
 					)
 				)
+			})
+		}
+	)
+	// Update listing status
+	.patch(
+		'/:id/status',
+		async ({ params, body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+
+			try {
+				const [existing] = await db
+					.select({ id: listingsTable.id, author_id: listingsTable.author_id, status: listingsTable.status })
+					.from(listingsTable)
+					.where(eq(listingsTable.id, params.id));
+
+				if (!existing) {
+					set.status = 404;
+					return { success: false, error: 'Listing not found' };
+				}
+
+				if (existing.author_id !== session.user.id) {
+					set.status = 403;
+					return { success: false, error: 'You can only change status of your own listings' };
+				}
+
+				// Enforce state transition rules
+				if (existing.status === 'sold') {
+					set.status = 400;
+					return { success: false, error: 'Sold listings cannot change status' };
+				}
+
+				const [updated] = await db
+					.update(listingsTable)
+					.set({ status: body.status })
+					.where(eq(listingsTable.id, params.id))
+					.returning();
+
+				return { success: true, data: updated };
+			} catch (err: any) {
+				console.error('Update listing status error:', err);
+				return { success: false, error: err.message, status: 500 };
+			}
+		},
+		{
+			params: t.Object({ id: t.String() }),
+			body: t.Object({
+				status: t.Union([t.Literal('active'), t.Literal('sold'), t.Literal('paused'), t.Literal('expired')])
 			})
 		}
 	)

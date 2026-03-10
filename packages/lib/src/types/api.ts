@@ -105,7 +105,7 @@ export interface ListingBase {
   amount: number;
   order_type: "buy" | "sell";
   paying_type: "each" | "total";
-  is_active?: boolean;
+  status?: 'active' | 'paused' | 'expired';
   offered_items?: OfferedItemBase[];
   offered_currencies?: OfferedCurrencyBase[];
 }
@@ -120,7 +120,7 @@ export interface Listing {
   amount: number;
   order_type: "buy" | "sell";
   paying_type: "each" | "total";
-  is_active: boolean;
+  status: 'active' | 'paused' | 'expired';
   author: User;
   requested_item?: Item;
   requested_currency?: Currency;
