@@ -6,6 +6,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import ReportDialog from '../report/ReportDialog.svelte';
 	import Flag from '@lucide/svelte/icons/flag';
+	import Pencil from '@lucide/svelte/icons/pencil';
 	import type { TransformedListing } from '$lib/utils/listings';
 
 	interface Props {
@@ -18,6 +19,7 @@
 
 	let reportDialogOpen = $state(false);
 	const canReport = $derived(sessionUserId && sessionUserId !== order.author.id);
+	const canEdit = $derived(sessionUserId && sessionUserId === order.author.id);
 
 	const author = $derived(order.author);
 	const requestedItem = $derived(order.requested_item);
@@ -191,6 +193,17 @@
 			<span class="text-xs text-muted-foreground">
 				{timeAgo(order.created_at)}
 			</span>
+			{#if canEdit}
+				<Button
+					size="sm"
+					variant="ghost"
+					class="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+					href="/listings/{order.id}/edit"
+					title="Edit listing"
+				>
+					<Pencil class="h-4 w-4" />
+				</Button>
+			{/if}
 			{#if canReport}
 				<Button
 					size="sm"

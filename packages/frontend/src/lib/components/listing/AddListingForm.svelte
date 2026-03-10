@@ -10,23 +10,37 @@
 	import type { Item, Currency } from '$lib/api/types';
 	import { toast } from 'svelte-sonner';
 
+	export interface ListingData {
+		id: string;
+		requested_item_id?: string;
+		requested_currency_id?: string;
+		amount: number;
+		order_type: 'buy' | 'sell';
+		paying_type: 'each' | 'total';
+		offered_items: Array<{ id: string; amount: number }>;
+		offered_currencies: Array<{ id: string; amount: number }>;
+	}
+
 	interface Props {
 		items: Item[];
 		currencies: Currency[];
+		listing?: ListingData;
 	}
 
-	let { items, currencies }: Props = $props();
+	let { items, currencies, listing }: Props = $props();
 
-	// Form state
-	let requestType = $state<'item' | 'currency'>('item');
-	let selectedRequestedId = $state<string>('');
-	let amount = $state<number>(1);
-	let orderType = $state<'buy' | 'sell'>('buy');
-	let payingType = $state<'each' | 'total'>('each');
+	const isEdit = $derived(!!listing);
+
+	// Form state — pre-populate from listing if editing
+	let requestType = $state<'item' | 'currency'>(listing?.requested_currency_id ? 'currency' : 'item');
+	let selectedRequestedId = $state<string>(listing?.requested_item_id ?? listing?.requested_currency_id ?? '');
+	let amount = $state<number>(listing?.amount ?? 1);
+	let orderType = $state<'buy' | 'sell'>(listing?.order_type ?? 'buy');
+	let payingType = $state<'each' | 'total'>(listing?.paying_type ?? 'each');
 
 	// Offered items/currencies
-	let offeredItems = $state<Array<{ id: string; amount: number }>>([]);
-	let offeredCurrencies = $state<Array<{ id: string; amount: number }>>([]);
+	let offeredItems = $state<Array<{ id: string; amount: number }>>(listing?.offered_items ?? []);
+	let offeredCurrencies = $state<Array<{ id: string; amount: number }>>(listing?.offered_currencies ?? []);
 
 	// UI state
 	let isSubmitting = $state(false);
@@ -124,7 +138,8 @@
 				formData.set('requested_currency_id', selectedRequestedId);
 			}
 
-			const res = await fetch('?/createListing', {
+			const action = isEdit ? '?/updateListing' : '?/createListing';
+			const res = await fetch(action, {
 				method: 'POST',
 				body: formData
 			});
@@ -136,10 +151,10 @@
 
 			const result = await res.json();
 			if (result.type === 'failure') {
-				error = result.data?.error || 'Failed to create listing';
+				error = result.data?.error || `Failed to ${isEdit ? 'update' : 'create'} listing`;
 				toast.error(error!);
 			} else {
-				toast.success('Listing created');
+				toast.success(isEdit ? 'Listing updated' : 'Listing created');
 				goto('/listings');
 			}
 		} catch (err: any) {
@@ -460,7 +475,7 @@
 			Cancel
 		</Button>
 		<Button type="submit" class="flex-1" disabled={isSubmitting}>
-			{isSubmitting ? 'Creating...' : 'Create Listing'}
+			{isSubmitting ? (isEdit ? 'Updating...' : 'Creating...') : (isEdit ? 'Update Listing' : 'Create Listing')}
 		</Button>
 	</div>
 </form>
