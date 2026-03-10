@@ -6,12 +6,15 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import ReportDialog from '../report/ReportDialog.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import Flag from '@lucide/svelte/icons/flag';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import CirclePause from '@lucide/svelte/icons/circle-pause';
 	import CirclePlay from '@lucide/svelte/icons/circle-play';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { toast } from 'svelte-sonner';
 	import type { TransformedListing } from '$lib/utils/listings';
@@ -30,8 +33,27 @@
 	let statusUpdating = $state(false);
 	let deleted = $state(false);
 	let currentStatus = $state(order.status);
+	let currentExpiresAt = $state(order.expires_at);
 	const canReport = $derived(sessionUserId && sessionUserId !== order.author.id);
 	const canEdit = $derived(sessionUserId && sessionUserId === order.author.id);
+
+	const expiryInfo = $derived(() => {
+		if (!currentExpiresAt || currentStatus !== 'active') return null;
+		const now = new Date();
+		const expires = new Date(currentExpiresAt);
+		const daysLeft = Math.ceil((expires.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+		if (daysLeft <= 0) return { text: 'Expired', urgent: true };
+		if (daysLeft <= 3) return { text: `${daysLeft}d left`, urgent: true };
+		return { text: `${daysLeft}d left`, urgent: false };
+	});
+
+	const showRenewButton = $derived(() => {
+		if (!canEdit || !currentExpiresAt) return false;
+		if (currentStatus === 'expired') return true;
+		if (currentStatus !== 'active') return false;
+		const daysLeft = Math.ceil((new Date(currentExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+		return daysLeft <= 3;
+	});
 
 	const statusConfig: Record<string, { label: string; class: string }> = {
 		active: { label: 'Active', class: 'bg-green-500 text-white hover:bg-green-500' },
@@ -86,6 +108,28 @@
 
 	async function markAsSold() {
 		await deleteListing();
+	}
+
+	async function renewListing() {
+		statusUpdating = true;
+		try {
+			const res = await fetch(`${PUBLIC_API_URL}/listings/${order.id}/renew`, {
+				method: 'PATCH',
+				credentials: 'include',
+			});
+			const result = await res.json();
+			if (result.success) {
+				currentStatus = 'active';
+				currentExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+				toast.success('Listing renewed for 30 days');
+			} else {
+				toast.error(result.error || 'Failed to renew listing');
+			}
+		} catch {
+			toast.error('Failed to renew listing');
+		} finally {
+			statusUpdating = false;
+		}
 	}
 
 	const author = $derived(order.author);
@@ -176,6 +220,51 @@
 				{:else}
 					<Badge class="bg-amber-500 text-white hover:bg-amber-500">Sell</Badge>
 				{/if}
+				{#if canEdit}
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							<Button size="sm" variant="ghost" class="h-8 w-8 p-0 text-muted-foreground">
+								<Ellipsis class="h-4 w-4" />
+							</Button>
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="end">
+							{#if currentStatus === 'active'}
+								<DropdownMenu.Item onclick={() => updateStatus('paused')} disabled={statusUpdating}>
+									<CirclePause class="mr-2 h-4 w-4 text-yellow-500" />
+									Pause
+								</DropdownMenu.Item>
+								<DropdownMenu.Item onclick={() => (soldDialogOpen = true)} disabled={statusUpdating}>
+									<CircleCheck class="mr-2 h-4 w-4 text-red-500" />
+									Mark as Sold
+								</DropdownMenu.Item>
+							{:else if currentStatus === 'paused' || currentStatus === 'expired'}
+								<DropdownMenu.Item onclick={() => updateStatus('active')} disabled={statusUpdating}>
+									<CirclePlay class="mr-2 h-4 w-4 text-green-500" />
+									Reactivate
+								</DropdownMenu.Item>
+							{/if}
+							{#if showRenewButton()}
+								<DropdownMenu.Item onclick={renewListing} disabled={statusUpdating}>
+									<RefreshCw class="mr-2 h-4 w-4 text-blue-500" />
+									Renew (30 days)
+								</DropdownMenu.Item>
+							{/if}
+							{#if currentStatus !== 'sold'}
+								<a href="/listings/{order.id}/edit" class="contents">
+									<DropdownMenu.Item>
+										<Pencil class="mr-2 h-4 w-4" />
+										Edit
+									</DropdownMenu.Item>
+								</a>
+							{/if}
+							<DropdownMenu.Separator />
+							<DropdownMenu.Item onclick={() => (deleteDialogOpen = true)} disabled={statusUpdating} class="text-destructive">
+								<Trash2 class="mr-2 h-4 w-4" />
+								Delete
+							</DropdownMenu.Item>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+				{/if}
 			</div>
 		</Card.Action>
 	</Card.Header>
@@ -262,65 +351,14 @@
 		>
 			@{author.username}
 		</a>
-		<div class="flex items-center gap-4">
+		<div class="flex items-center gap-3">
 			<span class="text-xs text-muted-foreground">
 				{timeAgo(order.created_at)}
 			</span>
-			{#if canEdit}
-				{#if currentStatus === 'active'}
-					<Button
-						size="sm"
-						variant="ghost"
-						class="h-8 w-8 p-0 text-muted-foreground hover:text-yellow-500"
-						onclick={() => updateStatus('paused')}
-						disabled={statusUpdating}
-						title="Pause listing"
-					>
-						<CirclePause class="h-4 w-4" />
-					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						class="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
-						onclick={() => (soldDialogOpen = true)}
-						disabled={statusUpdating}
-						title="Mark as sold"
-					>
-						<CircleCheck class="h-4 w-4" />
-					</Button>
-				{:else if currentStatus === 'paused' || currentStatus === 'expired'}
-					<Button
-						size="sm"
-						variant="ghost"
-						class="h-8 w-8 p-0 text-muted-foreground hover:text-green-500"
-						onclick={() => updateStatus('active')}
-						disabled={statusUpdating}
-						title="Reactivate listing"
-					>
-						<CirclePlay class="h-4 w-4" />
-					</Button>
-				{/if}
-				{#if currentStatus !== 'sold'}
-					<Button
-						size="sm"
-						variant="ghost"
-						class="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
-						href="/listings/{order.id}/edit"
-						title="Edit listing"
-					>
-						<Pencil class="h-4 w-4" />
-					</Button>
-				{/if}
-				<Button
-					size="sm"
-					variant="ghost"
-					class="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-					onclick={() => (deleteDialogOpen = true)}
-					disabled={statusUpdating}
-					title="Delete listing"
-				>
-					<Trash2 class="h-4 w-4" />
-				</Button>
+			{#if expiryInfo()}
+				<span class="text-xs {expiryInfo()?.urgent ? 'text-red-500 font-medium' : 'text-muted-foreground'}">
+					{expiryInfo()?.text}
+				</span>
 			{/if}
 			{#if canReport}
 				<Button
