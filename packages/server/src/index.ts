@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { itemsRoutes, currenciesRoutes } from "./routes/items";
-import { listingsRoutes } from "./routes/listings";
+import { listingsRoutes } from "./routes/listings/index";
 import { categoriesRoutes } from "./routes/categories";
 import { usersRoutes } from "./routes/users";
 import { reportsRoutes } from "./routes/reports";
