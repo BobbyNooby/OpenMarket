@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { itemsRoutes, currenciesRoutes } from "./routes/items";
 import { listingsRoutes } from "./routes/listings";
+import { categoriesRoutes } from "./routes/categories";
 import { usersRoutes } from "./routes/users";
 import { reportsRoutes } from "./routes/reports";
 import { adminRoutes } from "./routes/admin";
@@ -113,6 +114,7 @@ const app = new Elysia()
   .all("/api/auth/*", ({ request }) => auth.handler(request))
   .use(itemsRoutes)
   .use(currenciesRoutes)
+  .use(categoriesRoutes)
   .use(listingsRoutes)
   .use(usersRoutes)
   .use(reportsRoutes)

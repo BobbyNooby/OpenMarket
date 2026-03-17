@@ -40,6 +40,15 @@ export const usersActivityTable = pgTable("users_activity", {
   last_activity_at: timestamp("last_activity_at").notNull().defaultNow(),
 });
 
+// --- item categories ---
+export const itemCategoriesTable = pgTable("item_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+  icon_url: text("icon_url"),
+});
+
 // --- items/currencies (generic) ---
 export const itemsTable = pgTable("items", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -49,6 +58,10 @@ export const itemsTable = pgTable("items", {
   description: text("description"),
   wiki_link: text("wiki_link"),
   image_url: text("image_url"),
+  category_id: uuid("category_id").references(() => itemCategoriesTable.id, {
+    onDelete: "set null",
+    onUpdate: "cascade",
+  }),
 });
 
 export const currenciesTable = pgTable("currencies", {
@@ -171,6 +184,8 @@ export const reportsTable = pgTable("reports", {
 ]);
 
 // --- Type exports ---
+export type ItemCategoryInsert = typeof itemCategoriesTable.$inferInsert;
+export type ItemCategorySelect = typeof itemCategoriesTable.$inferSelect;
 export type UserProfileInsert = typeof userProfilesTable.$inferInsert;
 export type UserProfileSelect = typeof userProfilesTable.$inferSelect;
 export type UserActivityInsert = typeof usersActivityTable.$inferInsert;

@@ -87,7 +87,8 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 						slug,
 						description: body.description,
 						wiki_link: body.wiki_link,
-						image_url: body.image_url
+						image_url: body.image_url,
+						category_id: body.category_id
 					})
 					.returning();
 
@@ -103,7 +104,8 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 				slug: t.Optional(t.String()),
 				description: t.Optional(t.String()),
 				wiki_link: t.Optional(t.String()),
-				image_url: t.Optional(t.String())
+				image_url: t.Optional(t.String()),
+				category_id: t.Optional(t.String())
 			})
 		}
 	)
@@ -134,7 +136,8 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 						slug: newSlug,
 						description: body.description,
 						wiki_link: body.wiki_link,
-						image_url: body.image_url
+						image_url: body.image_url,
+						category_id: body.category_id ?? null
 					})
 					.where(eq(itemsTable.id, params.id))
 					.returning();
@@ -157,7 +160,8 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 				name: t.String(),
 				description: t.Optional(t.String()),
 				wiki_link: t.Optional(t.String()),
-				image_url: t.Optional(t.String())
+				image_url: t.Optional(t.String()),
+				category_id: t.Optional(t.String())
 			})
 		}
 	)
