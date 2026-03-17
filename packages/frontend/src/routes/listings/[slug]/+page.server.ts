@@ -4,8 +4,7 @@ import { error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ params }) => {
 	// Try to find the item by slug
-	// @ts-expect-error - Eden treaty type inference
-	const itemResult = await api.items({ idOrSlug: params.slug }).get();
+	const itemResult = await api.items({ id: params.slug }).get();
 
 	if (itemResult.data?.success && itemResult.data.data) {
 		const item = itemResult.data.data;
@@ -24,8 +23,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	// Try currencies if item not found
-	// @ts-expect-error - Eden treaty type inference
-	const currencyResult = await api.currencies({ idOrSlug: params.slug }).get();
+	const currencyResult = await api.currencies({ id: params.slug }).get();
 
 	if (currencyResult.data?.success && currencyResult.data.data) {
 		const currency = currencyResult.data.data;

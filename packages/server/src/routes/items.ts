@@ -29,19 +29,19 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 	})
 	// Get item by ID or slug
 	.get(
-		'/:idOrSlug',
+		'/:id',
 		async ({ params }) => {
 			try {
 				// Try to find by ID first (UUID format), then by slug
-				const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.idOrSlug);
+				const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id);
 
 				const [item] = await db
 					.select()
 					.from(itemsTable)
 					.where(
 						isUUID
-							? eq(itemsTable.id, params.idOrSlug)
-							: eq(itemsTable.slug, params.idOrSlug)
+							? eq(itemsTable.id, params.id)
+							: eq(itemsTable.slug, params.id)
 					);
 
 				if (!item) {
@@ -56,7 +56,7 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 		},
 		{
 			params: t.Object({
-				idOrSlug: t.String()
+				id: t.String()
 			})
 		}
 	)
@@ -204,19 +204,19 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 	})
 	// Get currency by ID or slug
 	.get(
-		'/:idOrSlug',
+		'/:id',
 		async ({ params }) => {
 			try {
 				// Try to find by ID first (UUID format), then by slug
-				const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.idOrSlug);
+				const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id);
 
 				const [currency] = await db
 					.select()
 					.from(currenciesTable)
 					.where(
 						isUUID
-							? eq(currenciesTable.id, params.idOrSlug)
-							: eq(currenciesTable.slug, params.idOrSlug)
+							? eq(currenciesTable.id, params.id)
+							: eq(currenciesTable.slug, params.id)
 					);
 
 				if (!currency) {
@@ -231,7 +231,7 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 		},
 		{
 			params: t.Object({
-				idOrSlug: t.String()
+				id: t.String()
 			})
 		}
 	)

@@ -69,8 +69,7 @@ export const actions: Actions = {
 		const wiki_link = formData.get('wiki_link') as string | null;
 		const image_url = formData.get('image_url') as string | null;
 
-		// @ts-expect-error - Eden treaty type inference issue with dynamic routes
-		const result = await api.items({ id }).put({
+const result = await api.items({ id }).put({
 			name,
 			description: description || undefined,
 			wiki_link: wiki_link || undefined,
@@ -92,8 +91,7 @@ export const actions: Actions = {
 		const wiki_link = formData.get('wiki_link') as string | null;
 		const image_url = formData.get('image_url') as string | null;
 
-		// @ts-expect-error - Eden treaty type inference issue with dynamic routes
-		const result = await api.currencies({ id }).put({
+const result = await api.currencies({ id }).put({
 			name,
 			description: description || undefined,
 			wiki_link: wiki_link || undefined,
@@ -111,8 +109,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
 
-		// @ts-expect-error - Eden treaty type inference issue with dynamic routes
-		const result = await api.items({ id }).delete(null, authHeaders(request));
+const result = await api.items({ id }).delete(null, authHeaders(request));
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to delete item' });
@@ -125,8 +122,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
 
-		// @ts-expect-error - Eden treaty type inference issue with dynamic routes
-		const result = await api.currencies({ id }).delete(null, authHeaders(request));
+const result = await api.currencies({ id }).delete(null, authHeaders(request));
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to delete currency' });
