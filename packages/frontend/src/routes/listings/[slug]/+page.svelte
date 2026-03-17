@@ -15,11 +15,11 @@
 	);
 
 	const filteredListings = $derived(
-		orderTypeFilter === 'all' ? listings : listings.filter((l) => l.order_type === orderTypeFilter)
+		orderTypeFilter === 'all' ? listings : listings.filter((l: TransformedListing) => l.order_type === orderTypeFilter)
 	);
 
-	const buyCount = $derived(listings.filter((l) => l.order_type === 'buy').length);
-	const sellCount = $derived(listings.filter((l) => l.order_type === 'sell').length);
+	const buyCount = $derived(listings.filter((l: TransformedListing) => l.order_type === 'buy').length);
+	const sellCount = $derived(listings.filter((l: TransformedListing) => l.order_type === 'sell').length);
 
 	function handleContact(order: TransformedListing) {
 		alert(`Contact ${order.author.display_name} (@${order.author.username}) about this order!`);

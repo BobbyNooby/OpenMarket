@@ -15,7 +15,8 @@
 
 	const session = $derived(data.session);
 	const profile = $derived(data.profile);
-	let reviews = $state(profile?.reviews || []);
+	let reviews = $state<NonNullable<typeof data.profile>['reviews']>([]);
+	$effect(() => { reviews = data.profile?.reviews ?? []; });
 
 	const isOwnProfile = $derived(session?.user?.id === profile?.id);
 	let reportDialogOpen = $state(false);
