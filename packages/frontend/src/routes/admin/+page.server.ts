@@ -7,14 +7,16 @@ function authHeaders(request: Request) {
 }
 
 export const load: PageServerLoad = async () => {
-	const [itemsResult, currenciesResult] = await Promise.all([
+	const [itemsResult, currenciesResult, categoriesResult] = await Promise.all([
 		api.items.get(),
-		api.currencies.get()
+		api.currencies.get(),
+		api.categories.get()
 	]);
 
 	return {
 		items: itemsResult.data?.success ? itemsResult.data.data : [],
-		currencies: currenciesResult.data?.success ? currenciesResult.data.data : []
+		currencies: currenciesResult.data?.success ? currenciesResult.data.data : [],
+		categories: categoriesResult.data?.success ? categoriesResult.data.data : []
 	};
 };
 
@@ -25,12 +27,14 @@ export const actions: Actions = {
 		const description = formData.get('description') as string | null;
 		const wiki_link = formData.get('wiki_link') as string | null;
 		const image_url = formData.get('image_url') as string | null;
+		const category_id = formData.get('category_id') as string | null;
 
 		const result = await api.items.post({
 			name,
 			description: description || undefined,
 			wiki_link: wiki_link || undefined,
-			image_url: image_url || undefined
+			image_url: image_url || undefined,
+			category_id: category_id || undefined
 		}, authHeaders(request));
 
 		if (!result.data?.success) {
@@ -68,12 +72,14 @@ export const actions: Actions = {
 		const description = formData.get('description') as string | null;
 		const wiki_link = formData.get('wiki_link') as string | null;
 		const image_url = formData.get('image_url') as string | null;
+		const category_id = formData.get('category_id') as string | null;
 
-const result = await api.items({ id }).put({
+		const result = await api.items({ id }).put({
 			name,
 			description: description || undefined,
 			wiki_link: wiki_link || undefined,
-			image_url: image_url || undefined
+			image_url: image_url || undefined,
+			category_id: category_id || undefined
 		}, authHeaders(request));
 
 		if (!result.data?.success) {
@@ -91,7 +97,7 @@ const result = await api.items({ id }).put({
 		const wiki_link = formData.get('wiki_link') as string | null;
 		const image_url = formData.get('image_url') as string | null;
 
-const result = await api.currencies({ id }).put({
+		const result = await api.currencies({ id }).put({
 			name,
 			description: description || undefined,
 			wiki_link: wiki_link || undefined,
@@ -109,7 +115,7 @@ const result = await api.currencies({ id }).put({
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
 
-const result = await api.items({ id }).delete(null, authHeaders(request));
+		const result = await api.items({ id }).delete(null, authHeaders(request));
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to delete item' });
@@ -122,7 +128,7 @@ const result = await api.items({ id }).delete(null, authHeaders(request));
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
 
-const result = await api.currencies({ id }).delete(null, authHeaders(request));
+		const result = await api.currencies({ id }).delete(null, authHeaders(request));
 
 		if (!result.data?.success) {
 			return fail(400, { error: result.data?.error || 'Failed to delete currency' });

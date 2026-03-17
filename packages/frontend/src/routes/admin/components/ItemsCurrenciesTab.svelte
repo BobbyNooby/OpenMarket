@@ -10,6 +10,7 @@
 		data: {
 			items?: any[];
 			currencies?: any[];
+			categories?: any[];
 			[key: string]: any;
 		};
 	}
@@ -48,6 +49,7 @@
 			if (formDataInput.description) formData.set('description', formDataInput.description);
 			if (formDataInput.wiki_link) formData.set('wiki_link', formDataInput.wiki_link);
 			if (formDataInput.image_url) formData.set('image_url', formDataInput.image_url);
+			if (formDataInput.category_id) formData.set('category_id', formDataInput.category_id);
 
 			if (editingItem) {
 				formData.set('id', editingItem.id);
@@ -147,6 +149,7 @@
 		<ItemForm
 			data={editingItem}
 			mode={editingItem ? 'edit' : 'create'}
+			categories={data.categories || []}
 			onSubmit={handleSubmit}
 			onCancel={handleCancel}
 		/>

@@ -144,6 +144,7 @@ export interface ItemFormData {
   description?: string;
   wiki_link?: string;
   image_url?: string;
+  category_id?: string | null;
   created_at?: string;
 }
 

@@ -8,14 +8,22 @@
 	import ItemTooltip from './ItemTooltip.svelte';
 	import type { ItemFormData } from '$lib/api/types';
 
+	interface Category {
+		id: string;
+		name: string;
+		slug: string;
+		icon_url: string | null;
+	}
+
 	interface Props {
 		data?: Partial<ItemFormData> | null;
 		mode?: 'create' | 'edit';
+		categories?: Category[];
 		onSubmit?: (data: ItemFormData) => void;
 		onCancel?: () => void;
 	}
 
-	let { data = null, mode = 'create', onSubmit, onCancel }: Props = $props();
+	let { data = null, mode = 'create', categories = [], onSubmit, onCancel }: Props = $props();
 
 	let formData = $state<ItemFormData>({
 		id: data?.id || undefined,
@@ -23,7 +31,8 @@
 		type: data?.type || '',
 		description: data?.description || '',
 		wiki_link: data?.wiki_link || '',
-		image_url: data?.image_url || ''
+		image_url: data?.image_url || '',
+		category_id: data?.category_id || null
 	});
 
 	let errors = $state({
@@ -109,6 +118,28 @@
 					{/if}
 				</div>
 			</div>
+
+			{#if formData.type === 'item' && categories.length > 0}
+				<div class="space-y-2">
+					<Label>Category</Label>
+					<Select.Root
+						type="single"
+						value={formData.category_id || undefined}
+						onValueChange={(val) => { formData.category_id = val || null; }}
+					>
+						<Select.Trigger class="w-full">
+							<span class={formData.category_id ? '' : 'text-muted-foreground'}>
+								{categories.find(c => c.id === formData.category_id)?.name || 'No category'}
+							</span>
+						</Select.Trigger>
+						<Select.Content>
+							{#each categories as cat}
+								<Select.Item value={cat.id} label={cat.name} />
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+			{/if}
 
 			<div class="space-y-2">
 				<Label for="item-desc">Description</Label>
