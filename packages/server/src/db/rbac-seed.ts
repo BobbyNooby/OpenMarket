@@ -48,6 +48,12 @@ const permissions = [
 
   // Audit
   { id: "audit:read", name: "audit:read", description: "View audit logs" },
+
+  // Messaging
+  { id: "messages:send", name: "messages:send", description: "Send messages" },
+  { id: "messages:read", name: "messages:read", description: "Read messages" },
+  { id: "messages:delete", name: "messages:delete", description: "Delete own messages" },
+  { id: "messages:moderate", name: "messages:moderate", description: "Moderate any message" },
 ];
 
 const roles = [
@@ -64,6 +70,7 @@ const rolePermissionMap: Record<string, string[]> = {
     "item:read", "currency:read",
     "profile:read", "profile:update",
     "report:create",
+    "messages:send", "messages:read", "messages:delete",
   ],
   moderator: [
     "listing:read", "listing:create", "listing:update", "listing:delete", "listing:moderate",
@@ -72,6 +79,7 @@ const rolePermissionMap: Record<string, string[]> = {
     "profile:read", "profile:update",
     "user:ban", "user:unban", "user:warn",
     "report:create", "report:moderate",
+    "messages:send", "messages:read", "messages:delete", "messages:moderate",
   ],
   "database-maintainer": [
     "listing:read", "listing:create", "listing:update", "listing:delete",

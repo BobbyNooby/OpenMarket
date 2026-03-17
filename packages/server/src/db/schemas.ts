@@ -7,6 +7,7 @@ import {
   boolean,
   integer,
   index,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 
@@ -183,6 +184,51 @@ export const reportsTable = pgTable("reports", {
   index("idx_reports_target").on(t.target_type, t.target_id),
 ]);
 
+// --- messaging ---
+export const conversationsTable = pgTable("conversations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+  listing_id: uuid("listing_id").references(() => listingsTable.id, {
+    onDelete: "set null",
+    onUpdate: "cascade",
+  }),
+}, (t) => [
+  index("idx_conversations_listing").on(t.listing_id),
+  index("idx_conversations_updated").on(t.updated_at),
+]);
+
+export const conversationParticipantsTable = pgTable("conversation_participants", {
+  conversation_id: uuid("conversation_id")
+    .notNull()
+    .references(() => conversationsTable.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  user_id: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  joined_at: timestamp("joined_at").defaultNow().notNull(),
+  last_read_at: timestamp("last_read_at"),
+}, (t) => [
+  primaryKey({ columns: [t.conversation_id, t.user_id] }),
+  index("idx_participants_user").on(t.user_id),
+]);
+
+export const messagesTable = pgTable("messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversation_id: uuid("conversation_id")
+    .notNull()
+    .references(() => conversationsTable.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  sender_id: text("sender_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  content: text("content").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  edited_at: timestamp("edited_at"),
+  is_deleted: boolean("is_deleted").notNull().default(false),
+}, (t) => [
+  index("idx_messages_conversation_created").on(t.conversation_id, t.created_at),
+  index("idx_messages_sender").on(t.sender_id),
+]);
+
 // --- Type exports ---
 export type ItemCategoryInsert = typeof itemCategoriesTable.$inferInsert;
 export type ItemCategorySelect = typeof itemCategoriesTable.$inferSelect;
@@ -208,3 +254,9 @@ export type ListingOfferedCurrencySelect =
   typeof listingOfferedCurrenciesTable.$inferSelect;
 export type ReportInsert = typeof reportsTable.$inferInsert;
 export type ReportSelect = typeof reportsTable.$inferSelect;
+export type ConversationInsert = typeof conversationsTable.$inferInsert;
+export type ConversationSelect = typeof conversationsTable.$inferSelect;
+export type ConversationParticipantInsert = typeof conversationParticipantsTable.$inferInsert;
+export type ConversationParticipantSelect = typeof conversationParticipantsTable.$inferSelect;
+export type MessageInsert = typeof messagesTable.$inferInsert;
+export type MessageSelect = typeof messagesTable.$inferSelect;

@@ -3,6 +3,7 @@ import { cors } from "@elysiajs/cors";
 import { itemsRoutes, currenciesRoutes } from "./routes/items";
 import { listingsRoutes } from "./routes/listings/index";
 import { categoriesRoutes } from "./routes/categories";
+import { messagesRoutes } from "./routes/messages/index";
 import { usersRoutes } from "./routes/users";
 import { reportsRoutes } from "./routes/reports";
 import { adminRoutes } from "./routes/admin";
@@ -118,6 +119,7 @@ const app = new Elysia()
   .use(listingsRoutes)
   .use(usersRoutes)
   .use(reportsRoutes)
+  .use(messagesRoutes)
   .use(adminRoutes)
   .listen(process.env.API_PORT || 3000);
 
