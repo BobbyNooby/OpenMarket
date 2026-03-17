@@ -8,6 +8,7 @@
 	import { page } from '$app/stores';
 	import type { Item, Currency } from '$lib/api/types';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
+	import { debounce } from '$lib/utils/debounce';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import Search from '@lucide/svelte/icons/search';
 	import Package from '@lucide/svelte/icons/package';
@@ -48,7 +49,6 @@
 	// Search suggestions
 	let showSuggestions = $state(false);
 	let searchInputRef = $state<HTMLInputElement | null>(null);
-	let debounceTimer: ReturnType<typeof setTimeout>;
 
 	const suggestions = $derived(() => {
 		const q = searchQuery.trim().toLowerCase();
@@ -140,15 +140,11 @@
 	}
 
 	// Debounced search: waits 300ms after last keystroke
-	function debouncedSearch() {
-		clearTimeout(debounceTimer);
-		debounceTimer = setTimeout(() => {
-			// Only trigger if no specific item/currency is selected via suggestion
-			if (!selectedItemId && !selectedCurrencyId) {
-				applyFilters();
-			}
-		}, 300);
-	}
+	const debouncedSearch = debounce(() => {
+		if (!selectedItemId && !selectedCurrencyId) {
+			applyFilters();
+		}
+	}, 300);
 
 	function selectItem(item: Item) {
 		selectedItemId = item.id;
@@ -214,7 +210,7 @@
 		return () => {
 			observer.disconnect();
 			document.removeEventListener('click', handleClickOutside);
-			clearTimeout(debounceTimer);
+			debouncedSearch.cancel();
 		};
 	});
 
