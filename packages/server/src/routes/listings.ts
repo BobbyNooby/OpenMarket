@@ -9,7 +9,7 @@ import {
 	user,
 	userProfilesTable
 } from '../db/schemas';
-import { eq, desc, sql, and } from 'drizzle-orm';
+import { eq, desc, asc, sql, and, or, ilike, gte, lte, inArray } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/rbac';
 
 // Alias for requested currency (to distinguish from offered currencies join)
@@ -65,19 +65,70 @@ function serializeAuthor(userData: any, profile: any) {
 export const listingsRoutes = new Elysia({ prefix: '/listings' })
 	.use(authMiddleware)
 	// Get all listings with full details (author, requested item/currency, offered items/currencies)
-	// Supports pagination with ?limit=N&offset=M
+	// Supports pagination, search, filtering, and sorting
 	.get('/', async ({ query }) => {
 		try {
 			const limit = Math.min(Math.max(parseInt(query.limit || '20', 10), 1), 100);
 			const offset = Math.max(parseInt(query.offset || '0', 10), 0);
 			const statusFilter = query.status || 'active';
-			const statusCondition = statusFilter === 'all' ? undefined : eq(listingsTable.status, statusFilter as any);
+			const searchQuery = query.q?.trim();
+			const orderTypeFilter = query.orderType;
+			const itemIdFilter = query.itemId;
+			const currencyIdFilter = query.currencyId;
+			const categoryIdFilter = query.categoryId;
+			const sortBy = query.sortBy || 'newest';
+			const minAmount = query.minAmount ? parseInt(query.minAmount, 10) : undefined;
+			const maxAmount = query.maxAmount ? parseInt(query.maxAmount, 10) : undefined;
+
+			// Build dynamic WHERE conditions
+			const conditions: ReturnType<typeof eq>[] = [];
+
+			if (statusFilter !== 'all') {
+				conditions.push(eq(listingsTable.status, statusFilter as any));
+			}
+			if (orderTypeFilter && orderTypeFilter !== 'all') {
+				conditions.push(eq(listingsTable.order_type, orderTypeFilter as any));
+			}
+			if (itemIdFilter) {
+				conditions.push(eq(listingsTable.requested_item_id, itemIdFilter));
+			}
+			if (currencyIdFilter) {
+				conditions.push(eq(listingsTable.requested_currency_id, currencyIdFilter));
+			}
+			if (minAmount !== undefined && !isNaN(minAmount)) {
+				conditions.push(gte(listingsTable.amount, minAmount));
+			}
+			if (maxAmount !== undefined && !isNaN(maxAmount)) {
+				conditions.push(lte(listingsTable.amount, maxAmount));
+			}
+			if (searchQuery) {
+				conditions.push(
+					or(
+						ilike(itemsTable.name, `%${searchQuery}%`),
+						ilike(requestedCurrencyTable.name, `%${searchQuery}%`)
+					)!
+				);
+			}
+			if (categoryIdFilter) {
+				conditions.push(eq(itemsTable.category_id, categoryIdFilter));
+			}
+
+			const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+			// Determine sort order
+			const orderByClause = sortBy === 'oldest' ? asc(listingsTable.created_at)
+				: sortBy === 'amount_asc' ? asc(listingsTable.amount)
+				: sortBy === 'amount_desc' ? desc(listingsTable.amount)
+				: desc(listingsTable.created_at);
 
 			// Get total count for pagination info
 			const [{ count: totalCount }] = await db
 				.select({ count: sql<number>`count(*)::int` })
 				.from(listingsTable)
-				.where(statusCondition);
+				.innerJoin(user, eq(listingsTable.author_id, user.id))
+				.leftJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
+				.leftJoin(requestedCurrencyTable, eq(listingsTable.requested_currency_id, requestedCurrencyTable.id))
+				.where(whereClause);
 
 			// Get all listings with author and requested item OR currency (one will be null)
 			const listings = await db
@@ -123,78 +174,89 @@ export const listingsRoutes = new Elysia({ prefix: '/listings' })
 				.leftJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
 				.leftJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
 				.leftJoin(requestedCurrencyTable, eq(listingsTable.requested_currency_id, requestedCurrencyTable.id))
-				.where(statusCondition)
-				.orderBy(desc(listingsTable.created_at))
+				.where(whereClause)
+				.orderBy(orderByClause)
 				.limit(limit)
 				.offset(offset);
 
-			// For each listing, get offered items and currencies
-			const listingsWithOffers = await Promise.all(
-				listings.map(async (listing) => {
-					// Get offered items
-					const offeredItems = await db
-						.select({
-							item: {
-								id: itemsTable.id,
-								slug: itemsTable.slug,
-								name: itemsTable.name,
-								description: itemsTable.description,
-								wiki_link: itemsTable.wiki_link,
-								image_url: itemsTable.image_url,
-								created_at: itemsTable.created_at
-							},
-							amount: listingOfferedItemsTable.amount
-						})
-						.from(listingOfferedItemsTable)
-						.innerJoin(itemsTable, eq(listingOfferedItemsTable.item_id, itemsTable.id))
-						.where(eq(listingOfferedItemsTable.listing_id, listing.id));
+			// Batch-fetch offered items and currencies for all listings (2 queries instead of N*2)
+			const listingIds = listings.map((l) => l.id);
 
-					// Get offered currencies
-					const offeredCurrencies = await db
-						.select({
-							currency: {
-								id: currenciesTable.id,
-								slug: currenciesTable.slug,
-								name: currenciesTable.name,
-								description: currenciesTable.description,
-								wiki_link: currenciesTable.wiki_link,
-								image_url: currenciesTable.image_url,
-								created_at: currenciesTable.created_at
-							},
-							amount: listingOfferedCurrenciesTable.amount
-						})
-						.from(listingOfferedCurrenciesTable)
-						.innerJoin(
-							currenciesTable,
-							eq(listingOfferedCurrenciesTable.currency_id, currenciesTable.id)
-						)
-						.where(eq(listingOfferedCurrenciesTable.listing_id, listing.id));
+			const [allOfferedItems, allOfferedCurrencies] = listingIds.length > 0
+				? await Promise.all([
+					db.select({
+						listing_id: listingOfferedItemsTable.listing_id,
+						item: {
+							id: itemsTable.id,
+							slug: itemsTable.slug,
+							name: itemsTable.name,
+							description: itemsTable.description,
+							wiki_link: itemsTable.wiki_link,
+							image_url: itemsTable.image_url,
+							created_at: itemsTable.created_at
+						},
+						amount: listingOfferedItemsTable.amount
+					})
+					.from(listingOfferedItemsTable)
+					.innerJoin(itemsTable, eq(listingOfferedItemsTable.item_id, itemsTable.id))
+					.where(inArray(listingOfferedItemsTable.listing_id, listingIds)),
 
-					return {
-						id: listing.id,
-						created_at: listing.created_at.toISOString(),
-						author_id: listing.author.id,
-						requested_item_id: listing.requested_item?.id ?? undefined,
-						requested_currency_id: listing.requested_currency?.id ?? undefined,
-						amount: listing.amount,
-						order_type: listing.order_type,
-						paying_type: listing.paying_type,
-						status: listing.status,
-						expires_at: listing.expires_at?.toISOString() ?? null,
-						author: serializeAuthor(listing.author, listing.authorProfile),
-						requested_item: serializeItemOrNull(listing.requested_item),
-						requested_currency: serializeCurrencyOrNull(listing.requested_currency),
-						offered_items: offeredItems.map((o) => ({
-							item: serializeItem(o.item),
-							amount: o.amount
-						})),
-						offered_currencies: offeredCurrencies.map((o) => ({
-							currency: serializeCurrency(o.currency),
-							amount: o.amount
-						}))
-					};
-				})
-			);
+					db.select({
+						listing_id: listingOfferedCurrenciesTable.listing_id,
+						currency: {
+							id: currenciesTable.id,
+							slug: currenciesTable.slug,
+							name: currenciesTable.name,
+							description: currenciesTable.description,
+							wiki_link: currenciesTable.wiki_link,
+							image_url: currenciesTable.image_url,
+							created_at: currenciesTable.created_at
+						},
+						amount: listingOfferedCurrenciesTable.amount
+					})
+					.from(listingOfferedCurrenciesTable)
+					.innerJoin(currenciesTable, eq(listingOfferedCurrenciesTable.currency_id, currenciesTable.id))
+					.where(inArray(listingOfferedCurrenciesTable.listing_id, listingIds))
+				])
+				: [[], []];
+
+			// Group by listing ID for O(1) lookup
+			const offeredItemsByListing = new Map<string, typeof allOfferedItems>();
+			for (const row of allOfferedItems) {
+				const arr = offeredItemsByListing.get(row.listing_id) || [];
+				arr.push(row);
+				offeredItemsByListing.set(row.listing_id, arr);
+			}
+			const offeredCurrenciesByListing = new Map<string, typeof allOfferedCurrencies>();
+			for (const row of allOfferedCurrencies) {
+				const arr = offeredCurrenciesByListing.get(row.listing_id) || [];
+				arr.push(row);
+				offeredCurrenciesByListing.set(row.listing_id, arr);
+			}
+
+			const listingsWithOffers = listings.map((listing) => ({
+				id: listing.id,
+				created_at: listing.created_at.toISOString(),
+				author_id: listing.author.id,
+				requested_item_id: listing.requested_item?.id ?? undefined,
+				requested_currency_id: listing.requested_currency?.id ?? undefined,
+				amount: listing.amount,
+				order_type: listing.order_type,
+				paying_type: listing.paying_type,
+				status: listing.status,
+				expires_at: listing.expires_at?.toISOString() ?? null,
+				author: serializeAuthor(listing.author, listing.authorProfile),
+				requested_item: serializeItemOrNull(listing.requested_item),
+				requested_currency: serializeCurrencyOrNull(listing.requested_currency),
+				offered_items: (offeredItemsByListing.get(listing.id) || []).map((o) => ({
+					item: serializeItem(o.item),
+					amount: o.amount
+				})),
+				offered_currencies: (offeredCurrenciesByListing.get(listing.id) || []).map((o) => ({
+					currency: serializeCurrency(o.currency),
+					amount: o.amount
+				}))
+			}));
 
 			return {
 				success: true,
