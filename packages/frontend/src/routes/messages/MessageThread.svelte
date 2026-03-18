@@ -1,0 +1,240 @@
+<script lang="ts">
+	import { onMount, tick } from 'svelte';
+	import * as Avatar from '$lib/components/ui/avatar';
+	import * as ScrollArea from '$lib/components/ui/scroll-area';
+	import { Button } from '$lib/components/ui/button';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import Loader2 from '@lucide/svelte/icons/loader-2';
+
+	interface Participant {
+		user_id: string;
+		username: string;
+		display_name: string;
+		avatar: string | null;
+	}
+
+	interface Message {
+		id: string;
+		conversation_id: string;
+		sender_id: string;
+		content: string | null;
+		created_at: string;
+		edited_at: string | null;
+		is_deleted: boolean;
+		sender: {
+			user_id: string;
+			username: string;
+			display_name: string;
+			avatar: string | null;
+		};
+	}
+
+	interface Props {
+		messages: Message[];
+		currentUserId: string;
+		otherUser: Participant | null;
+		loading: boolean;
+		hasMore: boolean;
+		onLoadMore: () => void;
+		onBack: () => void;
+		typingUsers?: Set<string>;
+	}
+
+	let {
+		messages,
+		currentUserId,
+		otherUser,
+		loading,
+		hasMore,
+		onLoadMore,
+		onBack,
+		typingUsers
+	}: Props = $props();
+
+	let scrollContainer: HTMLDivElement | null = $state(null);
+	let sentinelRef: HTMLDivElement | null = $state(null);
+	let wasNearBottom = $state(true);
+	let prevMessageCount = $state(0);
+
+	const isTyping = $derived(typingUsers && typingUsers.size > 0);
+
+	function isNearBottom(): boolean {
+		if (!scrollContainer) return true;
+		const threshold = 100;
+		return (
+			scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight <
+			threshold
+		);
+	}
+
+	function scrollToBottom() {
+		if (scrollContainer) {
+			scrollContainer.scrollTop = scrollContainer.scrollHeight;
+		}
+	}
+
+	// Scroll to bottom when new messages arrive (if near bottom)
+	$effect(() => {
+		const count = messages.length;
+		if (count > prevMessageCount) {
+			if (wasNearBottom) {
+				tick().then(scrollToBottom);
+			}
+			prevMessageCount = count;
+		}
+	});
+
+	// Initial scroll to bottom
+	onMount(() => {
+		tick().then(scrollToBottom);
+	});
+
+	// Intersection observer for infinite scroll upward
+	$effect(() => {
+		if (!sentinelRef) return;
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0].isIntersecting && hasMore && !loading) {
+					onLoadMore();
+				}
+			},
+			{ threshold: 0.1 }
+		);
+		observer.observe(sentinelRef);
+		return () => observer.disconnect();
+	});
+
+	function formatTime(dateString: string): string {
+		return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+	}
+
+	function formatDate(dateString: string): string {
+		const date = new Date(dateString);
+		const today = new Date();
+		const yesterday = new Date(today);
+		yesterday.setDate(yesterday.getDate() - 1);
+
+		if (date.toDateString() === today.toDateString()) return 'Today';
+		if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+		return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+	}
+
+	function shouldShowDateSeparator(index: number): boolean {
+		if (index === 0) return true;
+		const prev = new Date(messages[index - 1].created_at).toDateString();
+		const curr = new Date(messages[index].created_at).toDateString();
+		return prev !== curr;
+	}
+
+	function shouldShowAvatar(index: number): boolean {
+		if (index === messages.length - 1) return true;
+		return messages[index].sender_id !== messages[index + 1].sender_id;
+	}
+</script>
+
+<div class="flex flex-1 flex-col overflow-hidden">
+	<!-- Thread Header -->
+	<div class="flex items-center gap-3 border-b border-border px-4 py-3">
+		<Button variant="ghost" size="icon" class="md:hidden" onclick={onBack}>
+			<ArrowLeft class="h-5 w-5" />
+		</Button>
+		<Avatar.Root class="h-8 w-8">
+			{#if otherUser?.avatar}
+				<Avatar.Image src={otherUser.avatar} alt={otherUser.display_name} />
+			{/if}
+			<Avatar.Fallback class="bg-primary text-xs font-bold text-primary-foreground">
+				{(otherUser?.display_name ?? '?').charAt(0).toUpperCase()}
+			</Avatar.Fallback>
+		</Avatar.Root>
+		<div>
+			<p class="text-sm font-semibold">{otherUser?.display_name ?? 'Unknown'}</p>
+			<p class="text-xs text-muted-foreground">@{otherUser?.username ?? 'unknown'}</p>
+		</div>
+	</div>
+
+	<!-- Messages -->
+	<div
+		class="flex-1 overflow-y-auto px-4 py-2"
+		bind:this={scrollContainer}
+		onscroll={() => (wasNearBottom = isNearBottom())}
+	>
+		<!-- Load more sentinel -->
+		{#if hasMore}
+			<div bind:this={sentinelRef} class="flex justify-center py-2">
+				{#if loading}
+					<Loader2 class="h-5 w-5 animate-spin text-muted-foreground" />
+				{/if}
+			</div>
+		{/if}
+
+		{#each messages as msg, i (msg.id)}
+			<!-- Date separator -->
+			{#if shouldShowDateSeparator(i)}
+				<div class="my-4 flex items-center gap-3">
+					<div class="h-px flex-1 bg-border"></div>
+					<span class="text-xs font-medium text-muted-foreground">
+						{formatDate(msg.created_at)}
+					</span>
+					<div class="h-px flex-1 bg-border"></div>
+				</div>
+			{/if}
+
+			<!-- Message -->
+			{@const isOwn = msg.sender_id === currentUserId}
+			{@const showAvatar = shouldShowAvatar(i)}
+			<div class="mb-1 flex {isOwn ? 'justify-end' : 'justify-start'}">
+				<div class="flex max-w-[75%] items-end gap-2 {isOwn ? 'flex-row-reverse' : ''}">
+					<!-- Avatar (shown for last message in a group) -->
+					{#if !isOwn && showAvatar}
+						<Avatar.Root class="h-7 w-7 flex-shrink-0">
+							{#if msg.sender.avatar}
+								<Avatar.Image src={msg.sender.avatar} alt={msg.sender.display_name} />
+							{/if}
+							<Avatar.Fallback class="bg-muted text-xs">
+								{msg.sender.display_name.charAt(0).toUpperCase()}
+							</Avatar.Fallback>
+						</Avatar.Root>
+					{:else if !isOwn}
+						<div class="w-7 flex-shrink-0"></div>
+					{/if}
+
+					<!-- Bubble -->
+					<div>
+						<div
+							class="rounded-2xl px-3 py-2 text-sm {isOwn
+								? 'rounded-br-md bg-primary text-primary-foreground'
+								: 'rounded-bl-md bg-muted text-foreground'}"
+						>
+							{#if msg.is_deleted}
+								<span class="italic text-muted-foreground/70">Message deleted</span>
+							{:else}
+								<p class="whitespace-pre-wrap break-words">{msg.content}</p>
+							{/if}
+						</div>
+						{#if showAvatar}
+							<p
+								class="mt-0.5 text-[10px] text-muted-foreground {isOwn ? 'text-right' : 'text-left'}"
+							>
+								{formatTime(msg.created_at)}
+							</p>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/each}
+
+		<!-- Typing indicator -->
+		{#if isTyping}
+			<div class="mb-1 flex items-center gap-2 py-1">
+				<div class="flex items-center gap-1 rounded-2xl bg-muted px-3 py-2">
+					<span class="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0ms]"></span>
+					<span class="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:150ms]"></span>
+					<span class="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:300ms]"></span>
+				</div>
+				<span class="text-xs text-muted-foreground">
+					{otherUser?.display_name ?? 'Someone'} is typing...
+				</span>
+			</div>
+		{/if}
+	</div>
+</div>

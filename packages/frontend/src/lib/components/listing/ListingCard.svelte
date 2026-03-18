@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import ItemButton from '../item/ItemButton.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -26,6 +27,29 @@
 	}
 
 	let { order, onContact, sessionUserId = null }: Props = $props();
+
+	async function defaultContact() {
+		if (!sessionUserId) return;
+		try {
+			const res = await fetch(`${PUBLIC_API_URL}/api/conversations`, {
+				method: 'POST',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					target_user_id: order.author_id,
+					listing_id: order.id
+				})
+			});
+			const json = await res.json();
+			if (json.success) {
+				goto(`/messages?conv=${json.data.id}`);
+			}
+		} catch {
+			toast.error('Failed to start conversation');
+		}
+	}
+
+	const handleContact = $derived(onContact ?? defaultContact);
 
 	let reportDialogOpen = $state(false);
 	let soldDialogOpen = $state(false);
@@ -371,7 +395,9 @@
 					<Flag class="h-4 w-4" />
 				</Button>
 			{/if}
-			<Button size="sm" onclick={onContact}>Contact</Button>
+			{#if canReport}
+			<Button size="sm" onclick={handleContact}>Contact</Button>
+		{/if}
 		</div>
 	</Card.Footer>
 </Card.Root>

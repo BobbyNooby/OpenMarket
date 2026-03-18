@@ -37,11 +37,6 @@
 	const buyOrders = $derived(listings.filter((o: any) => o.order_type === 'buy').slice(0, 6));
 	const sellOrders = $derived(listings.filter((o: any) => o.order_type === 'sell').slice(0, 6));
 
-	function handleContact(order: any) {
-		if (profile) {
-			alert(`Contact ${profile.display_name} (@${profile.username}) about this order!`);
-		}
-	}
 
 	function formatDate(dateString: string): string {
 		const date = new Date(dateString);
@@ -190,7 +185,7 @@
 							</h3>
 							<div class="space-y-4">
 								{#each buyOrders as order}
-									<ListingCard {order} onContact={() => handleContact(order)} sessionUserId={data.session?.user?.id} />
+									<ListingCard {order} sessionUserId={data.session?.user?.id} />
 								{/each}
 								{#if buyOrders.length === 0}
 									<p class="py-4 text-center text-muted-foreground">No buy orders</p>
@@ -204,7 +199,7 @@
 							</h3>
 							<div class="space-y-4">
 								{#each sellOrders as order}
-									<ListingCard {order} onContact={() => handleContact(order)} sessionUserId={data.session?.user?.id} />
+									<ListingCard {order} sessionUserId={data.session?.user?.id} />
 								{/each}
 								{#if sellOrders.length === 0}
 									<p class="py-4 text-center text-muted-foreground">No sell orders</p>

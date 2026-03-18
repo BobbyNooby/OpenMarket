@@ -214,9 +214,6 @@
 		};
 	});
 
-	function handleContact(order: TransformedListing) {
-		alert(`Contact ${order.author.display_name} (@${order.author.username}) about this order!`);
-	}
 
 	function clearFilters() {
 		searchQuery = '';
@@ -528,7 +525,7 @@
 				{:else}
 					<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
 						{#each listings as order (order.id)}
-							<ListingCard {order} onContact={() => handleContact(order)} sessionUserId={data.session?.user?.id} />
+							<ListingCard {order} sessionUserId={data.session?.user?.id} />
 						{/each}
 					</div>
 				{/if}

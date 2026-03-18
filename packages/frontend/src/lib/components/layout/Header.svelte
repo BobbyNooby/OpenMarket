@@ -2,9 +2,12 @@
 	import { goto } from '$app/navigation';
 	import { authClient } from '$lib/api/client.js';
 	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { createPermissionChecker, type Session } from '$lib/utils/permissions';
+	import { chatManager } from '$lib/stores/chat.svelte';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
 
 	interface Props {
 		session: Session;
@@ -63,6 +66,22 @@
 
 		<!-- Right: Navigation and User Section -->
 		<div class="flex items-center gap-6">
+			{#if session}
+				<a
+					href="/messages"
+					class="relative font-medium text-foreground transition-colors hover:text-primary"
+				>
+					<MessageSquare class="h-5 w-5" />
+					{#if chatManager.totalUnread > 0}
+						<Badge
+							variant="destructive"
+							class="absolute -right-2.5 -top-2 h-4 min-w-4 px-1 text-[10px]"
+						>
+							{chatManager.totalUnread > 99 ? '99+' : chatManager.totalUnread}
+						</Badge>
+					{/if}
+				</a>
+			{/if}
 			{#each rightLinks as { href, label }}
 				<a
 					{href}

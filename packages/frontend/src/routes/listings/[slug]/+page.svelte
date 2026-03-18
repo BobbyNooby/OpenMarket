@@ -21,9 +21,6 @@
 	const buyCount = $derived(listings.filter((l: TransformedListing) => l.order_type === 'buy').length);
 	const sellCount = $derived(listings.filter((l: TransformedListing) => l.order_type === 'sell').length);
 
-	function handleContact(order: TransformedListing) {
-		alert(`Contact ${order.author.display_name} (@${order.author.username}) about this order!`);
-	}
 </script>
 
 <div class="min-h-screen text-foreground">
@@ -150,7 +147,7 @@
 		{:else}
 			<div class="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
 				{#each filteredListings as order (order.id)}
-					<ListingCard {order} onContact={() => handleContact(order)} sessionUserId={data.session?.user?.id} />
+					<ListingCard {order} sessionUserId={data.session?.user?.id} />
 				{/each}
 			</div>
 		{/if}

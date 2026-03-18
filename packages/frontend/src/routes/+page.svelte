@@ -120,9 +120,6 @@
 		};
 	});
 
-	function handleContact(order: TransformedListing) {
-		alert(`Contact ${order.author.display_name} (@${order.author.username}) about this order!`);
-	}
 </script>
 
 <div class="min-h-screen text-foreground">
@@ -221,7 +218,7 @@
 						</h3>
 						<div class="space-y-4">
 							{#each buyOrders as order (order.id)}
-								<ListingCard {order} onContact={() => handleContact(order)} sessionUserId={data.session?.user?.id} />
+								<ListingCard {order} sessionUserId={data.session?.user?.id} />
 							{/each}
 							{#if buyOrders.length === 0}
 								<p class="py-4 text-center text-muted-foreground">No buy orders</p>
@@ -236,7 +233,7 @@
 						</h3>
 						<div class="space-y-4">
 							{#each sellOrders as order (order.id)}
-								<ListingCard {order} onContact={() => handleContact(order)} sessionUserId={data.session?.user?.id} />
+								<ListingCard {order} sessionUserId={data.session?.user?.id} />
 							{/each}
 							{#if sellOrders.length === 0}
 								<p class="py-4 text-center text-muted-foreground">No sell orders</p>
