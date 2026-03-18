@@ -86,6 +86,47 @@ export const conversationRoutes = new Elysia()
     },
   )
 
+  // GET /conversations/unread-count — lightweight unread count for header badge
+  .get("/conversations/unread-count", async ({ session, set }) => {
+    if (!session.user) { set.status = 401; return { success: false, error: "Unauthorized" }; }
+
+    const myParticipations = await db
+      .select({
+        conversation_id: conversationParticipantsTable.conversation_id,
+        last_read_at: conversationParticipantsTable.last_read_at,
+      })
+      .from(conversationParticipantsTable)
+      .where(eq(conversationParticipantsTable.user_id, session.user.id));
+
+    if (myParticipations.length === 0) return { success: true, count: 0 };
+
+    const convIds = myParticipations.map((p) => p.conversation_id);
+    const lastReadMap = new Map(myParticipations.map((p) => [p.conversation_id, p.last_read_at]));
+
+    const unreadMessages = await db
+      .select({
+        conversation_id: messagesTable.conversation_id,
+        created_at: messagesTable.created_at,
+        sender_id: messagesTable.sender_id,
+      })
+      .from(messagesTable)
+      .where(
+        and(
+          inArray(messagesTable.conversation_id, convIds),
+          eq(messagesTable.is_deleted, false),
+          ne(messagesTable.sender_id, session.user.id),
+        ),
+      );
+
+    let count = 0;
+    for (const msg of unreadMessages) {
+      const lastReadAt = lastReadMap.get(msg.conversation_id) ?? null;
+      if (lastReadAt === null || msg.created_at > lastReadAt) count++;
+    }
+
+    return { success: true, count };
+  })
+
   // GET /conversations — list authenticated user's conversations with previews + unread counts
   .get("/conversations", async ({ session, set }) => {
     if (!session.user) { set.status = 401; return { success: false, error: "Unauthorized" }; }

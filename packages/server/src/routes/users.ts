@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../db/db';
 import { user, userProfilesTable, usersActivityTable, profileReviewsTable } from '../db/schemas';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, ne, desc, ilike, or } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/rbac';
 
 export const usersRoutes = new Elysia({ prefix: '/users' })
@@ -69,6 +69,50 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 				description: t.Optional(t.String())
 			})
 		}
+	)
+	// Search users by username or display name
+	.get(
+		'/search',
+		async ({ query, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+			const q = query.q?.trim();
+			if (!q || q.length < 2) return { success: true, data: [] };
+
+			const results = await db
+				.select({
+					id: user.id,
+					name: user.name,
+					image: user.image,
+					username: userProfilesTable.username,
+				})
+				.from(user)
+				.innerJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
+				.where(
+					and(
+						ne(user.id, session.user.id),
+						or(
+							ilike(userProfilesTable.username, `%${q}%`),
+							ilike(user.name, `%${q}%`),
+						),
+					),
+				)
+				.limit(10);
+
+			return {
+				success: true,
+				data: results.map((r) => ({
+					id: r.id,
+					username: r.username,
+					display_name: r.name,
+					avatar: r.image,
+				})),
+			};
+		},
+		{
+			query: t.Object({
+				q: t.Optional(t.String()),
+			}),
+		},
 	)
 	// Get user profile by username
 	.get(

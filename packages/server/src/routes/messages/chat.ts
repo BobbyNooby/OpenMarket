@@ -7,8 +7,9 @@ import {
   userProfilesTable,
 } from "../../db/schemas";
 import { user as userTable } from "../../db/auth-schema";
-import { and, eq, lt, desc } from "drizzle-orm";
+import { and, eq, lt, ne, desc } from "drizzle-orm";
 import { authMiddleware } from "../../middleware/rbac";
+import { sendToUser } from "../ws/connection-manager";
 
 export const chatRoutes = new Elysia()
   .use(authMiddleware)
@@ -149,6 +150,38 @@ export const chatRoutes = new Elysia()
           .where(eq(conversationsTable.id, params.id)),
       ]);
 
+      // Broadcast via WebSocket to other participants
+      const others = await db
+        .select({ user_id: conversationParticipantsTable.user_id })
+        .from(conversationParticipantsTable)
+        .where(
+          and(
+            eq(conversationParticipantsTable.conversation_id, params.id),
+            ne(conversationParticipantsTable.user_id, session.user.id),
+          ),
+        );
+
+      for (const other of others) {
+        sendToUser(other.user_id, {
+          type: "new_message",
+          data: {
+            id: message.id,
+            conversation_id: message.conversation_id,
+            sender_id: message.sender_id,
+            content: message.content,
+            created_at: message.created_at.toISOString(),
+            edited_at: null,
+            is_deleted: false,
+            sender: {
+              user_id: session.user.id,
+              username: session.user.name,
+              display_name: session.user.name,
+              avatar: session.user.image ?? null,
+            },
+          },
+        });
+      }
+
       return {
         success: true,
         data: {
@@ -190,6 +223,21 @@ export const chatRoutes = new Elysia()
       }
 
       await db.update(messagesTable).set({ is_deleted: true }).where(eq(messagesTable.id, params.id));
+
+      // Broadcast deletion via WebSocket
+      const participants = await db
+        .select({ user_id: conversationParticipantsTable.user_id })
+        .from(conversationParticipantsTable)
+        .where(eq(conversationParticipantsTable.conversation_id, message.conversation_id));
+
+      for (const p of participants) {
+        if (p.user_id !== session.user.id) {
+          sendToUser(p.user_id, {
+            type: "message_deleted",
+            data: { message_id: params.id, conversation_id: message.conversation_id },
+          });
+        }
+      }
 
       return { success: true };
     },
