@@ -6,13 +6,26 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import Sun from '@lucide/svelte/icons/sun';
+	import Moon from '@lucide/svelte/icons/moon';
 	import Toaster from '$lib/components/ui/sonner/sonner.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { chatManager } from '$lib/stores/chat.svelte';
 
 	let { children, data } = $props();
 
 	onMount(() => {
 		initTheme();
+
+		// Connect WebSocket for real-time messaging (logged-in users only)
+		if (data.session?.user) {
+			chatManager.updateUnreadCount(data.unreadMessageCount ?? 0);
+			chatManager.connect();
+		}
+	});
+
+	onDestroy(() => {
+		chatManager.disconnect();
 	});
 </script>
 
@@ -26,7 +39,11 @@
 
 		<div class="fixed right-4 top-4 z-50">
 			<Button variant="outline" size="sm" onclick={() => toggleTheme()}>
-				{$themeMode === 'dark' ? '☀️' : '🌙'}
+				{#if $themeMode === 'dark'}
+					<Sun class="h-4 w-4" />
+				{:else}
+					<Moon class="h-4 w-4" />
+				{/if}
 			</Button>
 		</div>
 
