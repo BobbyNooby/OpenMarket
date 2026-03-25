@@ -34,7 +34,7 @@
 		}
 		try {
 			const res = await fetch(
-				`${PUBLIC_API_URL}/api/users/search?q=${encodeURIComponent(q.trim())}`,
+				`${PUBLIC_API_URL}/users/search?q=${encodeURIComponent(q.trim())}`,
 				{ credentials: 'include' }
 			);
 			const json = await res.json();

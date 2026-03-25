@@ -6,6 +6,7 @@ import { authMiddleware } from '../middleware/rbac';
 
 export const usersRoutes = new Elysia({ prefix: '/users' })
 	.use(authMiddleware)
+
 	// Create or update user profile (called after OAuth login)
 	.post(
 		'/profile',
