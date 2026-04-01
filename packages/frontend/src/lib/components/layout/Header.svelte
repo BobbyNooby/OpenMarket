@@ -7,6 +7,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { createPermissionChecker, type Session } from '$lib/utils/permissions';
 	import { chatManager } from '$lib/stores/chat.svelte';
+	import NotificationDropdown from './NotificationDropdown.svelte';
 	import MessageSquare from '@lucide/svelte/icons/message-square';
 
 	interface Props {
@@ -67,6 +68,7 @@
 		<!-- Right: Navigation and User Section -->
 		<div class="flex items-center gap-6">
 			{#if session}
+				<NotificationDropdown />
 				<a
 					href="/messages"
 					class="relative font-medium text-foreground transition-colors hover:text-primary"
