@@ -23,6 +23,18 @@ export type WsMessageOut =
       type: "message_deleted";
       data: { message_id: string; conversation_id: string };
     }
+  | {
+      type: "notification";
+      data: {
+        id: string;
+        type: string;
+        title: string;
+        body: string | null;
+        link: string | null;
+        is_read: boolean;
+        created_at: string;
+      };
+    }
   | { type: "pong" };
 
 export type WsMessageIn =

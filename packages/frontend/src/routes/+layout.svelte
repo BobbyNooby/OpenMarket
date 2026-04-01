@@ -11,6 +11,7 @@
 	import Toaster from '$lib/components/ui/sonner/sonner.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { chatManager } from '$lib/stores/chat.svelte';
+	import { notificationManager } from '$lib/stores/notifications.svelte';
 
 	let { children, data } = $props();
 
@@ -21,6 +22,7 @@
 		if (data.session?.user) {
 			chatManager.updateUnreadCount(data.unreadMessageCount ?? 0);
 			chatManager.connect();
+			notificationManager.fetch();
 		}
 	});
 

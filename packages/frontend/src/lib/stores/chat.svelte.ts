@@ -1,4 +1,5 @@
 import { PUBLIC_API_URL } from '$env/static/public';
+import { toast } from 'svelte-sonner';
 
 type WsMessageOut =
 	| {
@@ -22,6 +23,18 @@ type WsMessageOut =
 	| { type: 'typing'; data: { conversation_id: string; user_id: string } }
 	| { type: 'stop_typing'; data: { conversation_id: string; user_id: string } }
 	| { type: 'message_deleted'; data: { message_id: string; conversation_id: string } }
+	| {
+			type: 'notification';
+			data: {
+				id: string;
+				type: string;
+				title: string;
+				body: string | null;
+				link: string | null;
+				is_read: boolean;
+				created_at: string;
+			};
+	  }
 	| { type: 'pong' };
 
 type EventCallback = (data: unknown) => void;
@@ -131,6 +144,28 @@ class ChatManager {
 		}
 
 		if (msg.type === 'pong') return;
+
+		// Handle notification events — show toast and update notification store
+		if (msg.type === 'notification') {
+			// Dynamically import to avoid circular dependency
+			import('$lib/stores/notifications.svelte').then(({ notificationManager }) => {
+				notificationManager.addFromWebSocket(msg.data);
+			});
+
+			toast(msg.data.title, {
+				description: msg.data.body ?? undefined,
+				action: msg.data.link
+					? {
+							label: 'View',
+							onClick: () => {
+								window.location.href = msg.data.link!;
+							}
+						}
+					: undefined,
+				duration: 5000,
+			});
+			return;
+		}
 
 		// Bump unread count for messages not in the active conversation
 		if (msg.type === 'new_message' && msg.data.conversation_id !== this.activeConversationId) {
