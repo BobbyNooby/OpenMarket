@@ -12,6 +12,7 @@
     "build": "pnpm run -r build",
     "check": "pnpm run -r check",
     "setup": "pnpm install && pnpm docker:dev",
+    "db:push": "pnpm --filter @openmarket/server db:push",
     "db:studio": "pnpm --filter @openmarket/server db:studio"
   },
   "devDependencies": {

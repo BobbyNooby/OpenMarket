@@ -7,6 +7,7 @@ import { messagesRoutes } from "./routes/messages/index";
 import { wsRoutes } from "./routes/ws/index";
 import { usersRoutes } from "./routes/users";
 import { reportsRoutes } from "./routes/reports";
+import { notificationsRoutes } from "./routes/notifications";
 import { adminRoutes } from "./routes/admin";
 import { auth } from "./auth";
 import { authMiddleware } from "./middleware/rbac";
@@ -120,6 +121,7 @@ const app = new Elysia()
   .use(listingsRoutes)
   .use(usersRoutes)
   .use(reportsRoutes)
+  .use(notificationsRoutes)
   .use(messagesRoutes)
   .use(wsRoutes)
   .use(adminRoutes)

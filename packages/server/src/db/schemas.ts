@@ -184,6 +184,32 @@ export const reportsTable = pgTable("reports", {
   index("idx_reports_target").on(t.target_type, t.target_id),
 ]);
 
+// --- notifications ---
+export const notificationType = pgEnum("notification_type", [
+  "new_message",
+  "new_review",
+  "listing_expired",
+  "listing_sold",
+  "role_changed",
+  "warning_received",
+  "report_resolved",
+]);
+
+export const notificationsTable = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  type: notificationType("type").notNull(),
+  title: text("title").notNull(),
+  body: text("body"),
+  link: text("link"),
+  is_read: boolean("is_read").notNull().default(false),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("idx_notifications_user_read_created").on(t.user_id, t.is_read, t.created_at),
+]);
+
 // --- messaging ---
 export const conversationsTable = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -260,3 +286,5 @@ export type ConversationParticipantInsert = typeof conversationParticipantsTable
 export type ConversationParticipantSelect = typeof conversationParticipantsTable.$inferSelect;
 export type MessageInsert = typeof messagesTable.$inferInsert;
 export type MessageSelect = typeof messagesTable.$inferSelect;
+export type NotificationInsert = typeof notificationsTable.$inferInsert;
+export type NotificationSelect = typeof notificationsTable.$inferSelect;
