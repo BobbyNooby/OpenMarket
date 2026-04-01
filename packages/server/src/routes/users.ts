@@ -3,6 +3,7 @@ import { db } from '../db/db';
 import { user, userProfilesTable, usersActivityTable, profileReviewsTable } from '../db/schemas';
 import { eq, and, ne, desc, ilike, or } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/rbac';
+import { createNotification } from '../services/notifications';
 
 export const usersRoutes = new Elysia({ prefix: '/users' })
 	.use(authMiddleware)
@@ -274,6 +275,14 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 						comment: body.comment || null
 					})
 					.returning();
+
+				createNotification({
+					userId: profileUser.id,
+					type: "new_review",
+					title: `${session.user!.name} left a ${body.type} on your profile`,
+					body: body.comment || undefined,
+					link: `/profile/${profileUser.username}`,
+				});
 
 				return { success: true, data: review, updated: false };
 			} catch (err: any) {

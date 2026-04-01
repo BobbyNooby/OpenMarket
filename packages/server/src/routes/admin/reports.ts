@@ -7,6 +7,7 @@ import { eq, desc, count, and, inArray, isNotNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { authMiddleware } from '../../middleware/rbac';
 import { logAuditEvent } from '../../services/audit';
+import { createNotification } from '../../services/notifications';
 
 // Aliases for joining the user table multiple times
 const resolverUser = alias(user, 'resolver_user');
@@ -257,6 +258,13 @@ export const adminReportRoutes = new Elysia()
 					status: body.status,
 					targetType: existing.target_type,
 					targetId: existing.target_id,
+				});
+
+				createNotification({
+					userId: existing.reporter_id,
+					type: "report_resolved",
+					title: `Your report was ${body.status}`,
+					body: `Your ${existing.target_type} report has been reviewed and ${body.status}.`,
 				});
 
 				return { success: true, data: updated };

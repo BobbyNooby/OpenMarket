@@ -1,6 +1,7 @@
 import { db } from '../db/db';
 import { listingsTable } from '../db/schemas';
 import { eq, and, lt } from 'drizzle-orm';
+import { createNotification } from '../services/notifications';
 
 const EXPIRY_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -16,7 +17,17 @@ export async function expireListings() {
 				lt(listingsTable.expires_at, now)
 			)
 		)
-		.returning({ id: listingsTable.id });
+		.returning({ id: listingsTable.id, author_id: listingsTable.author_id });
+
+	for (const listing of expired) {
+		createNotification({
+			userId: listing.author_id,
+			type: "listing_expired",
+			title: "Your listing has expired",
+			body: "You can renew it from the listing page.",
+			link: `/listings/${listing.id}`,
+		});
+	}
 
 	if (expired.length > 0) {
 		console.log(`\x1b[33m[expiry]\x1b[0m Expired ${expired.length} listing(s)`);

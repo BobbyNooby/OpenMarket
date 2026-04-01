@@ -180,6 +180,7 @@ export const chatRoutes = new Elysia()
             },
           },
         });
+
       }
 
       return {

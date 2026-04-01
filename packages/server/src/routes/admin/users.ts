@@ -6,6 +6,7 @@ import { rolesTable, userRolesTable, userBansTable, userWarningsTable } from '..
 import { eq, ilike, or, and, desc, inArray, count, exists } from 'drizzle-orm';
 import { assignRole, removeRole, authMiddleware } from '../../middleware/rbac';
 import { logAuditEvent } from '../../services/audit';
+import { createNotification } from '../../services/notifications';
 
 export const adminUserRoutes = new Elysia()
 	.use(authMiddleware)
@@ -166,6 +167,11 @@ export const adminUserRoutes = new Elysia()
 
 				await assignRole(params.id, body.role);
 				await logAuditEvent(session.user!.id, 'role.assign', 'user', params.id, { role: body.role });
+				createNotification({
+					userId: params.id,
+					type: "role_changed",
+					title: `You were assigned the "${body.role}" role`,
+				});
 				return {
 					success: true,
 					message: `Role "${body.role}" assigned to user ${params.id}`
@@ -193,6 +199,11 @@ export const adminUserRoutes = new Elysia()
 			try {
 				await removeRole(params.id, params.role);
 				await logAuditEvent(session.user!.id, 'role.remove', 'user', params.id, { role: params.role });
+				createNotification({
+					userId: params.id,
+					type: "role_changed",
+					title: `Your "${params.role}" role was removed`,
+				});
 				return {
 					success: true,
 					message: `Role "${params.role}" removed from user ${params.id}`
@@ -339,6 +350,13 @@ export const adminUserRoutes = new Elysia()
 
 				await logAuditEvent(session.user!.id, 'user.warn', 'user', params.id, {
 					reason: body.reason,
+				});
+
+				createNotification({
+					userId: params.id,
+					type: "warning_received",
+					title: "You received a warning from a moderator",
+					body: body.reason,
 				});
 
 				return { success: true, data: warning };
