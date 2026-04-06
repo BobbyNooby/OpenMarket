@@ -5,10 +5,14 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import type { Item, Currency } from '$lib/api/types';
+	import { track } from '$lib/utils/analytics';
 	import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
 	import Coins from '@lucide/svelte/icons/coins';
 	import Search from '@lucide/svelte/icons/search';
 	import Package from '@lucide/svelte/icons/package';
+	import TrendingUp from '@lucide/svelte/icons/trending-up';
+	import Eye from '@lucide/svelte/icons/eye';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
 
 	let { data } = $props();
 	let searchQuery = $state('');
@@ -69,6 +73,16 @@
 	const buyOrders = $derived(listings.filter((o) => o.order_type === 'buy'));
 	const sellOrders = $derived(listings.filter((o) => o.order_type === 'sell'));
 
+	const trendingListings = $derived(
+		((data.trending || []) as any[]).map(transformListing).filter((l): l is TransformedListing => l !== null).slice(0, 6)
+	);
+	const popularListings = $derived(
+		((data.popular || []) as any[]).map(transformListing).filter((l): l is TransformedListing => l !== null).slice(0, 6)
+	);
+	const recommendedListings = $derived(
+		((data.recommended || []) as any[]).map(transformListing).filter((l): l is TransformedListing => l !== null).slice(0, 6)
+	);
+
 	async function loadMore() {
 		if (loading || !hasMore) return;
 
@@ -94,6 +108,8 @@
 	let sentinelRef = $state<HTMLDivElement | null>(null);
 
 	onMount(() => {
+		track('page_view');
+
 		const observer = new IntersectionObserver(
 			(entries) => {
 				if (entries[0].isIntersecting && hasMore && !loading) {
@@ -258,4 +274,58 @@
 			{/if}
 		</div>
 	</div>
+
+	{#if trendingListings.length > 0}
+		<div class="px-8 py-12">
+			<div class="mx-auto max-w-7xl">
+				<h2 class="mb-6 text-2xl font-bold flex items-center gap-2">
+					<TrendingUp class="h-6 w-6 text-primary" />
+					Trending Now
+				</h2>
+				<div class="flex gap-4 overflow-x-auto pb-4">
+					{#each trendingListings as order (order.id)}
+						<div class="min-w-[400px] flex-shrink-0">
+							<ListingCard {order} sessionUserId={data.session?.user?.id} />
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	{#if popularListings.length > 0}
+		<div class="px-8 py-12">
+			<div class="mx-auto max-w-7xl">
+				<h2 class="mb-6 text-2xl font-bold flex items-center gap-2">
+					<Eye class="h-6 w-6 text-primary" />
+					Popular This Week
+				</h2>
+				<div class="flex gap-4 overflow-x-auto pb-4">
+					{#each popularListings as order (order.id)}
+						<div class="min-w-[400px] flex-shrink-0">
+							<ListingCard {order} sessionUserId={data.session?.user?.id} />
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	{#if recommendedListings.length > 0}
+		<div class="px-8 py-12">
+			<div class="mx-auto max-w-7xl">
+				<h2 class="mb-6 text-2xl font-bold flex items-center gap-2">
+					<Sparkles class="h-6 w-6 text-primary" />
+					Recommended for You
+				</h2>
+				<div class="flex gap-4 overflow-x-auto pb-4">
+					{#each recommendedListings as order (order.id)}
+						<div class="min-w-[400px] flex-shrink-0">
+							<ListingCard {order} sessionUserId={data.session?.user?.id} />
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
