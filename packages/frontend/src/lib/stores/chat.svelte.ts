@@ -122,7 +122,7 @@ class ChatManager {
 		this.wsSend({ type: 'stop_typing', data: { conversation_id: conversationId } });
 	}
 
-	/** Conversation currently being viewed — messages here don't bump unread */
+	// Conversation currently being viewed — messages here don't bump unread
 	activeConversationId = $state<string | null>(null);
 
 	updateUnreadCount(count: number): void {
