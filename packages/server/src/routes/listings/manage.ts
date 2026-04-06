@@ -7,6 +7,7 @@ import {
 } from '../../db/schemas';
 import { eq } from 'drizzle-orm';
 import { authMiddleware } from '../../middleware/rbac';
+import { trackEvent } from '../../services/analytics';
 
 const offeredBody = t.Object({
 	requested_item_id: t.Optional(t.String()),
@@ -66,6 +67,7 @@ export const listingsManageRoutes = new Elysia()
 					);
 				}
 
+				trackEvent({ type: "listing_created", userId: session.user.id, metadata: { listing_id: listing.id, order_type: body.order_type, item_id: body.requested_item_id } });
 				return { success: true, data: listing };
 			} catch (err: any) {
 				console.error('Create listing error:', err);
@@ -192,6 +194,7 @@ export const listingsManageRoutes = new Elysia()
 					.where(eq(listingsTable.id, params.id))
 					.returning();
 
+				trackEvent({ type: "listing_renewed", userId: session.user.id, metadata: { listing_id: params.id } });
 				return { success: true, data: updated };
 			} catch (err: any) {
 				console.error('Renew listing error:', err);
@@ -220,6 +223,7 @@ export const listingsManageRoutes = new Elysia()
 				}
 
 				const [listing] = await db.delete(listingsTable).where(eq(listingsTable.id, params.id)).returning();
+				trackEvent({ type: "listing_sold", userId: session.user.id, metadata: { listing_id: params.id } });
 				return { success: true, data: listing };
 			} catch (err: any) {
 				console.error('Delete listing error:', err);

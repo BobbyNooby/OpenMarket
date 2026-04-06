@@ -4,6 +4,7 @@ import { user, userProfilesTable, usersActivityTable, profileReviewsTable } from
 import { eq, and, ne, desc, ilike, or } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/rbac';
 import { createNotification } from '../services/notifications';
+import { trackEvent } from '../services/analytics';
 
 export const usersRoutes = new Elysia({ prefix: '/users' })
 	.use(authMiddleware)
@@ -284,6 +285,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 					link: `/profile/${profileUser.username}`,
 				});
 
+				trackEvent({ type: "review_submitted", userId: session.user!.id, metadata: { target_user_id: profileUser.id, type: body.type } });
 				return { success: true, data: review, updated: false };
 			} catch (err: any) {
 				console.error('Submit review error:', err);

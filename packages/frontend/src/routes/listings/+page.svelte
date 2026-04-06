@@ -10,6 +10,7 @@
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 	import { debounce } from '$lib/utils/debounce';
 	import { PUBLIC_API_URL } from '$env/static/public';
+	import { track } from '$lib/utils/analytics';
 	import Search from '@lucide/svelte/icons/search';
 	import Package from '@lucide/svelte/icons/package';
 	import Coins from '@lucide/svelte/icons/coins';
@@ -142,6 +143,9 @@
 	// Debounced search: waits 300ms after last keystroke
 	const debouncedSearch = debounce(() => {
 		if (!selectedItemId && !selectedCurrencyId) {
+			if (searchQuery.trim()) {
+				track('search', { query: searchQuery.trim(), filters: { orderType: orderTypeFilter, sortBy, categoryId: selectedCategoryId } });
+			}
 			applyFilters();
 		}
 	}, 300);
@@ -151,6 +155,7 @@
 		selectedCurrencyId = null;
 		searchQuery = item.name;
 		showSuggestions = false;
+		track('suggestion_clicked', { type: 'item', id: item.id, name: item.name, query: searchQuery });
 		applyFilters();
 	}
 
@@ -159,6 +164,7 @@
 		selectedItemId = null;
 		searchQuery = currency.name;
 		showSuggestions = false;
+		track('suggestion_clicked', { type: 'currency', id: currency.id, name: currency.name, query: searchQuery });
 		applyFilters();
 	}
 
@@ -354,6 +360,7 @@
 									class="flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors {orderTypeFilter === opt.value ? opt.color : 'bg-background text-foreground'}"
 									onclick={() => {
 										orderTypeFilter = opt.value as any;
+										track('filter_applied', { filter_type: 'orderType', value: opt.value });
 										applyFilters();
 									}}
 								>
@@ -393,7 +400,7 @@
 							id="sort"
 							class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 							bind:value={sortBy}
-							onchange={() => applyFilters()}
+							onchange={() => { track('filter_applied', { filter_type: 'sortBy', value: sortBy }); applyFilters(); }}
 						>
 							<option value="newest">Newest First</option>
 							<option value="oldest">Oldest First</option>
@@ -410,7 +417,7 @@
 								id="category-filter"
 								class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 								bind:value={selectedCategoryId}
-								onchange={() => applyFilters()}
+								onchange={() => { track('filter_applied', { filter_type: 'category', value: selectedCategoryId }); applyFilters(); }}
 							>
 								<option value={null}>All Categories</option>
 								{#each categories as cat}

@@ -18,6 +18,7 @@
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { toast } from 'svelte-sonner';
+	import { track } from '$lib/utils/analytics';
 	import type { TransformedListing } from '$lib/utils/listings';
 
 	interface Props {
@@ -30,6 +31,7 @@
 
 	async function defaultContact() {
 		if (!sessionUserId) return;
+		track('listing_contact', { listing_id: order.id, author_id: order.author_id });
 		try {
 			const res = await fetch(`${PUBLIC_API_URL}/api/conversations`, {
 				method: 'POST',
@@ -50,6 +52,25 @@
 	}
 
 	const handleContact = $derived(onContact ?? defaultContact);
+
+	// Track listing view once when card enters viewport
+	let viewTracked = false;
+	let cardRef = $state<HTMLElement | null>(null);
+	$effect(() => {
+		if (!cardRef || viewTracked) return;
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				if (entry.isIntersecting && !viewTracked) {
+					viewTracked = true;
+					track('listing_view', { listing_id: order.id, source: 'browse' });
+					observer.disconnect();
+				}
+			},
+			{ threshold: 0.5 }
+		);
+		observer.observe(cardRef);
+		return () => observer.disconnect();
+	});
 
 	let reportDialogOpen = $state(false);
 	let soldDialogOpen = $state(false);
@@ -224,7 +245,7 @@
 </script>
 
 {#if !deleted}
-<Card.Root class="gap-3 py-4">
+<Card.Root bind:ref={cardRef} class="gap-3 py-4">
 	<Card.Header>
 		<Card.Title>
 			<a

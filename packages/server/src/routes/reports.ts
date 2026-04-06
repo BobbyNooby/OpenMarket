@@ -4,6 +4,7 @@ import { reportsTable, listingsTable, profileReviewsTable } from '../db/schemas'
 import { user } from '../db/auth-schema';
 import { eq, and } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/rbac';
+import { trackEvent } from '../services/analytics';
 
 export const reportsRoutes = new Elysia({ prefix: '/reports' })
 	.use(authMiddleware)
@@ -95,6 +96,7 @@ export const reportsRoutes = new Elysia({ prefix: '/reports' })
 					})
 					.returning();
 
+				trackEvent({ type: "report_submitted", userId: session.user.id, metadata: { target_type: body.target_type, target_id: body.target_id } });
 				return {
 					success: true,
 					data: {

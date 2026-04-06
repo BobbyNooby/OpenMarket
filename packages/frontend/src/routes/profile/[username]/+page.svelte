@@ -10,11 +10,19 @@
 	import { invalidateAll } from '$app/navigation';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 	import { toast } from 'svelte-sonner';
+	import { track } from '$lib/utils/analytics';
+	import { onMount } from 'svelte';
 
 	let { data } = $props();
 
 	const session = $derived(data.session);
 	const profile = $derived(data.profile);
+
+	onMount(() => {
+		if (profile && !isOwnProfile) {
+			track('profile_view', { target_user_id: profile.id });
+		}
+	});
 	let reviews = $state<NonNullable<typeof data.profile>['reviews']>([]);
 	$effect(() => { reviews = data.profile?.reviews ?? []; });
 

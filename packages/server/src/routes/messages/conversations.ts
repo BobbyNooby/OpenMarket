@@ -9,6 +9,7 @@ import {
 import { user as userTable } from "../../db/auth-schema";
 import { and, eq, inArray, ne, desc, sql } from "drizzle-orm";
 import { authMiddleware } from "../../middleware/rbac";
+import { trackEvent } from "../../services/analytics";
 
 export const conversationRoutes = new Elysia()
   .use(authMiddleware)
@@ -76,6 +77,7 @@ export const conversationRoutes = new Elysia()
         { conversation_id: conversation.id, user_id: target_user_id },
       ]);
 
+      trackEvent({ type: "conversation_started", userId: session.user.id, metadata: { conversation_id: conversation.id, target_user_id: body.target_user_id, listing_id: body.listing_id } });
       return { success: true, data: conversation, existing: false };
     },
     {

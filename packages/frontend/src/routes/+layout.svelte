@@ -12,11 +12,14 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { chatManager } from '$lib/stores/chat.svelte';
 	import { notificationManager } from '$lib/stores/notifications.svelte';
+	import { track } from '$lib/utils/analytics';
+	import { afterNavigate } from '$app/navigation';
 
 	let { children, data } = $props();
 
 	onMount(() => {
 		initTheme();
+		track('page_view');
 
 		// Connect WebSocket for real-time messaging (logged-in users only)
 		if (data.session?.user) {
@@ -24,6 +27,10 @@
 			chatManager.connect();
 			notificationManager.fetch();
 		}
+	});
+
+	afterNavigate(() => {
+		track('page_view');
 	});
 
 	onDestroy(() => {
