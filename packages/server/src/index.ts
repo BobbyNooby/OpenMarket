@@ -8,6 +8,7 @@ import { wsRoutes } from "./routes/ws/index";
 import { usersRoutes } from "./routes/users";
 import { reportsRoutes } from "./routes/reports";
 import { notificationsRoutes } from "./routes/notifications";
+import { analyticsRoutes } from "./routes/analytics";
 import { adminRoutes } from "./routes/admin";
 import { auth } from "./auth";
 import { authMiddleware } from "./middleware/rbac";
@@ -124,6 +125,7 @@ const app = new Elysia()
   .use(notificationsRoutes)
   .use(messagesRoutes)
   .use(wsRoutes)
+  .use(analyticsRoutes)
   .use(adminRoutes)
   .listen(process.env.API_PORT || 3000);
 

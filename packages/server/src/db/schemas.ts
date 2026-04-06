@@ -184,6 +184,25 @@ export const reportsTable = pgTable("reports", {
   index("idx_reports_target").on(t.target_type, t.target_id),
 ]);
 
+// --- analytics events ---
+export const analyticsEventsTable = pgTable("analytics_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  event_type: text("event_type").notNull(),
+  user_id: text("user_id").references(() => user.id, { onDelete: "set null", onUpdate: "cascade" }),
+  session_id: text("session_id"),
+  metadata: text("metadata"), // JSON string — jsonb would need raw sql
+  path: text("path"),
+  referrer: text("referrer"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("idx_analytics_type_created").on(t.event_type, t.created_at),
+  index("idx_analytics_user_created").on(t.user_id, t.created_at),
+  index("idx_analytics_session").on(t.session_id),
+]);
+
+export type AnalyticsEventInsert = typeof analyticsEventsTable.$inferInsert;
+export type AnalyticsEventSelect = typeof analyticsEventsTable.$inferSelect;
+
 // --- notifications ---
 export const notificationType = pgEnum("notification_type", [
   "new_message",
