@@ -1,7 +1,8 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../db/db';
-import { user, userProfilesTable, usersActivityTable, profileReviewsTable } from '../db/schemas';
-import { eq, and, ne, desc, ilike, or } from 'drizzle-orm';
+import { user, userProfilesTable, usersActivityTable, profileReviewsTable, listingsTable, tradesTable } from '../db/schemas';
+import { eq, and, ne, desc, ilike, or, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { authMiddleware } from '../middleware/rbac';
 import { createNotification } from '../services/notifications';
 import { trackEvent } from '../services/analytics';
@@ -145,6 +146,36 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 
 				const userRow = userRows[0];
 
+				// Fetch listing counts by status
+				const listingCounts = await db
+					.select({
+						status: listingsTable.status,
+						count: sql<number>`count(*)::int`,
+					})
+					.from(listingsTable)
+					.where(eq(listingsTable.author_id, userRow.id))
+					.groupBy(listingsTable.status);
+
+				const listingStats = {
+					active: 0, paused: 0, expired: 0, total: 0,
+				};
+				for (const row of listingCounts) {
+					listingStats[row.status as keyof typeof listingStats] = row.count;
+					listingStats.total += row.count;
+				}
+
+				// Fetch trade count
+				const [tradeCountResult] = await db
+					.select({ count: sql<number>`count(*)::int` })
+					.from(tradesTable)
+					.where(
+						or(
+							eq(tradesTable.seller_id, userRow.id),
+							eq(tradesTable.buyer_id, userRow.id),
+						)
+					);
+				const tradeCount = tradeCountResult?.count ?? 0;
+
 				// Fetch profile reviews with voter info
 				const reviewRows = await db
 					.select({
@@ -188,6 +219,17 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 					}
 				}));
 
+				// Calculate trust score
+				const upvoteCount = reviews.filter(r => r.type === 'upvote').length;
+				const totalReviewCount = reviews.length;
+				const upvoteRatio = totalReviewCount > 0 ? upvoteCount / totalReviewCount : 0.5;
+				const accountAgeDays = (Date.now() - new Date(userRow.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+				const ageFactor = Math.min(accountAgeDays / 365, 1);
+				const tradeFactor = listingStats.total > 0 ? Math.min(tradeCount / listingStats.total, 1) : 0;
+				const trustScore = Math.min(Math.round(
+					(upvoteRatio * 40) + (ageFactor * 30) + (tradeFactor * 30)
+				), 100);
+
 				return {
 					success: true,
 					data: {
@@ -199,6 +241,9 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 						description: userRow.description ?? undefined,
 						is_active: userRow.is_active ?? false,
 						last_activity_at: userRow.last_activity_at?.toISOString() ?? undefined,
+						listing_stats: listingStats,
+						trade_count: tradeCount,
+						trust_score: trustScore,
 						reviews
 					}
 				};
@@ -301,6 +346,91 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 				comment: t.Optional(t.String())
 			})
 		}
+	)
+	// Get authenticated user's trade history
+	.get(
+		'/trades',
+		async ({ query, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+
+			const limit = Math.min(Math.max(Number(query.limit) || 20, 1), 100);
+			const offset = Math.max(Number(query.offset) || 0, 0);
+			const userId = session.user.id;
+
+			try {
+				const sellerUser = alias(user, 'seller_user');
+				const buyerUser = alias(user, 'buyer_user');
+				const sellerProfile = alias(userProfilesTable, 'seller_profile');
+				const buyerProfile = alias(userProfilesTable, 'buyer_profile');
+
+				// Get total count
+				const [totalResult] = await db
+					.select({ count: sql<number>`count(*)::int` })
+					.from(tradesTable)
+					.where(or(eq(tradesTable.seller_id, userId), eq(tradesTable.buyer_id, userId)));
+
+				const total = totalResult?.count ?? 0;
+
+				// Fetch trades with seller/buyer info
+				const trades = await db
+					.select({
+						id: tradesTable.id,
+						listing_snapshot: tradesTable.listing_snapshot,
+						completed_at: tradesTable.completed_at,
+						seller_id: tradesTable.seller_id,
+						buyer_id: tradesTable.buyer_id,
+						seller_name: sellerUser.name,
+						seller_image: sellerUser.image,
+						seller_username: sellerProfile.username,
+						buyer_name: buyerUser.name,
+						buyer_image: buyerUser.image,
+						buyer_username: buyerProfile.username,
+					})
+					.from(tradesTable)
+					.innerJoin(sellerUser, eq(tradesTable.seller_id, sellerUser.id))
+					.innerJoin(sellerProfile, eq(sellerUser.id, sellerProfile.userId))
+					.leftJoin(buyerUser, eq(tradesTable.buyer_id, buyerUser.id))
+					.leftJoin(buyerProfile, eq(buyerUser.id, buyerProfile.userId))
+					.where(or(eq(tradesTable.seller_id, userId), eq(tradesTable.buyer_id, userId)))
+					.orderBy(desc(tradesTable.completed_at))
+					.limit(limit)
+					.offset(offset);
+
+				const data = trades.map((t) => ({
+					id: t.id,
+					listing_snapshot: JSON.parse(t.listing_snapshot),
+					completed_at: t.completed_at.toISOString(),
+					seller: {
+						id: t.seller_id,
+						username: t.seller_username,
+						display_name: t.seller_name,
+						avatar: t.seller_image,
+					},
+					buyer: t.buyer_id ? {
+						id: t.buyer_id,
+						username: t.buyer_username,
+						display_name: t.buyer_name,
+						avatar: t.buyer_image,
+					} : null,
+					role: t.seller_id === userId ? 'seller' as const : 'buyer' as const,
+				}));
+
+				return {
+					success: true,
+					data,
+					pagination: { total, limit, offset, hasMore: offset + limit < total },
+				};
+			} catch (err: any) {
+				console.error('Get trades error:', err);
+				return { success: false, error: err.message, status: 500 };
+			}
+		},
+		{
+			query: t.Object({
+				limit: t.Optional(t.String()),
+				offset: t.Optional(t.String()),
+			}),
+		},
 	)
 	// Get user by ID
 	.get(

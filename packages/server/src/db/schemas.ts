@@ -203,6 +203,25 @@ export const analyticsEventsTable = pgTable("analytics_events", {
 export type AnalyticsEventInsert = typeof analyticsEventsTable.$inferInsert;
 export type AnalyticsEventSelect = typeof analyticsEventsTable.$inferSelect;
 
+// --- trades ---
+export const tradesTable = pgTable("trades", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  seller_id: text("seller_id").notNull()
+    .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  buyer_id: text("buyer_id")
+    .references(() => user.id, { onDelete: "set null", onUpdate: "cascade" }),
+  listing_snapshot: text("listing_snapshot").notNull(), // JSON string of frozen listing data
+  completed_at: timestamp("completed_at").defaultNow().notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("idx_trades_seller").on(t.seller_id),
+  index("idx_trades_buyer").on(t.buyer_id),
+  index("idx_trades_completed").on(t.completed_at),
+]);
+
+export type TradeInsert = typeof tradesTable.$inferInsert;
+export type TradeSelect = typeof tradesTable.$inferSelect;
+
 // --- notifications ---
 export const notificationType = pgEnum("notification_type", [
   "new_message",

@@ -4,8 +4,15 @@ import {
 	listingsTable,
 	listingOfferedItemsTable,
 	listingOfferedCurrenciesTable,
+	itemsTable,
+	currenciesTable,
+	tradesTable,
+	conversationsTable,
+	conversationParticipantsTable,
+	userProfilesTable,
+	user,
 } from '../../db/schemas';
-import { eq } from 'drizzle-orm';
+import { eq, and, ne, inArray } from 'drizzle-orm';
 import { authMiddleware } from '../../middleware/rbac';
 import { trackEvent } from '../../services/analytics';
 
@@ -204,16 +211,77 @@ export const listingsManageRoutes = new Elysia()
 		{ params: t.Object({ id: t.String() }) },
 	)
 
-	// DELETE /:id — hard delete (sold = delete)
-	.delete(
-		'/:id',
+	// GET /:id/contacts — users who messaged about this listing (for buyer selection on sold)
+	.get(
+		'/:id/contacts',
 		async ({ params, session, set }) => {
 			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
 
+			const [listing] = await db
+				.select({ author_id: listingsTable.author_id })
+				.from(listingsTable)
+				.where(eq(listingsTable.id, params.id));
+
+			if (!listing) { set.status = 404; return { success: false, error: 'Listing not found' }; }
+			if (listing.author_id !== session.user.id) {
+				set.status = 403;
+				return { success: false, error: 'Forbidden' };
+			}
+
+			// Find conversations linked to this listing, then get the other participants
+			const convs = await db
+				.select({ id: conversationsTable.id })
+				.from(conversationsTable)
+				.where(eq(conversationsTable.listing_id, params.id));
+
+			if (convs.length === 0) return { success: true, data: [] };
+
+			const convIds = convs.map((c) => c.id);
+
+			const contacts = await db
+				.selectDistinct({
+					user_id: user.id,
+					username: userProfilesTable.username,
+					avatar: user.image,
+				})
+				.from(conversationParticipantsTable)
+				.innerJoin(user, eq(conversationParticipantsTable.user_id, user.id))
+				.innerJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
+				.where(
+					and(
+						inArray(conversationParticipantsTable.conversation_id, convIds),
+						ne(conversationParticipantsTable.user_id, session.user.id),
+					),
+				);
+
+			return { success: true, data: contacts };
+		},
+		{ params: t.Object({ id: t.String() }) },
+	)
+
+	// DELETE /:id — hard delete (sold = delete), creates trade record
+	.delete(
+		'/:id',
+		async ({ params, body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+
 			try {
+				// Fetch listing with requested item/currency names
 				const [existing] = await db
-					.select({ id: listingsTable.id, author_id: listingsTable.author_id })
+					.select({
+						id: listingsTable.id,
+						author_id: listingsTable.author_id,
+						amount: listingsTable.amount,
+						order_type: listingsTable.order_type,
+						paying_type: listingsTable.paying_type,
+						requested_item_id: listingsTable.requested_item_id,
+						requested_currency_id: listingsTable.requested_currency_id,
+						requested_item_name: itemsTable.name,
+						requested_currency_name: currenciesTable.name,
+					})
 					.from(listingsTable)
+					.leftJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
+					.leftJoin(currenciesTable, eq(listingsTable.requested_currency_id, currenciesTable.id))
 					.where(eq(listingsTable.id, params.id));
 
 				if (!existing) { set.status = 404; return { success: false, error: 'Listing not found' }; }
@@ -221,6 +289,48 @@ export const listingsManageRoutes = new Elysia()
 					set.status = 403;
 					return { success: false, error: 'Forbidden' };
 				}
+
+				// Fetch offered items with names
+				const offeredItems = await db
+					.select({
+						item_id: listingOfferedItemsTable.item_id,
+						amount: listingOfferedItemsTable.amount,
+						name: itemsTable.name,
+					})
+					.from(listingOfferedItemsTable)
+					.innerJoin(itemsTable, eq(listingOfferedItemsTable.item_id, itemsTable.id))
+					.where(eq(listingOfferedItemsTable.listing_id, params.id));
+
+				// Fetch offered currencies with names
+				const offeredCurrencies = await db
+					.select({
+						currency_id: listingOfferedCurrenciesTable.currency_id,
+						amount: listingOfferedCurrenciesTable.amount,
+						name: currenciesTable.name,
+					})
+					.from(listingOfferedCurrenciesTable)
+					.innerJoin(currenciesTable, eq(listingOfferedCurrenciesTable.currency_id, currenciesTable.id))
+					.where(eq(listingOfferedCurrenciesTable.listing_id, params.id));
+
+				// Build listing snapshot
+				const listingSnapshot = JSON.stringify({
+					requested_item_name: existing.requested_item_name ?? null,
+					requested_currency_name: existing.requested_currency_name ?? null,
+					amount: existing.amount,
+					order_type: existing.order_type,
+					paying_type: existing.paying_type,
+					offered_items: offeredItems.map((i) => ({ name: i.name, amount: i.amount })),
+					offered_currencies: offeredCurrencies.map((c) => ({ name: c.name, amount: c.amount })),
+				});
+
+				// Create trade record, then delete listing
+				const buyerId = body?.buyer_id ?? null;
+
+				await db.insert(tradesTable).values({
+					seller_id: existing.author_id,
+					buyer_id: buyerId,
+					listing_snapshot: listingSnapshot,
+				});
 
 				const [listing] = await db.delete(listingsTable).where(eq(listingsTable.id, params.id)).returning();
 				trackEvent({ type: "listing_sold", userId: session.user.id, metadata: { listing_id: params.id } });
@@ -230,5 +340,10 @@ export const listingsManageRoutes = new Elysia()
 				return { success: false, error: err.message, status: 500 };
 			}
 		},
-		{ params: t.Object({ id: t.String() }) },
+		{
+			params: t.Object({ id: t.String() }),
+			body: t.Optional(t.Object({
+				buyer_id: t.Optional(t.String()),
+			})),
+		},
 	);
