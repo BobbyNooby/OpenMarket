@@ -65,41 +65,15 @@ const app = new Elysia()
   .get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }))
   .use(authMiddleware)
   .get("/api/auth/get-session", async ({ session }) => {
-    if (session.user) {
-      // Check if user profile exists — only create if missing
-      const [existing] = await db
-        .select({ userId: userProfilesTable.userId })
-        .from(userProfilesTable)
-        .where(eq(userProfilesTable.userId, session.user.id));
+    if (!session.user) return session;
 
-      if (!existing) {
-        await Promise.all([
-          db
-            .insert(userProfilesTable)
-            .values({
-              userId: session.user.id,
-              username: session.user.name,
-            })
-            .onConflictDoNothing(),
-          db
-            .insert(usersActivityTable)
-            .values({
-              user_id: session.user.id,
-              is_active: true,
-              last_activity_at: new Date(),
-            })
-            .onConflictDoNothing(),
-          db
-            .insert(userRolesTable)
-            .values({
-              userId: session.user.id,
-              roleId: "user",
-            })
-            .onConflictDoNothing(),
-        ]);
-      }
-    }
-    return session;
+    // Check if the user has completed onboarding (has a marketplace profile)
+    const [existing] = await db
+      .select({ userId: userProfilesTable.userId })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.userId, session.user.id));
+
+    return { ...session, hasProfile: !!existing };
   })
   // Global ban guard — blocks all write, update, delete operations for banned users
   .onBeforeHandle(({ session, set, request }) => {

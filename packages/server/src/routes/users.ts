@@ -1,6 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../db/db';
-import { user, userProfilesTable, usersActivityTable, profileReviewsTable, listingsTable, tradesTable } from '../db/schemas';
+import { user, userProfilesTable, usersActivityTable, profileReviewsTable, listingsTable, tradesTable, account } from '../db/schemas';
+import { userRolesTable } from '../db/rbac-schema';
 import { eq, and, ne, desc, ilike, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { authMiddleware } from '../middleware/rbac';
@@ -19,7 +20,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 
 			const validation = validateUsername(body.username);
 			if (!validation.valid) {
-				set.status = 400;
+				set.status =  400;
 				return { success: false, error: validation.error ?? 'Invalid username' };
 			}
 
@@ -144,6 +145,94 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 			query: t.Object({
 				username: t.String(),
 			}),
+		},
+	)
+	// Complete onboarding — called after a user first signs in to create their marketplace profile
+	.post(
+		'/complete-onboarding',
+		async ({ body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+
+			// Reject if the user already has a profile (onboarding is one-shot)
+			const [existing] = await db
+				.select({ userId: userProfilesTable.userId })
+				.from(userProfilesTable)
+				.where(eq(userProfilesTable.userId, session.user.id));
+			if (existing) {
+				set.status = 409;
+				return { success: false, error: 'Profile already exists' };
+			}
+
+			const username = body.username.trim().toLowerCase();
+			const validation = validateUsername(username);
+			if (!validation.valid) {
+				set.status = 400;
+				return { success: false, error: validation.error ?? 'Invalid username' };
+			}
+
+			try {
+				await db.transaction(async (tx) => {
+					await tx.insert(userProfilesTable).values({
+						userId: session.user!.id,
+						username,
+					});
+					await tx
+						.insert(usersActivityTable)
+						.values({
+							user_id: session.user!.id,
+							is_active: true,
+							last_activity_at: new Date(),
+						})
+						.onConflictDoNothing();
+					await tx
+						.insert(userRolesTable)
+						.values({
+							userId: session.user!.id,
+							roleId: 'user',
+						})
+						.onConflictDoNothing();
+				});
+
+				console.log(`Onboarding complete: ${session.user.id} (${username})`);
+				return { success: true };
+			} catch (err: any) {
+				const message = typeof err?.message === 'string' ? err.message : 'Unknown error';
+				const isConflict = /unique|constraint|conflict/i.test(message);
+				console.error('Onboarding error:', err);
+				set.status = isConflict ? 409 : 500;
+				return {
+					success: false,
+					error: isConflict ? 'That username is already taken' : message,
+				};
+			}
+		},
+		{
+			body: t.Object({
+				username: t.String(),
+			}),
+		},
+	)
+	// List the linked auth providers for the authenticated user
+	.get(
+		'/accounts',
+		async ({ session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+
+			const rows = await db
+				.select({
+					provider_id: account.providerId,
+					created_at: account.createdAt,
+				})
+				.from(account)
+				.where(eq(account.userId, session.user.id));
+
+			return {
+				success: true,
+				data: rows.map((r) => ({
+					provider: r.provider_id,
+					linked_at: r.created_at.toISOString(),
+				})),
+			};
 		},
 	)
 	// Search users by username or display name

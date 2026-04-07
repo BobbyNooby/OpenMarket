@@ -16,7 +16,7 @@ export const auth = betterAuth({
   }),
 
   emailAndPassword: {
-    enabled: false,
+    enabled: true,
   },
   socialProviders: {
     discord: {
@@ -27,5 +27,14 @@ export const auth = betterAuth({
       }),
     },
   },
-  trustedOrigins: ["http://localhost:5173", "http://localhost:4173"],
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["discord"],
+    },
+  },
+  trustedOrigins: [
+    process.env.PUBLIC_APP_URL ?? "http://localhost:5173",
+    "http://localhost:4173",
+  ],
 });
