@@ -6,15 +6,43 @@ import { alias } from 'drizzle-orm/pg-core';
 import { authMiddleware } from '../middleware/rbac';
 import { createNotification } from '../services/notifications';
 import { trackEvent } from '../services/analytics';
+import { validateUsername } from '../utils/username';
 
 export const usersRoutes = new Elysia({ prefix: '/users' })
 	.use(authMiddleware)
 
-	// Create or update user profile (called after OAuth login)
+	// Create or update user profile (called after OAuth login and from settings)
 	.post(
 		'/profile',
 		async ({ body, session, set }) => {
 			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+
+			const validation = validateUsername(body.username);
+			if (!validation.valid) {
+				set.status = 400;
+				return { success: false, error: validation.error ?? 'Invalid username' };
+			}
+
+			// Validate accent color (hex)
+			if (body.accent_color && !/^#[0-9a-fA-F]{6}$/.test(body.accent_color)) {
+				set.status = 400;
+				return { success: false, error: 'Accent color must be a hex code like #aabbcc' };
+			}
+
+			// Validate JSON fields upfront so we return a clean 400 on bad payloads
+			if (body.social_links !== undefined) {
+				try { JSON.parse(body.social_links); } catch {
+					set.status = 400;
+					return { success: false, error: 'social_links must be valid JSON' };
+				}
+			}
+			if (body.notification_preferences !== undefined) {
+				try { JSON.parse(body.notification_preferences); } catch {
+					set.status = 400;
+					return { success: false, error: 'notification_preferences must be valid JSON' };
+				}
+			}
+
 			try {
 				const userId = session.user.id;
 				const result = await db.transaction(async (tx) => {
@@ -24,13 +52,24 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 						.values({
 							userId,
 							username: body.username,
-							description: body.description
+							description: body.description,
+							bio: body.bio,
+							social_links: body.social_links,
+							accent_color: body.accent_color,
+							notification_preferences: body.notification_preferences ?? '{}',
 						})
 						.onConflictDoUpdate({
 							target: userProfilesTable.userId,
 							set: {
 								username: body.username,
-								description: body.description
+								description: body.description,
+								bio: body.bio,
+								social_links: body.social_links,
+								accent_color: body.accent_color,
+								// only overwrite prefs if the caller sent them
+								...(body.notification_preferences !== undefined
+									? { notification_preferences: body.notification_preferences }
+									: {}),
 							}
 						})
 						.returning();
@@ -62,7 +101,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 				const isConflict = /unique|constraint|conflict/i.test(message);
 				return {
 					success: false,
-					error: message,
+					error: isConflict ? 'That username is already taken' : message,
 					status: isConflict ? 409 : 500
 				};
 			}
@@ -70,9 +109,42 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 		{
 			body: t.Object({
 				username: t.String(),
-				description: t.Optional(t.String())
+				description: t.Optional(t.String()),
+				bio: t.Optional(t.String()),
+				social_links: t.Optional(t.String()),
+				accent_color: t.Optional(t.String()),
+				notification_preferences: t.Optional(t.String()),
 			})
 		}
+	)
+	// Check if a username is available (used by settings + future registration flow)
+	.get(
+		'/username-available',
+		async ({ query, session }) => {
+			const username = (query.username ?? '').trim().toLowerCase();
+			const validation = validateUsername(username);
+			if (!validation.valid) {
+				return { success: true, available: false, reason: validation.error };
+			}
+
+			const existing = await db
+				.select({ userId: userProfilesTable.userId })
+				.from(userProfilesTable)
+				.where(eq(userProfilesTable.username, username))
+				.limit(1);
+
+			// Own username counts as available (lets users re-save the form)
+			if (existing.length > 0 && existing[0].userId !== session?.user?.id) {
+				return { success: true, available: false, reason: 'Username is already taken' };
+			}
+
+			return { success: true, available: true };
+		},
+		{
+			query: t.Object({
+				username: t.String(),
+			}),
+		},
 	)
 	// Search users by username or display name
 	.get(
@@ -132,6 +204,10 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 						createdAt: user.createdAt,
 						username: userProfilesTable.username,
 						description: userProfilesTable.description,
+						bio: userProfilesTable.bio,
+						social_links: userProfilesTable.social_links,
+						accent_color: userProfilesTable.accent_color,
+						notification_preferences: userProfilesTable.notification_preferences,
 						is_active: usersActivityTable.is_active,
 						last_activity_at: usersActivityTable.last_activity_at
 					})
@@ -230,6 +306,15 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 					(upvoteRatio * 40) + (ageFactor * 30) + (tradeFactor * 30)
 				), 100);
 
+				// Parse JSON fields — fall back to safe defaults on corruption
+				let socialLinks: Record<string, string> = {};
+				if (userRow.social_links) {
+					try {
+						const parsed = JSON.parse(userRow.social_links);
+						if (parsed && typeof parsed === 'object') socialLinks = parsed;
+					} catch { /* ignore */ }
+				}
+
 				return {
 					success: true,
 					data: {
@@ -239,6 +324,10 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 						display_name: userRow.name,
 						avatar_url: userRow.image ?? undefined,
 						description: userRow.description ?? undefined,
+						bio: userRow.bio ?? undefined,
+						social_links: socialLinks,
+						accent_color: userRow.accent_color ?? undefined,
+						notification_preferences: userRow.notification_preferences ?? '{}',
 						is_active: userRow.is_active ?? false,
 						last_activity_at: userRow.last_activity_at?.toISOString() ?? undefined,
 						listing_stats: listingStats,

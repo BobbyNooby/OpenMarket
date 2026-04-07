@@ -1,5 +1,6 @@
 import { db } from "../db/db";
-import { notificationsTable } from "../db/schemas";
+import { notificationsTable, userProfilesTable } from "../db/schemas";
+import { eq } from "drizzle-orm";
 import { sendToUser } from "../routes/ws/connection-manager";
 
 export type NotificationType =
@@ -43,6 +44,24 @@ export async function createNotification({
   link,
 }: CreateNotificationOptions) {
   const template = defaultTemplates[type];
+
+  // Respect the user's notification preferences. Empty object = all enabled (default).
+  // Only an explicit `false` disables a type, so new types ship enabled by default.
+  try {
+    const [profile] = await db
+      .select({ notification_preferences: userProfilesTable.notification_preferences })
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.userId, userId))
+      .limit(1);
+
+    if (profile?.notification_preferences) {
+      const prefs = JSON.parse(profile.notification_preferences) as Record<string, boolean>;
+      if (prefs[type] === false) return null;
+    }
+  } catch (err) {
+    // Fire-and-forget: never block on a preferences read failure
+    console.error("Failed to read notification preferences:", err);
+  }
 
   const [notification] = await db
     .insert(notificationsTable)

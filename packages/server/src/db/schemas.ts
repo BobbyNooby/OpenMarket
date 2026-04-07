@@ -30,6 +30,10 @@ export const userProfilesTable = pgTable("user_profiles", {
     .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
   username: text("username").notNull().unique(),
   description: text("description"),
+  bio: text("bio"),
+  social_links: text("social_links"), // JSON string of {discord, twitter, ...}
+  accent_color: text("accent_color"), // hex color
+  notification_preferences: text("notification_preferences").notNull().default('{}'), // JSON string of Record<NotificationType, boolean>
 });
 
 // --- activity ---
