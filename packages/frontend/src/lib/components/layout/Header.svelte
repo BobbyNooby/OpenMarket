@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { authClient } from '$lib/api/client.js';
+	import { authClient } from '$lib/api/client';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Avatar from '$lib/components/ui/avatar';
@@ -33,13 +33,6 @@
 			? [{ href: '/admin', label: 'Admin' }]
 			: []
 	);
-
-	async function signInWithDiscord() {
-		await authClient.signIn.social({
-			provider: 'discord',
-			callbackURL: 'http://localhost:5173'
-		});
-	}
 
 	async function signOut() {
 		await authClient.signOut();
@@ -148,7 +141,9 @@
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 			{:else}
-				<Button onclick={signInWithDiscord}>Sign In with Discord</Button>
+				<a href="/login">
+					<Button>Sign In</Button>
+				</a>
 			{/if}
 		</div>
 	</div>
