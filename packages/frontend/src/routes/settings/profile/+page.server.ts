@@ -10,12 +10,21 @@ export const load: PageServerLoad = async ({ request, parent }) => {
 	const headers = { cookie };
 
 	// session.user.name is this project's stand-in for username
-	const profileRes = await api.users.profile({ username: session.user.name }).get({ headers });
-	const profile = profileRes.data?.success ? profileRes.data.data : null;
+	const [profileRes, itemsRes, currenciesRes, listsRes] = await Promise.all([
+		api.users.profile({ username: session.user.name }).get({ headers }),
+		api.items.get({ headers }),
+		api.currencies.get({ headers }),
+		api.lists.user({ userId: session.user.id }).get({ headers }),
+	]);
 
+	const profile = profileRes.data?.success ? profileRes.data.data : null;
 	if (!profile) throw redirect(302, '/');
 
-	return { session, profile };
+	const items = itemsRes.data?.success ? itemsRes.data.data : [];
+	const currencies = currenciesRes.data?.success ? currenciesRes.data.data : [];
+	const lists = listsRes.data?.success ? listsRes.data.data : { have: [], want: [] };
+
+	return { session, profile, items, currencies, lists };
 };
 
 export const actions: Actions = {

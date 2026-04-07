@@ -13,6 +13,7 @@ export { default as ItemImage } from './item/ItemImage.svelte';
 export { default as ItemTooltip } from './item/ItemTooltip.svelte';
 export { default as ItemButton } from './item/ItemButton.svelte';
 export { default as ItemForm } from './item/ItemForm.svelte';
+export { default as ItemPicker } from './item/ItemPicker.svelte';
 
 // Listing Components
 export { default as ListingCard } from './listing/ListingCard.svelte';
@@ -23,6 +24,7 @@ export { default as Header } from './layout/Header.svelte';
 
 // Profile Components
 export { default as CommentCard } from './profile/CommentCard.svelte';
+export { default as HaveWantEditor } from './profile/HaveWantEditor.svelte';
 
 // Report Components
 export { default as ReportDialog } from './report/ReportDialog.svelte';

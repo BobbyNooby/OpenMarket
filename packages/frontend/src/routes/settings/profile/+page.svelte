@@ -9,6 +9,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
+	import HaveWantEditor from '$lib/components/profile/HaveWantEditor.svelte';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Check from '@lucide/svelte/icons/check';
@@ -353,6 +354,38 @@
 					<Plus class="mr-1.5 h-4 w-4" />
 					Add link
 				</Button>
+			</Card.Content>
+		</Card.Root>
+
+		<!-- Have / Want lists -->
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Have / Want lists</Card.Title>
+				<Card.Description>
+					Public lists of items you have and items you're looking for. Other traders can find you by these.
+				</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<HaveWantEditor
+					items={(data.items ?? []) as any}
+					currencies={(data.currencies ?? []) as any}
+					initialHave={(data.lists?.have ?? []).map((e: any) => ({
+						id: e.id,
+						kind: e.kind,
+						ref_id: e.kind === 'item' ? e.item_id : e.currency_id,
+						name: e.name,
+						image_url: e.image_url,
+						description: e.description,
+					}))}
+					initialWant={(data.lists?.want ?? []).map((e: any) => ({
+						id: e.id,
+						kind: e.kind,
+						ref_id: e.kind === 'item' ? e.item_id : e.currency_id,
+						name: e.name,
+						image_url: e.image_url,
+						description: e.description,
+					}))}
+				/>
 			</Card.Content>
 		</Card.Root>
 
