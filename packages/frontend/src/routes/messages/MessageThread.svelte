@@ -138,18 +138,20 @@
 		<Button variant="ghost" size="icon" class="md:hidden" onclick={onBack}>
 			<ArrowLeft class="h-5 w-5" />
 		</Button>
-		<Avatar.Root class="h-8 w-8">
-			{#if otherUser?.avatar}
-				<Avatar.Image src={otherUser.avatar} alt={otherUser.display_name} />
-			{/if}
-			<Avatar.Fallback class="bg-primary text-xs font-bold text-primary-foreground">
-				{(otherUser?.display_name ?? '?').charAt(0).toUpperCase()}
-			</Avatar.Fallback>
-		</Avatar.Root>
-		<div>
-			<p class="text-sm font-semibold">{otherUser?.display_name ?? 'Unknown'}</p>
-			<p class="text-xs text-muted-foreground">@{otherUser?.username ?? 'unknown'}</p>
-		</div>
+		<a href="/profile/{otherUser?.username ?? ''}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+			<Avatar.Root class="h-8 w-8">
+				{#if otherUser?.avatar}
+					<Avatar.Image src={otherUser.avatar} alt={otherUser.display_name} />
+				{/if}
+				<Avatar.Fallback class="bg-primary text-xs font-bold text-primary-foreground">
+					{(otherUser?.display_name ?? '?').charAt(0).toUpperCase()}
+				</Avatar.Fallback>
+			</Avatar.Root>
+			<div>
+				<p class="text-sm font-semibold">{otherUser?.display_name ?? 'Unknown'}</p>
+				<p class="text-xs text-muted-foreground">@{otherUser?.username ?? 'unknown'}</p>
+			</div>
+		</a>
 	</div>
 
 	<!-- Messages -->
