@@ -14,8 +14,14 @@
 	import { notificationManager } from '$lib/stores/notifications.svelte';
 	import { track } from '$lib/utils/analytics';
 	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/state';
 
 	let { children, data } = $props();
+
+	// Auth pages (login, onboarding) render as full-screen standalone layouts
+	const isAuthPage = $derived(
+		page.url.pathname.startsWith('/login') || page.url.pathname.startsWith('/onboarding'),
+	);
 
 	onMount(() => {
 		initTheme();
@@ -44,7 +50,9 @@
 
 <Tooltip.Provider delayDuration={0}>
 	<div class="relative min-h-screen bg-background">
-		<Header session={data.session} />
+		{#if !isAuthPage}
+			<Header session={data.session} />
+		{/if}
 
 		<div class="fixed right-4 top-4 z-50">
 			<Button variant="outline" size="sm" onclick={() => toggleTheme()}>
