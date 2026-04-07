@@ -8,6 +8,7 @@
 	import Users from '@lucide/svelte/icons/users';
 	import MessageSquare from '@lucide/svelte/icons/message-square';
 	import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
+	import Repeat from '@lucide/svelte/icons/repeat';
 	import { track } from '$lib/utils/analytics';
 	import { onMount } from 'svelte';
 
@@ -204,6 +205,66 @@
 									<Table.Cell class="text-right">{stats.messages}</Table.Cell>
 									<Table.Cell class="text-muted-foreground">
 										{new Date(listing.created_at).toLocaleDateString()}
+									</Table.Cell>
+								</Table.Row>
+							{/each}
+						</Table.Body>
+					</Table.Root>
+				{/if}
+			</Card.Content>
+		</Card.Root>
+
+		<!-- Trade History -->
+		<Card.Root>
+			<Card.Header>
+				<Card.Title class="flex items-center gap-2">
+					<Repeat class="h-5 w-5" />
+					Trade History ({(data.trades ?? []).length})
+				</Card.Title>
+				<Card.Description>Completed trades as buyer or seller</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				{#if (data.trades ?? []).length === 0}
+					<p class="py-8 text-center text-muted-foreground">No completed trades yet.</p>
+				{:else}
+					<Table.Root>
+						<Table.Header>
+							<Table.Row>
+								<Table.Head>Item</Table.Head>
+								<Table.Head>Role</Table.Head>
+								<Table.Head>Other Party</Table.Head>
+								<Table.Head class="text-right">Amount</Table.Head>
+								<Table.Head>Date</Table.Head>
+							</Table.Row>
+						</Table.Header>
+						<Table.Body>
+							{#each data.trades as trade}
+								{@const snapshot = typeof trade.listing_snapshot === 'string' ? JSON.parse(trade.listing_snapshot) : trade.listing_snapshot}
+								{@const otherParty = trade.role === 'seller' ? trade.buyer : trade.seller}
+								<Table.Row>
+									<Table.Cell class="font-medium">
+										{snapshot?.requested_item_name ?? snapshot?.requested_currency_name ?? 'Unknown'}
+									</Table.Cell>
+									<Table.Cell>
+										<Badge variant={trade.role === 'seller' ? 'default' : 'secondary'}>
+											{trade.role}
+										</Badge>
+									</Table.Cell>
+									<Table.Cell>
+										{#if otherParty}
+											<a href="/profile/{otherParty.username}" class="flex items-center gap-2 hover:text-primary hover:underline">
+												{#if otherParty.avatar}
+													<img src={otherParty.avatar} alt="" class="h-5 w-5 rounded-full" />
+												{/if}
+												@{otherParty.username}
+											</a>
+										{:else}
+											<span class="text-muted-foreground">—</span>
+										{/if}
+									</Table.Cell>
+									<Table.Cell class="text-right">{snapshot?.amount ?? '—'}</Table.Cell>
+									<Table.Cell class="text-muted-foreground">
+										{new Date(trade.completed_at).toLocaleDateString()}
 									</Table.Cell>
 								</Table.Row>
 							{/each}

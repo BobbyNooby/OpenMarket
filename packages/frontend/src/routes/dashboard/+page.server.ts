@@ -31,5 +31,9 @@ export const load: PageServerLoad = async ({ request }) => {
 		}
 	}
 
-	return { listings, statsMap, session };
+	// Fetch trade history
+	const tradesRes = await api.users.trades.get({ headers }).catch(() => null);
+	const trades = (tradesRes?.data as any)?.success ? (tradesRes?.data as any).data : [];
+
+	return { listings, statsMap, session, trades };
 };

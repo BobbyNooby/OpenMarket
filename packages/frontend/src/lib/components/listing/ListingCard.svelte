@@ -130,17 +130,19 @@
 		}
 	}
 
-	async function deleteListing() {
+	async function deleteListing(buyerId?: string | null) {
 		statusUpdating = true;
 		try {
 			const res = await fetch(`${PUBLIC_API_URL}/listings/${order.id}`, {
 				method: 'DELETE',
 				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: buyerId ? JSON.stringify({ buyer_id: buyerId }) : undefined,
 			});
 			const result = await res.json();
 			if (result.success) {
 				deleted = true;
-				toast.success('Listing deleted');
+				toast.success(buyerId ? 'Listing marked as sold' : 'Listing deleted');
 			} else {
 				toast.error(result.error || 'Failed to delete listing');
 			}
@@ -151,8 +153,35 @@
 		}
 	}
 
+	// Buyer selection state for sold dialog
+	let conversationContacts = $state<{ user_id: string; username: string; avatar: string | null }[]>([]);
+	let selectedBuyerId = $state<string>('');
+	let loadingContacts = $state(false);
+
+	async function loadContacts() {
+		if (conversationContacts.length > 0) return;
+		loadingContacts = true;
+		try {
+			const res = await fetch(`${PUBLIC_API_URL}/listings/${order.id}/contacts`, {
+				credentials: 'include',
+			});
+			const result = await res.json();
+			if (result.success) {
+				conversationContacts = result.data ?? [];
+			}
+		} catch {
+			// silently fail
+		} finally {
+			loadingContacts = false;
+		}
+	}
+
+	$effect(() => {
+		if (soldDialogOpen) loadContacts();
+	});
+
 	async function markAsSold() {
-		await deleteListing();
+		await deleteListing(selectedBuyerId || null);
 	}
 
 	async function renewListing() {
@@ -438,15 +467,33 @@
 			<AlertDialog.Header>
 				<AlertDialog.Title>Mark as Sold</AlertDialog.Title>
 				<AlertDialog.Description>
-					Marking this listing as sold will permanently delete it from the marketplace. This action cannot be undone.
+					This will remove the listing from the marketplace and save it as a completed trade in your history.
 				</AlertDialog.Description>
 			</AlertDialog.Header>
+
+			<div class="py-2">
+				<label for="buyer-select" class="mb-2 block text-sm font-medium">Buyer (optional)</label>
+				{#if loadingContacts}
+					<p class="text-xs text-muted-foreground">Loading contacts...</p>
+				{:else if conversationContacts.length === 0}
+					<p class="text-xs text-muted-foreground">No contacts found. The trade will be saved without a buyer.</p>
+				{:else}
+					<select
+						id="buyer-select"
+						bind:value={selectedBuyerId}
+						class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+					>
+						<option value="">— Select buyer —</option>
+						{#each conversationContacts as contact}
+							<option value={contact.user_id}>@{contact.username}</option>
+						{/each}
+					</select>
+				{/if}
+			</div>
+
 			<AlertDialog.Footer>
 				<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-				<AlertDialog.Action
-					class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-					onclick={markAsSold}
-				>
+				<AlertDialog.Action onclick={markAsSold}>
 					Mark as Sold
 				</AlertDialog.Action>
 			</AlertDialog.Footer>
@@ -465,7 +512,7 @@
 				<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
 				<AlertDialog.Action
 					class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-					onclick={deleteListing}
+					onclick={() => deleteListing()}
 				>
 					Delete
 				</AlertDialog.Action>
