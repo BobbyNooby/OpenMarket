@@ -24,14 +24,19 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 
 	const profile = profileResult.data.data;
 
-	// Fetch user's listings
-	const listingsResult = await api.listings.user({ userId: profile.id }).get();
+	// Fetch user's listings + have/want lists in parallel
+	const [listingsResult, listsResult] = await Promise.all([
+		api.listings.user({ userId: profile.id }).get(),
+		api.lists.user({ userId: profile.id }).get(),
+	]);
 	const listings = listingsResult.data?.success ? listingsResult.data.data : [];
+	const lists = listsResult.data?.success ? listsResult.data.data : { have: [], want: [] };
 
 	return {
 		username,
 		profile,
 		listings,
+		lists,
 		session
 	};
 };

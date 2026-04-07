@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ListingCard, CommentCard, ReportDialog } from '$lib/components';
+	import { ListingCard, CommentCard, ReportDialog, ItemImage } from '$lib/components';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Badge } from '$lib/components/ui/badge';
@@ -91,6 +91,12 @@
 			? Object.entries(profile.social_links).filter(([k, v]) => k && v) as [string, string][]
 			: []
 	);
+
+	// Have / Want lists (Story 7.10)
+	const haveEntries = $derived((data.lists?.have ?? []) as any[]);
+	const wantEntries = $derived((data.lists?.want ?? []) as any[]);
+	const haveCount = $derived(haveEntries.length);
+	const wantCount = $derived(wantEntries.length);
 
 	// Build a URL for a social link — accept full URLs or platform handles
 	function socialUrl(platform: string, value: string): string {
@@ -302,6 +308,7 @@
 				<Tabs.Root value="listings">
 					<Tabs.List class="mb-8">
 						<Tabs.Trigger value="listings">Listings</Tabs.Trigger>
+						<Tabs.Trigger value="havewant">Have / Want ({haveCount + wantCount})</Tabs.Trigger>
 						<Tabs.Trigger value="reviews">Reviews ({totalReviews})</Tabs.Trigger>
 					</Tabs.List>
 
@@ -339,6 +346,65 @@
 											<p class="py-4 text-center text-muted-foreground">No sell orders</p>
 										{/if}
 									</div>
+								</div>
+							</div>
+						{/if}
+					</Tabs.Content>
+
+					<!-- Have / Want Tab -->
+					<Tabs.Content value="havewant">
+						{#if haveCount === 0 && wantCount === 0}
+							<div class="py-12 text-center">
+								<p class="text-lg text-muted-foreground">
+									{isOwnProfile ? "You haven't added any items yet." : "This user hasn't added any items yet."}
+								</p>
+								{#if isOwnProfile}
+									<a href="/settings/profile" class="mt-4 inline-block text-primary hover:underline">
+										Edit your lists →
+									</a>
+								{/if}
+							</div>
+						{:else}
+							<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+								<div>
+									<h3 class="mb-4 rounded-t-lg bg-emerald-600 p-3 text-center text-xl font-semibold text-white">
+										Have ({haveCount})
+									</h3>
+									{#if haveEntries.length === 0}
+										<p class="py-6 text-center text-muted-foreground">Nothing here yet.</p>
+									{:else}
+										<div class="grid grid-cols-4 gap-3 sm:grid-cols-6">
+											{#each haveEntries as entry (entry.id)}
+												<a
+													href={entry.slug ? `/listings/${entry.slug}` : '#'}
+													class="flex flex-col items-center gap-1 rounded-md p-2 transition-colors hover:bg-card"
+												>
+													<ItemImage src={entry.image_url ?? ''} alt={entry.name} size="md" />
+													<p class="text-center text-xs text-foreground">{entry.name}</p>
+												</a>
+											{/each}
+										</div>
+									{/if}
+								</div>
+								<div>
+									<h3 class="mb-4 rounded-t-lg bg-sky-600 p-3 text-center text-xl font-semibold text-white">
+										Want ({wantCount})
+									</h3>
+									{#if wantEntries.length === 0}
+										<p class="py-6 text-center text-muted-foreground">Nothing here yet.</p>
+									{:else}
+										<div class="grid grid-cols-4 gap-3 sm:grid-cols-6">
+											{#each wantEntries as entry (entry.id)}
+												<a
+													href={entry.slug ? `/listings/${entry.slug}` : '#'}
+													class="flex flex-col items-center gap-1 rounded-md p-2 transition-colors hover:bg-card"
+												>
+													<ItemImage src={entry.image_url ?? ''} alt={entry.name} size="md" />
+													<p class="text-center text-xs text-foreground">{entry.name}</p>
+												</a>
+											{/each}
+										</div>
+									{/if}
 								</div>
 							</div>
 						{/if}
