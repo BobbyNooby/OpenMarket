@@ -9,6 +9,7 @@
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import Flag from '@lucide/svelte/icons/flag';
+	import Heart from '@lucide/svelte/icons/heart';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import CirclePause from '@lucide/svelte/icons/circle-pause';
@@ -25,9 +26,42 @@
 		order: TransformedListing;
 		onContact?: () => void;
 		sessionUserId?: string | null;
+		watchlisted?: boolean;
+		onWatchlistToggle?: (listingId: string, saved: boolean) => void;
 	}
 
-	let { order, onContact, sessionUserId = null }: Props = $props();
+	let { order, onContact, sessionUserId = null, watchlisted = false, onWatchlistToggle }: Props = $props();
+	let isWatchlisted = $state(false);
+	let watchlistLoading = $state(false);
+	$effect(() => { isWatchlisted = watchlisted; });
+
+	async function toggleWatchlist() {
+		if (!sessionUserId || watchlistLoading) return;
+		watchlistLoading = true;
+		// Optimistic update
+		const previous = isWatchlisted;
+		isWatchlisted = !previous;
+		try {
+			const res = await fetch(`${PUBLIC_API_URL}/watchlist/${order.id}`, {
+				method: 'POST',
+				credentials: 'include',
+			});
+			const json = await res.json();
+			if (json.success) {
+				isWatchlisted = json.saved;
+				onWatchlistToggle?.(order.id, json.saved);
+				toast.success(json.saved ? 'Added to watchlist' : 'Removed from watchlist');
+			} else {
+				isWatchlisted = previous;
+				toast.error('Failed to update watchlist');
+			}
+		} catch {
+			isWatchlisted = previous;
+			toast.error('Failed to update watchlist');
+		} finally {
+			watchlistLoading = false;
+		}
+	}
 
 	async function defaultContact() {
 		if (!sessionUserId) return;
@@ -435,6 +469,16 @@
 				</span>
 			{/if}
 			{#if canReport}
+				<Button
+					size="sm"
+					variant="ghost"
+					class="h-8 w-8 p-0 hover:text-rose-500 {isWatchlisted ? 'text-rose-500' : 'text-muted-foreground'}"
+					onclick={toggleWatchlist}
+					disabled={watchlistLoading}
+					title={isWatchlisted ? 'Remove from watchlist' : 'Add to watchlist'}
+				>
+					<Heart class="h-4 w-4" fill={isWatchlisted ? 'currentColor' : 'none'} />
+				</Button>
 				<Button
 					size="sm"
 					variant="ghost"
