@@ -2,11 +2,17 @@
 	import { ListingCard, CommentCard, ReportDialog } from '$lib/components';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import { Badge } from '$lib/components/ui/badge';
+	import * as Tabs from '$lib/components/ui/tabs';
 	import ThumbsUpIcon from '@lucide/svelte/icons/thumbs-up';
 	import ThumbsDownIcon from '@lucide/svelte/icons/thumbs-down';
 	import Flag from '@lucide/svelte/icons/flag';
 	import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
 	import Coins from '@lucide/svelte/icons/coins';
+	import Calendar from '@lucide/svelte/icons/calendar';
+	import Shield from '@lucide/svelte/icons/shield';
+	import Repeat from '@lucide/svelte/icons/repeat';
+	import Package from '@lucide/svelte/icons/package';
 	import { invalidateAll } from '$app/navigation';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 	import { toast } from 'svelte-sonner';
@@ -45,7 +51,6 @@
 	const buyOrders = $derived(listings.filter((o: any) => o.order_type === 'buy').slice(0, 6));
 	const sellOrders = $derived(listings.filter((o: any) => o.order_type === 'sell').slice(0, 6));
 
-
 	function formatDate(dateString: string): string {
 		const date = new Date(dateString);
 		return date.toLocaleDateString('en-US', {
@@ -54,6 +59,28 @@
 			year: 'numeric'
 		});
 	}
+
+	// Profile stats
+	const totalListings = $derived(profile?.listing_stats?.total ?? listings.length);
+	const tradeCount = $derived(profile?.trade_count ?? 0);
+	const trustScore = $derived(profile?.trust_score ?? null);
+
+	// Trust score badge color
+	const trustScoreVariant = $derived<'default' | 'secondary' | 'destructive' | 'outline'>(
+		trustScore !== null && trustScore >= 70 ? 'default' :
+		trustScore !== null && trustScore >= 40 ? 'secondary' :
+		'destructive'
+	);
+	const trustScoreColor = $derived(
+		trustScore !== null && trustScore >= 70 ? 'bg-green-600 hover:bg-green-600' :
+		trustScore !== null && trustScore >= 40 ? 'bg-yellow-500 hover:bg-yellow-500 text-black' :
+		''
+	);
+
+	// Member since
+	const memberSince = $derived(
+		profile?.created_at ? formatDate(profile.created_at) : null
+	);
 
 	let reviewType = $state<'upvote' | 'downvote' | null>(null);
 	let reviewComment = $state('');
@@ -140,7 +167,15 @@
 					{/if}
 
 					<div class="flex-1">
-						<h1 class="mb-2 text-4xl font-bold text-foreground">{profile.display_name}</h1>
+						<div class="mb-2 flex items-center gap-3">
+							<h1 class="text-4xl font-bold text-foreground">{profile.display_name}</h1>
+							{#if trustScore !== null}
+								<Badge class={trustScoreColor}>
+									<Shield class="mr-1 h-3.5 w-3.5" />
+									Trust: {trustScore}/100
+								</Badge>
+							{/if}
+						</div>
 						<p class="mb-4 text-lg text-muted-foreground">@{profile.username}</p>
 
 						{#if profile.description}
@@ -171,139 +206,172 @@
 								</Button>
 							{/if}
 						</div>
+
+						<!-- Profile Stats Bar -->
+						<div class="mt-5 flex flex-wrap items-center gap-6 rounded-lg border border-border bg-background/50 px-5 py-3">
+							<div class="flex items-center gap-2 text-sm text-muted-foreground">
+								<Package class="h-4 w-4" />
+								<span class="font-medium text-foreground">{totalListings}</span>
+								Listings
+							</div>
+							<div class="flex items-center gap-2 text-sm text-muted-foreground">
+								<Repeat class="h-4 w-4" />
+								<span class="font-medium text-foreground">{tradeCount}</span>
+								Trades
+							</div>
+							{#if memberSince}
+								<div class="flex items-center gap-2 text-sm text-muted-foreground">
+									<Calendar class="h-4 w-4" />
+									Member since
+									<span class="font-medium text-foreground">{memberSince}</span>
+								</div>
+							{/if}
+							{#if trustScore !== null}
+								<div class="flex items-center gap-2 text-sm text-muted-foreground">
+									<Shield class="h-4 w-4" />
+									<Badge variant={trustScoreVariant} class={trustScoreColor}>
+										Trust: {trustScore}/100
+									</Badge>
+								</div>
+							{/if}
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<!-- Active Listings Section -->
+		<!-- Tabbed Content Section -->
 		<div class="px-8 py-12">
 			<div class="mx-auto max-w-7xl">
-				<h2 class="mb-8 text-3xl font-bold text-foreground">Active Listings</h2>
+				<Tabs.Root value="listings">
+					<Tabs.List class="mb-8">
+						<Tabs.Trigger value="listings">Listings</Tabs.Trigger>
+						<Tabs.Trigger value="reviews">Reviews ({totalReviews})</Tabs.Trigger>
+					</Tabs.List>
 
-				{#if buyOrders.length === 0 && sellOrders.length === 0}
-					<div class="py-12 text-center">
-						<p class="text-lg text-muted-foreground">This user has no listings yet.</p>
-					</div>
-				{:else}
-					<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-						<div>
-							<h3 class="mb-4 rounded-t-lg bg-green-500 p-3 text-center text-xl font-semibold text-white">
-								<ShoppingCart class="inline h-5 w-5" /> Buy Orders ({buyOrders.length})
-							</h3>
-							<div class="space-y-4">
-								{#each buyOrders as order}
-									<ListingCard {order} sessionUserId={data.session?.user?.id} />
-								{/each}
-								{#if buyOrders.length === 0}
-									<p class="py-4 text-center text-muted-foreground">No buy orders</p>
-								{/if}
+					<!-- Listings Tab -->
+					<Tabs.Content value="listings">
+						{#if buyOrders.length === 0 && sellOrders.length === 0}
+							<div class="py-12 text-center">
+								<p class="text-lg text-muted-foreground">This user has no listings yet.</p>
 							</div>
-						</div>
+						{:else}
+							<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+								<div>
+									<h3 class="mb-4 rounded-t-lg bg-green-500 p-3 text-center text-xl font-semibold text-white">
+										<ShoppingCart class="inline h-5 w-5" /> Buy Orders ({buyOrders.length})
+									</h3>
+									<div class="space-y-4">
+										{#each buyOrders as order}
+											<ListingCard {order} sessionUserId={data.session?.user?.id} />
+										{/each}
+										{#if buyOrders.length === 0}
+											<p class="py-4 text-center text-muted-foreground">No buy orders</p>
+										{/if}
+									</div>
+								</div>
 
-						<div>
-							<h3 class="mb-4 rounded-t-lg bg-amber-500 p-3 text-center text-xl font-semibold text-white">
-								<Coins class="inline h-5 w-5" /> Sell Orders ({sellOrders.length})
-							</h3>
-							<div class="space-y-4">
-								{#each sellOrders as order}
-									<ListingCard {order} sessionUserId={data.session?.user?.id} />
-								{/each}
-								{#if sellOrders.length === 0}
-									<p class="py-4 text-center text-muted-foreground">No sell orders</p>
-								{/if}
-							</div>
-						</div>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Reviews Section -->
-		<div class="bg-card px-8 py-12">
-			<div class="mx-auto max-w-7xl">
-				<h2 class="mb-8 text-3xl font-bold text-foreground">Reviews ({totalReviews})</h2>
-
-				<div class="mb-8 rounded-lg border border-border bg-background p-6">
-					<h3 class="mb-4 text-lg font-semibold text-foreground">Leave a Review</h3>
-
-					{#if !session?.user}
-						<div class="py-4 text-center">
-							<p class="mb-4 text-muted-foreground">
-								You must be signed in to leave a review.
-							</p>
-							<a
-								href="/auth/signin"
-								class="inline-block rounded-md bg-primary px-6 py-2 font-semibold text-primary-foreground transition-colors hover:opacity-90"
-							>
-								Sign In
-							</a>
-						</div>
-					{:else if isOwnProfile}
-						<div class="py-4 text-center">
-							<p class="text-muted-foreground">You cannot review your own profile.</p>
-						</div>
-					{:else}
-						{#if submitError}
-							<div class="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-								{submitError}
+								<div>
+									<h3 class="mb-4 rounded-t-lg bg-amber-500 p-3 text-center text-xl font-semibold text-white">
+										<Coins class="inline h-5 w-5" /> Sell Orders ({sellOrders.length})
+									</h3>
+									<div class="space-y-4">
+										{#each sellOrders as order}
+											<ListingCard {order} sessionUserId={data.session?.user?.id} />
+										{/each}
+										{#if sellOrders.length === 0}
+											<p class="py-4 text-center text-muted-foreground">No sell orders</p>
+										{/if}
+									</div>
+								</div>
 							</div>
 						{/if}
+					</Tabs.Content>
 
-						<div class="mb-4 flex gap-4">
-							<button
-								class="flex items-center gap-2 rounded-md border-2 px-6 py-3 transition-all disabled:cursor-not-allowed disabled:opacity-50 {reviewType === 'upvote' ? 'border-green-500 bg-green-500 text-white' : 'border-border hover:border-green-500'}"
-								onclick={() => (reviewType = reviewType === 'upvote' ? null : 'upvote')}
-								disabled={submitting}
-							>
-								<ThumbsUpIcon class="size-5" />
-								<span class="font-semibold">Upvote</span>
-							</button>
+					<!-- Reviews Tab -->
+					<Tabs.Content value="reviews">
+						<div class="mb-8 rounded-lg border border-border bg-card p-6">
+							<h3 class="mb-4 text-lg font-semibold text-foreground">Leave a Review</h3>
 
-							<button
-								class="flex items-center gap-2 rounded-md border-2 px-6 py-3 transition-all disabled:cursor-not-allowed disabled:opacity-50 {reviewType === 'downvote' ? 'border-destructive bg-destructive text-destructive-foreground' : 'border-border hover:border-destructive'}"
-								onclick={() => (reviewType = reviewType === 'downvote' ? null : 'downvote')}
-								disabled={submitting}
-							>
-								<ThumbsDownIcon class="size-5" />
-								<span class="font-semibold">Downvote</span>
-							</button>
-						</div>
-
-						<div class="mb-4">
-							<Textarea
-								bind:value={reviewComment}
-								placeholder="Share your experience with this user (optional)..."
-								rows={3}
-								disabled={submitting}
-							/>
-						</div>
-
-						<div class="flex justify-end">
-							<Button onclick={handleSubmitReview} disabled={submitting}>
-								{#if submitting}
-									Submitting...
-								{:else}
-									Submit Review
+							{#if !session?.user}
+								<div class="py-4 text-center">
+									<p class="mb-4 text-muted-foreground">
+										You must be signed in to leave a review.
+									</p>
+									<a
+										href="/auth/signin"
+										class="inline-block rounded-md bg-primary px-6 py-2 font-semibold text-primary-foreground transition-colors hover:opacity-90"
+									>
+										Sign In
+									</a>
+								</div>
+							{:else if isOwnProfile}
+								<div class="py-4 text-center">
+									<p class="text-muted-foreground">You cannot review your own profile.</p>
+								</div>
+							{:else}
+								{#if submitError}
+									<div class="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+										{submitError}
+									</div>
 								{/if}
-							</Button>
-						</div>
-					{/if}
-				</div>
 
-				{#if reviews.length === 0}
-					<div class="py-12 text-center">
-						<p class="text-lg text-muted-foreground">No reviews yet.</p>
-					</div>
-				{:else}
-					<div class="space-y-4">
-						{#each reviews as review}
-							{#if review.voter}
-								<CommentCard {review} voter={review.voter} {formatDate} />
+								<div class="mb-4 flex gap-4">
+									<button
+										class="flex items-center gap-2 rounded-md border-2 px-6 py-3 transition-all disabled:cursor-not-allowed disabled:opacity-50 {reviewType === 'upvote' ? 'border-green-500 bg-green-500 text-white' : 'border-border hover:border-green-500'}"
+										onclick={() => (reviewType = reviewType === 'upvote' ? null : 'upvote')}
+										disabled={submitting}
+									>
+										<ThumbsUpIcon class="size-5" />
+										<span class="font-semibold">Upvote</span>
+									</button>
+
+									<button
+										class="flex items-center gap-2 rounded-md border-2 px-6 py-3 transition-all disabled:cursor-not-allowed disabled:opacity-50 {reviewType === 'downvote' ? 'border-destructive bg-destructive text-destructive-foreground' : 'border-border hover:border-destructive'}"
+										onclick={() => (reviewType = reviewType === 'downvote' ? null : 'downvote')}
+										disabled={submitting}
+									>
+										<ThumbsDownIcon class="size-5" />
+										<span class="font-semibold">Downvote</span>
+									</button>
+								</div>
+
+								<div class="mb-4">
+									<Textarea
+										bind:value={reviewComment}
+										placeholder="Share your experience with this user (optional)..."
+										rows={3}
+										disabled={submitting}
+									/>
+								</div>
+
+								<div class="flex justify-end">
+									<Button onclick={handleSubmitReview} disabled={submitting}>
+										{#if submitting}
+											Submitting...
+										{:else}
+											Submit Review
+										{/if}
+									</Button>
+								</div>
 							{/if}
-						{/each}
-					</div>
-				{/if}
+						</div>
+
+						{#if reviews.length === 0}
+							<div class="py-12 text-center">
+								<p class="text-lg text-muted-foreground">No reviews yet.</p>
+							</div>
+						{:else}
+							<div class="space-y-4">
+								{#each reviews as review}
+									{#if review.voter}
+										<CommentCard {review} voter={review.voter} {formatDate} />
+									{/if}
+								{/each}
+							</div>
+						{/if}
+					</Tabs.Content>
+				</Tabs.Root>
 			</div>
 		</div>
 	</div>
