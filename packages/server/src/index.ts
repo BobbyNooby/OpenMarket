@@ -10,6 +10,7 @@ import { reportsRoutes } from "./routes/reports";
 import { notificationsRoutes } from "./routes/notifications";
 import { analyticsRoutes } from "./routes/analytics";
 import { watchlistRoutes } from "./routes/watchlist";
+import { listsRoutes } from "./routes/lists";
 import { adminRoutes } from "./routes/admin";
 import { auth } from "./auth";
 import { authMiddleware } from "./middleware/rbac";
@@ -128,6 +129,7 @@ const app = new Elysia()
   .use(wsRoutes)
   .use(analyticsRoutes)
   .use(watchlistRoutes)
+  .use(listsRoutes)
   .use(adminRoutes)
   .listen(process.env.API_PORT || 3000);
 

@@ -242,6 +242,26 @@ export const watchlistTable = pgTable("watchlist", {
 export type WatchlistInsert = typeof watchlistTable.$inferInsert;
 export type WatchlistSelect = typeof watchlistTable.$inferSelect;
 
+// --- user item lists (have / want) ---
+export const itemListType = pgEnum("item_list_type", ["have", "want"]);
+
+export const userItemListsTable = pgTable("user_item_lists", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: text("user_id").notNull()
+    .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  list_type: itemListType("list_type").notNull(),
+  item_id: uuid("item_id").references(() => itemsTable.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  currency_id: uuid("currency_id").references(() => currenciesTable.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("idx_user_item_lists_user_type").on(t.user_id, t.list_type),
+  index("idx_user_item_lists_item").on(t.item_id),
+  index("idx_user_item_lists_currency").on(t.currency_id),
+]);
+
+export type UserItemListInsert = typeof userItemListsTable.$inferInsert;
+export type UserItemListSelect = typeof userItemListsTable.$inferSelect;
+
 // --- notifications ---
 export const notificationType = pgEnum("notification_type", [
   "new_message",
