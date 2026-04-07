@@ -139,6 +139,9 @@
 						<DropdownMenu.Item onclick={() => goto('/watchlist')}>
 							Watchlist
 						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => goto('/settings/profile')}>
+							Settings
+						</DropdownMenu.Item>
 						<DropdownMenu.Item variant="destructive" onclick={signOut}>
 							Sign Out
 						</DropdownMenu.Item>

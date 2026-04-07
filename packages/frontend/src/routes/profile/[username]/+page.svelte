@@ -13,6 +13,7 @@
 	import Shield from '@lucide/svelte/icons/shield';
 	import Repeat from '@lucide/svelte/icons/repeat';
 	import Package from '@lucide/svelte/icons/package';
+	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import { invalidateAll } from '$app/navigation';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 	import { toast } from 'svelte-sonner';
@@ -82,6 +83,29 @@
 		profile?.created_at ? formatDate(profile.created_at) : null
 	);
 
+	// Profile customization (Story 7.4)
+	const accentColor = $derived(profile?.accent_color ?? null);
+	const bio = $derived(profile?.bio ?? null);
+	const socialLinks = $derived<[string, string][]>(
+		profile?.social_links
+			? Object.entries(profile.social_links).filter(([k, v]) => k && v) as [string, string][]
+			: []
+	);
+
+	// Build a URL for a social link — accept full URLs or platform handles
+	function socialUrl(platform: string, value: string): string {
+		if (/^https?:\/\//i.test(value)) return value;
+		const handle = value.replace(/^@/, '');
+		const lower = platform.toLowerCase();
+		if (lower === 'twitter' || lower === 'x') return `https://x.com/${handle}`;
+		if (lower === 'github') return `https://github.com/${handle}`;
+		if (lower === 'youtube') return `https://youtube.com/@${handle}`;
+		if (lower === 'twitch') return `https://twitch.tv/${handle}`;
+		if (lower === 'reddit') return `https://reddit.com/user/${handle}`;
+		// Discord/other platforms — leave as plain text inside a span by signaling no URL
+		return '';
+	}
+
 	let reviewType = $state<'upvote' | 'downvote' | null>(null);
 	let reviewComment = $state('');
 	let submitting = $state(false);
@@ -149,18 +173,23 @@
 {:else}
 	<div class="min-h-screen text-foreground">
 		<!-- Profile Header Section -->
-		<div class="bg-card pb-20 pt-8 shadow-sm">
+		<div
+			class="bg-card pb-20 pt-8 shadow-sm"
+			style={accentColor ? `border-top: 4px solid ${accentColor};` : ''}
+		>
 			<div class="mx-auto max-w-7xl px-8">
 				<div class="flex items-start gap-6">
 					{#if profile.avatar_url}
 						<img
 							src={profile.avatar_url}
 							alt={profile.display_name}
-							class="h-32 w-32 rounded-full border-4 border-border bg-card object-cover shadow-lg"
+							class="h-32 w-32 rounded-full border-4 bg-card object-cover shadow-lg"
+							style={accentColor ? `border-color: ${accentColor};` : 'border-color: var(--border);'}
 						/>
 					{:else}
 						<div
-							class="flex h-32 w-32 items-center justify-center rounded-full border-4 border-border bg-primary text-5xl font-bold text-primary-foreground shadow-lg"
+							class="flex h-32 w-32 items-center justify-center rounded-full border-4 bg-primary text-5xl font-bold text-primary-foreground shadow-lg"
+							style={accentColor ? `border-color: ${accentColor};` : 'border-color: var(--border);'}
 						>
 							{profile.display_name.charAt(0).toUpperCase()}
 						</div>
@@ -179,7 +208,34 @@
 						<p class="mb-4 text-lg text-muted-foreground">@{profile.username}</p>
 
 						{#if profile.description}
-							<p class="mb-4 text-foreground">{profile.description}</p>
+							<p class="mb-2 text-foreground">{profile.description}</p>
+						{/if}
+
+						{#if bio}
+							<p class="mb-4 whitespace-pre-line text-sm text-muted-foreground">{bio}</p>
+						{/if}
+
+						{#if socialLinks.length > 0}
+							<div class="mb-4 flex flex-wrap gap-2">
+								{#each socialLinks as [platform, value]}
+									{@const url = socialUrl(platform, value)}
+									{#if url}
+										<a
+											href={url}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+										>
+											<ExternalLink class="h-3 w-3" />
+											{platform}
+										</a>
+									{:else}
+										<Badge variant="outline" class="font-normal">
+											{platform}: {value}
+										</Badge>
+									{/if}
+								{/each}
+							</div>
 						{/if}
 
 						<div class="flex items-center gap-4">
