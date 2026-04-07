@@ -222,6 +222,22 @@ export const tradesTable = pgTable("trades", {
 export type TradeInsert = typeof tradesTable.$inferInsert;
 export type TradeSelect = typeof tradesTable.$inferSelect;
 
+// --- watchlist ---
+export const watchlistTable = pgTable("watchlist", {
+  user_id: text("user_id").notNull()
+    .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  listing_id: uuid("listing_id").notNull()
+    .references(() => listingsTable.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.user_id, t.listing_id] }),
+  index("idx_watchlist_user").on(t.user_id),
+  index("idx_watchlist_listing").on(t.listing_id),
+]);
+
+export type WatchlistInsert = typeof watchlistTable.$inferInsert;
+export type WatchlistSelect = typeof watchlistTable.$inferSelect;
+
 // --- notifications ---
 export const notificationType = pgEnum("notification_type", [
   "new_message",
