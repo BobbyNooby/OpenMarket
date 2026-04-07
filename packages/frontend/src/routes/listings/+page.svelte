@@ -28,6 +28,7 @@
 	const items = $derived((data.items || []) as unknown as Item[]);
 	const currencies = $derived((data.currencies || []) as unknown as Currency[]);
 	const categories = $derived((data.categories || []) as unknown as Category[]);
+	const watchlistSet = $derived(new Set<string>(((data as any).watchlistIds ?? []) as string[]));
 
 	let allListings = $state<any[]>(data.listings || []);
 	let loading = $state(false);
@@ -532,7 +533,7 @@
 				{:else}
 					<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
 						{#each listings as order (order.id)}
-							<ListingCard {order} sessionUserId={data.session?.user?.id} />
+							<ListingCard {order} sessionUserId={data.session?.user?.id} watchlisted={watchlistSet.has(order.id)} />
 						{/each}
 					</div>
 				{/if}

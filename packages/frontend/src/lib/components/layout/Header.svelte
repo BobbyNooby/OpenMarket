@@ -136,6 +136,9 @@
 						<DropdownMenu.Item onclick={() => goto('/dashboard')}>
 							Dashboard
 						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => goto('/watchlist')}>
+							Watchlist
+						</DropdownMenu.Item>
 						<DropdownMenu.Item variant="destructive" onclick={signOut}>
 							Sign Out
 						</DropdownMenu.Item>

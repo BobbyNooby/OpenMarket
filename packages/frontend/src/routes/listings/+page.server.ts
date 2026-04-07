@@ -1,7 +1,9 @@
 import type { PageServerLoad } from './$types';
 import { api } from '$lib/api/server';
+import { PUBLIC_API_URL } from '$env/static/public';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, request }) => {
+	const cookie = request.headers.get('cookie') || '';
 	const limit = 20;
 
 	// Read filter params from URL
@@ -30,11 +32,14 @@ export const load: PageServerLoad = async ({ url }) => {
 	if (minAmount) query.minAmount = minAmount;
 	if (maxAmount) query.maxAmount = maxAmount;
 
-	const [listingsResult, itemsResult, currenciesResult, categoriesResult] = await Promise.all([
+	const [listingsResult, itemsResult, currenciesResult, categoriesResult, watchlistRes] = await Promise.all([
 		api.listings.get({ query }),
 		api.items.get(),
 		api.currencies.get(),
-		api.categories.get()
+		api.categories.get(),
+		fetch(`${PUBLIC_API_URL}/watchlist/ids`, { headers: { cookie } })
+			.then((r) => r.json())
+			.catch(() => ({ success: false, data: [] }))
 	]);
 
 	return {
@@ -43,6 +48,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		items: itemsResult.data?.success ? itemsResult.data.data : [],
 		currencies: currenciesResult.data?.success ? currenciesResult.data.data : [],
 		categories: categoriesResult.data?.success ? categoriesResult.data.data : [],
+		watchlistIds: (watchlistRes?.success ? watchlistRes.data : []) as string[],
 		// Pass current filter state so the page can initialize from URL
 		filters: { q, orderType, status, itemId, currencyId, categoryId, sortBy, minAmount, maxAmount }
 	};
