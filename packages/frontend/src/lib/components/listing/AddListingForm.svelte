@@ -4,7 +4,6 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Card from '$lib/components/ui/card';
-	import * as Select from '$lib/components/ui/select';
 	import { Separator } from '$lib/components/ui/separator';
 	import ItemButton from '../item/ItemButton.svelte';
 	import type { Item, Currency } from '$lib/api/types';
@@ -56,19 +55,14 @@
 		}
 	});
 
-	const itemOptions = $derived(
-		items.map((item) => ({
-			value: item.id,
-			label: item.name
-		}))
-	);
+	let requestedSearch = $state('');
 
-	const currencyOptions = $derived(
-		currencies.map((currency) => ({
-			value: currency.id,
-			label: currency.name
-		}))
-	);
+	const filteredRequested = $derived(() => {
+		const list = requestType === 'item' ? items : currencies;
+		const q = requestedSearch.trim().toLowerCase();
+		if (!q) return list;
+		return list.filter((entry) => entry.name.toLowerCase().includes(q));
+	});
 
 	function getItem(id: string) {
 		return items.find((i) => i.id === id);
@@ -230,25 +224,49 @@
 				</div>
 			</div>
 
-			<!-- Select item/currency -->
+			<!-- Select item/currency (visual picker) -->
 			<div class="space-y-2">
-				<Label>Select {requestType === 'item' ? 'Item' : 'Currency'}</Label>
-				<Select.Root
-					type="single"
-					value={selectedRequestedId || undefined}
-					onValueChange={(val) => { selectedRequestedId = val; }}
-				>
-					<Select.Trigger class="w-full">
-						<span class={selectedRequestedId ? '' : 'text-muted-foreground'}>
-							{selectedRequested()?.name || `Choose ${requestType === 'item' ? 'an item' : 'a currency'}...`}
-						</span>
-					</Select.Trigger>
-					<Select.Content>
-						{#each requestType === 'item' ? itemOptions : currencyOptions as opt}
-							<Select.Item value={opt.value} label={opt.label} />
+				<div class="flex items-center justify-between">
+					<Label>Select {requestType === 'item' ? 'Item' : 'Currency'}</Label>
+					{#if selectedRequestedId}
+						<button
+							type="button"
+							class="text-xs text-muted-foreground hover:text-foreground"
+							onclick={() => (selectedRequestedId = '')}
+						>
+							Clear
+						</button>
+					{/if}
+				</div>
+				<Input
+					type="text"
+					placeholder="Search {requestType === 'item' ? 'items' : 'currencies'}..."
+					bind:value={requestedSearch}
+				/>
+				<div class="rounded-md border border-border bg-background p-3">
+					<div class="grid max-h-64 grid-cols-6 gap-2 overflow-y-auto">
+						{#each filteredRequested() as entry}
+							<button
+								type="button"
+								class="rounded-md p-1 transition-colors hover:bg-card"
+								class:ring-2={entry.id === selectedRequestedId}
+								class:ring-primary={entry.id === selectedRequestedId}
+								onclick={() => (selectedRequestedId = entry.id)}
+							>
+								<ItemButton
+									name={entry.name}
+									type={requestType}
+									description={entry.description ?? ''}
+									image_url={entry.image_url ?? ''}
+								/>
+							</button>
+						{:else}
+							<p class="col-span-6 py-4 text-center text-sm text-muted-foreground">
+								No {requestType === 'item' ? 'items' : 'currencies'} found
+							</p>
 						{/each}
-					</Select.Content>
-				</Select.Root>
+					</div>
+				</div>
 			</div>
 
 			<!-- Amount -->
