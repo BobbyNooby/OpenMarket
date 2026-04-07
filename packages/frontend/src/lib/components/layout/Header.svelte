@@ -133,6 +133,9 @@
 						<DropdownMenu.Item onclick={() => goto(`/profile/${username}`)}>
 							View Profile
 						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => goto('/dashboard')}>
+							Dashboard
+						</DropdownMenu.Item>
 						<DropdownMenu.Item variant="destructive" onclick={signOut}>
 							Sign Out
 						</DropdownMenu.Item>
