@@ -7,6 +7,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import PermissionGrid from './PermissionGrid.svelte';
 	import { DEFAULT_ROLES, type RoleDetail, type Permission } from './admin-api';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		role: RoleDetail;
@@ -46,27 +47,26 @@
 		</div>
 	{/if}
 
-	<!-- Role Info -->
 	<div class="space-y-4">
 		<div class="flex items-center gap-3">
-			<h3 class="text-lg font-semibold text-foreground">Role Details</h3>
+			<h3 class="text-lg font-semibold text-foreground">{m.admin_role_editor_title()}</h3>
 			{#if isDefault}
-				<Badge variant="outline" class="text-xs">Default</Badge>
+				<Badge variant="outline" class="text-xs">{m.admin_roles_default()}</Badge>
 			{/if}
 		</div>
 
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 			<div class="space-y-2">
-				<Label for="role-name">Name</Label>
+				<Label for="role-name">{m.admin_create_role_name()}</Label>
 				<Input id="role-name" bind:value={editName} />
 			</div>
 			<div class="space-y-2">
-				<Label for="role-id">Slug</Label>
+				<Label for="role-id">{m.admin_role_editor_slug()}</Label>
 				<Input id="role-id" value={role.id} disabled />
 			</div>
 		</div>
 		<div class="space-y-2">
-			<Label for="role-desc">Description</Label>
+			<Label for="role-desc">{m.admin_create_role_description()}</Label>
 			<Textarea id="role-desc" bind:value={editDescription} rows={2} />
 		</div>
 	</div>
@@ -81,17 +81,16 @@
 
 	<Separator />
 
-	<!-- Actions -->
 	<div class="flex items-center justify-between">
 		<div>
 			{#if !isDefault}
 				<Button variant="destructive" size="sm" disabled={isSaving} onclick={onDelete}>
-					Delete Role
+					{m.admin_role_editor_delete()}
 				</Button>
 			{/if}
 		</div>
 		<Button disabled={isSaving || !hasChanges} onclick={onSave}>
-			{isSaving ? 'Saving...' : 'Save Changes'}
+			{isSaving ? m.admin_role_editor_saving() : m.admin_role_editor_save()}
 		</Button>
 	</div>
 </div>

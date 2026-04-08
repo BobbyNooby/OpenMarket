@@ -10,6 +10,7 @@
 	import { updateReportStatus, banUser, warnUser, type AdminReport } from './admin-api';
 	import { toast } from 'svelte-sonner';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		open: boolean;
@@ -47,14 +48,12 @@
 		saving = true;
 
 		try {
-			// Determine which user to act on
 			const targetUserId = (action === 'warn-target' || action === 'ban-target')
 				? report.target?.id
-				: (action === 'warn-reporter' || action === 'ban-reporter')
+				: (action === 'warn-reporter' ||action === 'ban-reporter')
 					? report.reporter.id
 					: null;
 
-			// Execute warn/ban if needed
 			if (targetUserId && isWarnAction) {
 				const result = await warnUser(targetUserId, reason.trim());
 				if (!result.success) {
@@ -73,22 +72,13 @@
 				}
 			}
 
-			// Update report status
 			const statusResult = await updateReportStatus(report.id, reportStatus);
 			if (!statusResult.success) {
 				throw new Error(statusResult.error || 'Failed to update report status');
 			}
 
-			const actionLabels: Record<Action, string> = {
-				'dismiss': 'Report dismissed',
-				'resolve': 'Report resolved',
-				'warn-target': `Report resolved — @${report.target?.username} warned`,
-				'ban-target': `Report resolved — @${report.target?.username} banned`,
-				'warn-reporter': `Report resolved — @${report.reporter.username} warned`,
-				'ban-reporter': `Report resolved — @${report.reporter.username} banned`,
-			};
-
-			toast.success(actionLabels[action]);
+			const statusText = action === 'dismiss' ? 'dismissed' : 'resolved';
+			toast.success(m.admin_resolve_report_success({ status: statusText }));
 			onResolved();
 			resetForm();
 			open = false;
@@ -103,19 +93,16 @@
 <Dialog.Root bind:open onOpenChange={(o) => { if (!o) resetForm(); }}>
 	<Dialog.Content class="sm:max-w-lg">
 		<Dialog.Header>
-			<Dialog.Title>Review Report</Dialog.Title>
-			<Dialog.Description>
-				Choose how to handle this report.
-			</Dialog.Description>
+			<Dialog.Title>{m.admin_resolve_report_title()}</Dialog.Title>
+			<Dialog.Description>{m.admin_resolve_report_description()}</Dialog.Description>
 		</Dialog.Header>
 
-		<!-- Report summary -->
 		<div class="rounded-md border border-border bg-muted/30 p-4 space-y-2">
 			<div class="flex items-center gap-2 text-sm">
-				<span class="text-muted-foreground">Reporter:</span>
+				<span class="text-muted-foreground">{m.admin_resolve_report_reporter()}:</span>
 				<span class="font-medium">@{report.reporter.username}</span>
 				<ArrowRight class="h-3.5 w-3.5 text-muted-foreground" />
-				<span class="text-muted-foreground">Target:</span>
+				<span class="text-muted-foreground">{m.admin_resolve_report_target()}:</span>
 				{#if report.target}
 					<span class="font-medium">@{report.target.username}</span>
 				{:else}
@@ -125,61 +112,59 @@
 			</div>
 			<p class="text-sm text-foreground">{report.reason}</p>
 			{#if report.report_count > 1}
-				<p class="text-xs text-muted-foreground">{report.report_count} total reports on this target</p>
+				<p class="text-xs text-muted-foreground">{m.admin_resolve_report_total({ count: report.report_count })}</p>
 			{/if}
 		</div>
 
-		<!-- Action selection -->
 		<div class="space-y-3 py-2">
-			<Label class="text-sm font-medium">Action</Label>
+			<Label class="text-sm font-medium">{m.admin_resolve_report_action()}</Label>
 			<RadioGroup.Root bind:value={action}>
 				<div class="flex items-center gap-2">
 					<RadioGroup.Item value="dismiss" id="action-dismiss" />
-					<Label for="action-dismiss" class="text-sm font-normal">Dismiss — false or spam report</Label>
+					<Label for="action-dismiss" class="text-sm font-normal">{m.admin_resolve_report_dismiss()}</Label>
 				</div>
 				<div class="flex items-center gap-2">
 					<RadioGroup.Item value="resolve" id="action-resolve" />
-					<Label for="action-resolve" class="text-sm font-normal">Resolve — no further action needed</Label>
+					<Label for="action-resolve" class="text-sm font-normal">{m.admin_resolve_report_resolve()}</Label>
 				</div>
 
 				{#if report.target}
 					<div class="border-t border-border pt-2 mt-2">
-						<p class="text-xs text-muted-foreground mb-2">Action against @{report.target.username} (reportee)</p>
+						<p class="text-xs text-muted-foreground mb-2">{m.admin_resolve_report_action_against_target({ user: `@${report.target.username}` })}</p>
 						<div class="grid gap-3">
 							<div class="flex items-center gap-2">
 								<RadioGroup.Item value="warn-target" id="action-warn-target" />
-								<Label for="action-warn-target" class="text-sm font-normal">Warn reportee</Label>
+								<Label for="action-warn-target" class="text-sm font-normal">{m.admin_resolve_report_warn_target()}</Label>
 							</div>
 							<div class="flex items-center gap-2">
 								<RadioGroup.Item value="ban-target" id="action-ban-target" />
-								<Label for="action-ban-target" class="text-sm font-normal text-destructive">Ban reportee</Label>
+								<Label for="action-ban-target" class="text-sm font-normal text-destructive">{m.admin_resolve_report_ban_target()}</Label>
 							</div>
 						</div>
 					</div>
 				{/if}
 
 				<div class="border-t border-border pt-2 mt-2">
-					<p class="text-xs text-muted-foreground mb-2">Action against @{report.reporter.username} (reporter)</p>
+					<p class="text-xs text-muted-foreground mb-2">{m.admin_resolve_report_action_against_reporter({ user: `@${report.reporter.username}` })}</p>
 					<div class="grid gap-3">
 						<div class="flex items-center gap-2">
 							<RadioGroup.Item value="warn-reporter" id="action-warn-reporter" />
-							<Label for="action-warn-reporter" class="text-sm font-normal">Warn reporter — false report</Label>
+							<Label for="action-warn-reporter" class="text-sm font-normal">{m.admin_resolve_report_warn_reporter()}</Label>
 						</div>
 						<div class="flex items-center gap-2">
 							<RadioGroup.Item value="ban-reporter" id="action-ban-reporter" />
-							<Label for="action-ban-reporter" class="text-sm font-normal text-destructive">Ban reporter — report abuse</Label>
+							<Label for="action-ban-reporter" class="text-sm font-normal text-destructive">{m.admin_resolve_report_ban_reporter()}</Label>
 						</div>
 					</div>
 				</div>
 			</RadioGroup.Root>
 		</div>
 
-		<!-- Reason + ban duration (only for warn/ban) -->
 		{#if needsReason}
 			<div class="space-y-4 border-t border-border pt-4">
 				<div class="space-y-2">
-					<Label>Reason <span class="text-destructive">*</span></Label>
-					<Textarea bind:value={reason} placeholder="Reason for this action..." rows={3} />
+					<Label>{m.admin_resolve_report_reason()} <span class="text-destructive">*</span></Label>
+					<Textarea bind:value={reason} placeholder={m.admin_resolve_report_reason_placeholder()} rows={3} />
 				</div>
 
 				{#if isBanAction}
@@ -188,12 +173,12 @@
 							checked={isPermanent}
 							onCheckedChange={(v) => { isPermanent = !!v; }}
 						/>
-						<Label class="text-sm">Permanent ban</Label>
+						<Label class="text-sm">{m.admin_ban_permanent()}</Label>
 					</div>
 
 					{#if !isPermanent}
 						<div class="space-y-2">
-							<Label>Expires at</Label>
+							<Label>{m.admin_ban_expires()}</Label>
 							<Input type="datetime-local" bind:value={expiresAt} />
 						</div>
 					{/if}
@@ -203,14 +188,24 @@
 
 		<Dialog.Footer>
 			<Button variant="outline" onclick={() => { open = false; }} disabled={saving}>
-				Cancel
+				{m.button_cancel()}
 			</Button>
 			<Button
 				variant={isBanAction ? 'destructive' : 'default'}
 				onclick={handleSubmit}
 				disabled={saving || !canSubmit}
 			>
-				{saving ? 'Processing...' : isBanAction ? 'Ban & Resolve' : isWarnAction ? 'Warn & Resolve' : action === 'dismiss' ? 'Dismiss Report' : 'Resolve Report'}
+				{#if saving}
+					{m.admin_resolve_report_processing()}
+				{:else if isBanAction}
+					{m.admin_resolve_report_ban_button()}
+				{:else if isWarnAction}
+					{m.admin_resolve_report_warn_button()}
+				{:else if action === 'dismiss'}
+					{m.admin_resolve_report_dismiss_button()}
+				{:else}
+					{m.admin_resolve_report_resolve_button()}
+				{/if}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

@@ -8,6 +8,7 @@
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import FolderOpen from '@lucide/svelte/icons/folder-open';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Category {
 		id: string;
@@ -81,11 +82,11 @@
 			if (editingCategory) {
 				const result = await apiJson(`/categories/${editingCategory.id}`, 'PUT', body);
 				if (!result.success) throw new Error(result.error);
-				toast.success(`"${formName}" updated`);
+				toast.success(m.admin_category_updated({ name: formName }));
 			} else {
 				const result = await apiJson('/categories', 'POST', body);
 				if (!result.success) throw new Error(result.error);
-				toast.success(`"${formName}" created`);
+				toast.success(m.admin_category_created({ name: formName }));
 			}
 
 			showDialog = false;
@@ -100,23 +101,23 @@
 	}
 
 	async function handleDelete(cat: Category) {
-		if (!confirm(`Delete "${cat.name}"? Items in this category will become uncategorized.`)) return;
+		if (!confirm(m.admin_category_delete_confirm({ name: cat.name }))) return;
 
 		try {
 			const result = await apiJson(`/categories/${cat.id}`, 'DELETE');
 			if (!result.success) throw new Error(result.error);
-			toast.success(`"${cat.name}" deleted`);
+			toast.success(m.admin_category_deleted({ name: cat.name }));
 			onDataChanged();
 			await loadCategories();
 		} catch (err: any) {
-			toast.error(err.message || 'Failed to delete category');
+			toast.error(err.message || m.admin_category_delete_error());
 		}
 	}
 </script>
 
 <div class="flex items-center justify-between mb-6">
-	<p class="text-muted-foreground">Manage item categories</p>
-	<Button onclick={openCreate}>+ Create Category</Button>
+	<p class="text-muted-foreground">{m.admin_categories_manage()}</p>
+	<Button onclick={openCreate}>+ {m.admin_categories_create()}</Button>
 </div>
 
 <!-- Create/Edit Dialog -->
@@ -158,17 +159,17 @@
 <div class="rounded-lg border border-border bg-card shadow-md">
 	<div class="border-b border-border p-6">
 		<h2 class="text-2xl font-semibold text-foreground">
-			Categories ({categories.length})
+			{m.admin_categories_heading({ count: categories.length })}
 		</h2>
 	</div>
 
 	{#if loading}
-		<div class="p-12 text-center text-muted-foreground">Loading...</div>
+		<div class="p-12 text-center text-muted-foreground">{m.common_loading()}</div>
 	{:else if categories.length === 0}
 		<div class="p-12 text-center">
 			<FolderOpen class="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
 			<p class="text-lg text-muted-foreground">
-				No categories yet. Create one to organize items.
+				{m.admin_categories_empty()}
 			</p>
 		</div>
 	{:else}

@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { apiJson } from './admin-api';
 	import { toast } from 'svelte-sonner';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		open: boolean;
@@ -21,7 +22,7 @@
 
 	async function handleCreate() {
 		if (!name.trim()) {
-			error = 'Name is required';
+			error = m.admin_create_role_name_required();
 			return;
 		}
 
@@ -35,16 +36,16 @@
 			});
 
 			if (!result.success) {
-				throw new Error(result.error || 'Failed to create role');
+				throw new Error(result.error || m.admin_create_role_error());
 			}
 
-			toast.success(`Role "${name.trim()}" created`);
+			toast.success(m.admin_create_role_success({ name: name.trim() }));
 			onRoleCreated(result.data.id);
 			name = '';
 			description = '';
 			open = false;
 		} catch (err: any) {
-			toast.error(err.message || 'Failed to create role');
+			toast.error(err.message || m.admin_create_role_error());
 		} finally {
 			isSaving = false;
 		}
@@ -54,10 +55,8 @@
 <Dialog.Root bind:open>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Create New Role</Dialog.Title>
-			<Dialog.Description>
-				Create a custom role with a unique name.
-			</Dialog.Description>
+			<Dialog.Title>{m.admin_create_role_title()}</Dialog.Title>
+			<Dialog.Description>{m.admin_create_role_subtitle()}</Dialog.Description>
 		</Dialog.Header>
 
 		{#if error}
@@ -68,24 +67,24 @@
 
 		<div class="space-y-4 py-2">
 			<div class="space-y-2">
-				<Label for="new-role-name">Name <span class="text-destructive">*</span></Label>
+				<Label for="new-role-name">{m.admin_create_role_name()} <span class="text-destructive">*</span></Label>
 				<Input
 					id="new-role-name"
 					bind:value={name}
-					placeholder="e.g. Content Manager"
+					placeholder={m.admin_create_role_name_placeholder()}
 				/>
 				{#if name.trim()}
 					<p class="text-xs text-muted-foreground">
-						Slug: {name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
+						{m.admin_create_role_slug()}: {name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
 					</p>
 				{/if}
 			</div>
 			<div class="space-y-2">
-				<Label for="new-role-desc">Description</Label>
+				<Label for="new-role-desc">{m.admin_create_role_description()}</Label>
 				<Textarea
 					id="new-role-desc"
 					bind:value={description}
-					placeholder="Describe what this role is for..."
+					placeholder={m.admin_create_role_description_placeholder()}
 					rows={3}
 				/>
 			</div>
@@ -93,10 +92,10 @@
 
 		<div class="flex justify-end gap-3">
 			<Button variant="outline" onclick={() => open = false} disabled={isSaving}>
-				Cancel
+				{m.button_cancel()}
 			</Button>
 			<Button onclick={handleCreate} disabled={isSaving || !name.trim()}>
-				{isSaving ? 'Creating...' : 'Create Role'}
+				{isSaving ? m.admin_create_role_creating() : m.admin_create_role_button()}
 			</Button>
 		</div>
 	</Dialog.Content>

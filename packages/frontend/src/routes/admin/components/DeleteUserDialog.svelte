@@ -6,6 +6,7 @@
 	import { deleteUser, type AdminUser } from './admin-api';
 	import { toast } from 'svelte-sonner';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		open: boolean;
@@ -38,7 +39,7 @@
 				throw new Error(result.error || 'Failed to delete user');
 			}
 
-			toast.success(`@${user.username} has been permanently deleted`);
+			toast.success(m.admin_delete_user_success({ user: `@${user.username}` }));
 			onDeleted();
 			resetForm();
 			open = false;
@@ -53,12 +54,12 @@
 <Dialog.Root bind:open onOpenChange={(o) => { if (!o) resetForm(); }}>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Delete User</Dialog.Title>
+			<Dialog.Title>{m.admin_delete_user_title()}</Dialog.Title>
 			<Dialog.Description>
 				{#if step === 1}
-					Are you sure you want to delete <span class="font-semibold">@{user.username}</span>?
+					{m.admin_delete_user_confirm({ user: `@${user.username}` })}
 				{:else}
-					This action is permanent and cannot be undone.
+					{m.admin_delete_user_permanent()}
 				{/if}
 			</Dialog.Description>
 		</Dialog.Header>
@@ -67,19 +68,17 @@
 			<div class="flex items-start gap-3 rounded-md border border-destructive/50 bg-destructive/5 p-4">
 				<CircleAlert class="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
 				<div class="text-sm">
-					<p class="font-medium text-destructive">This will permanently delete this user account.</p>
-					<p class="mt-1 text-muted-foreground">
-						All associated data will be removed. This action cannot be undone.
-					</p>
+					<p class="font-medium text-destructive">{m.admin_delete_user_warning_title()}</p>
+					<p class="mt-1 text-muted-foreground">{m.admin_delete_user_warning_text()}</p>
 				</div>
 			</div>
 
 			<Dialog.Footer>
 				<Button variant="outline" onclick={() => { open = false; }}>
-					Cancel
+					{m.button_cancel()}
 				</Button>
 				<Button variant="destructive" onclick={() => { step = 2; }}>
-					Continue
+					{m.button_continue()}
 				</Button>
 			</Dialog.Footer>
 
@@ -87,22 +86,22 @@
 			<div class="space-y-4 py-2">
 				<div class="rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm">
 					<p class="mb-2 font-medium text-destructive">
-						Deleting @{user.username} will permanently remove:
+						{m.admin_delete_user_deleting_title({ user: `@${user.username}` })}
 					</p>
 					<ul class="list-inside list-disc space-y-1 text-muted-foreground">
-						<li>Their profile and activity data</li>
-						<li>All listings they created</li>
-						<li>All reviews they gave and received</li>
-						<li>All reports they submitted</li>
-						<li>All bans and warnings on their account</li>
-						<li>All role assignments</li>
-						<li>Their login sessions and OAuth connections</li>
+						<li>{m.admin_delete_user_profile()}</li>
+						<li>{m.admin_delete_user_listings()}</li>
+						<li>{m.admin_delete_user_reviews()}</li>
+						<li>{m.admin_delete_user_reports()}</li>
+						<li>{m.admin_delete_user_bans()}</li>
+						<li>{m.admin_delete_user_roles()}</li>
+						<li>{m.admin_delete_user_sessions()}</li>
 					</ul>
 				</div>
 
 				<div class="space-y-2">
 					<Label>
-						Type <span class="font-mono font-semibold text-destructive">{user.username}</span> to confirm
+							{m.admin_delete_user_type_confirm({ username: user.username })}
 					</Label>
 					<Input
 						bind:value={confirmUsername}
@@ -114,14 +113,14 @@
 
 			<Dialog.Footer>
 				<Button variant="outline" onclick={() => { step = 1; }} disabled={saving}>
-					Back
+					{m.button_back()}
 				</Button>
 				<Button
 					variant="destructive"
 					onclick={handleDelete}
 					disabled={saving || !usernameMatches}
 				>
-					{saving ? 'Deleting...' : 'Delete User Permanently'}
+					{saving ? m.admin_delete_user_deleting() : m.admin_delete_user_button()}
 				</Button>
 			</Dialog.Footer>
 		{/if}

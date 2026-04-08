@@ -9,6 +9,7 @@
 	import AnalyticsTab from './components/AnalyticsTab.svelte';
 	import SiteConfigTab from './components/SiteConfigTab.svelte';
 	import ThemeTab from './components/ThemeTab.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { data } = $props();
 
@@ -20,19 +21,19 @@
 
 <div class="min-h-screen bg-background text-foreground">
 	<div class="mx-auto max-w-7xl px-8 py-12">
-		<h1 class="mb-8 text-4xl font-bold text-foreground">Admin Panel</h1>
+		<h1 class="mb-8 text-4xl font-bold text-foreground">{m.admin_panel_title()}</h1>
 
 		<Tabs.Root value="items">
 			<Tabs.List>
-				<Tabs.Trigger value="items">Items & Currencies</Tabs.Trigger>
-				<Tabs.Trigger value="categories">Categories</Tabs.Trigger>
-				<Tabs.Trigger value="users">Users</Tabs.Trigger>
-				<Tabs.Trigger value="roles">Roles</Tabs.Trigger>
-				<Tabs.Trigger value="reports">Reports</Tabs.Trigger>
-				<Tabs.Trigger value="audit">Audit Log</Tabs.Trigger>
-				<Tabs.Trigger value="analytics">Analytics</Tabs.Trigger>
-				<Tabs.Trigger value="site-config">Site Config</Tabs.Trigger>
-				<Tabs.Trigger value="theme">Theme</Tabs.Trigger>
+				<Tabs.Trigger value="items">{m.admin_tab_items()}</Tabs.Trigger>
+				<Tabs.Trigger value="categories">{m.admin_tab_categories()}</Tabs.Trigger>
+				<Tabs.Trigger value="users">{m.admin_tab_users()}</Tabs.Trigger>
+				<Tabs.Trigger value="roles">{m.admin_tab_roles()}</Tabs.Trigger>
+				<Tabs.Trigger value="reports">{m.admin_tab_reports()}</Tabs.Trigger>
+				<Tabs.Trigger value="audit">{m.admin_tab_audit()}</Tabs.Trigger>
+				<Tabs.Trigger value="analytics">{m.admin_tab_analytics()}</Tabs.Trigger>
+				<Tabs.Trigger value="site-config">{m.admin_tab_site_config()}</Tabs.Trigger>
+				<Tabs.Trigger value="theme">{m.admin_tab_theme()}</Tabs.Trigger>
 			</Tabs.List>
 
 			<Tabs.Content value="items" class="mt-6">

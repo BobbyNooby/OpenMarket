@@ -4,6 +4,7 @@
 	import * as Table from '$lib/components/ui/table';
 	import * as Select from '$lib/components/ui/select';
 	import { getAuditLogs, type AuditLogEntry } from './admin-api';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		dataVersion: number;
@@ -74,13 +75,13 @@
 
 	function actionLabel(action: string): string {
 		const labels: Record<string, string> = {
-			'user.ban': 'Ban',
-			'user.unban': 'Unban',
-			'user.warn': 'Warning',
-			'user.delete': 'Delete',
-			'role.assign': 'Role Assigned',
-			'role.remove': 'Role Removed',
-			'report.resolve': 'Report Resolved',
+			'user.ban': m.admin_audit_action_ban(),
+			'user.unban': m.admin_audit_action_unban(),
+			'user.warn': m.admin_audit_action_warning(),
+			'user.delete': m.admin_audit_action_delete(),
+			'role.assign': m.admin_audit_action_role_assigned(),
+			'role.remove': m.admin_audit_action_role_removed(),
+			'report.resolve': m.admin_audit_action_report_resolved(),
 		};
 		return labels[action] ?? action;
 	}
@@ -93,11 +94,11 @@
 
 	function metadataSummary(entry: AuditLogEntry): string {
 		if (!entry.metadata) return '';
-		const m = entry.metadata;
-		if (m.reason) return String(m.reason);
-		if (m.role) return `Role: ${m.role}`;
-		if (m.status) return `Status: ${m.status}`;
-		if (m.deletedUserName) return `User: ${m.deletedUserName}`;
+		const md = entry.metadata;
+		if (md.reason) return String(md.reason);
+		if (md.role) return `Role: ${md.role}`;
+		if (md.status) return `Status: ${md.status}`;
+		if (md.deletedUserName) return `User: ${md.deletedUserName}`;
 		return '';
 	}
 
@@ -111,7 +112,7 @@
 </script>
 
 <div class="space-y-4">
-	<h3 class="text-lg font-semibold text-foreground">Audit Log</h3>
+	<h3 class="text-lg font-semibold text-foreground">{m.admin_audit_title()}</h3>
 
 	<div class="flex items-center gap-4">
 		<Select.Root
@@ -123,7 +124,7 @@
 				<span class={actionFilter ? '' : 'text-muted-foreground'}>
 					{actionFilter
 						? actionLabel(actionFilter)
-						: 'All actions'}
+						: m.admin_audit_all_actions()}
 				</span>
 			</Select.Trigger>
 			<Select.Content>
@@ -135,18 +136,18 @@
 	</div>
 
 	{#if loading}
-		<div class="flex items-center justify-center py-12 text-muted-foreground">Loading...</div>
+		<div class="flex items-center justify-center py-12 text-muted-foreground">{m.common_loading()}</div>
 	{:else if logs.length === 0}
-		<div class="py-8 text-center text-muted-foreground">No audit log entries found.</div>
+		<div class="py-8 text-center text-muted-foreground">{m.admin_audit_no_logs()}</div>
 	{:else}
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
-					<Table.Head>Action</Table.Head>
-					<Table.Head>Actor</Table.Head>
-					<Table.Head>Target</Table.Head>
-					<Table.Head>Details</Table.Head>
-					<Table.Head>Date</Table.Head>
+					<Table.Head>{m.admin_audit_column_action()}</Table.Head>
+					<Table.Head>{m.admin_audit_column_actor()}</Table.Head>
+					<Table.Head>{m.admin_audit_target()}</Table.Head>
+					<Table.Head>{m.admin_audit_column_details()}</Table.Head>
+					<Table.Head>{m.admin_audit_column_date()}</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
@@ -199,7 +200,7 @@
 						</Table.Cell>
 						<Table.Cell>
 							<p class="max-w-60 truncate text-sm" title={metadataSummary(entry)}>
-								{metadataSummary(entry) || '—'}
+								{metadataSummary(entry) ||"—"}
 							</p>
 						</Table.Cell>
 						<Table.Cell>
@@ -215,11 +216,11 @@
 
 	<div class="flex items-center justify-between">
 		<p class="text-sm text-muted-foreground">
-			Showing {showingFrom}–{showingTo} of {total}
+			{m.admin_audit_showing({ from: showingFrom, to: showingTo, total })}
 		</p>
 		<div class="flex gap-2">
 			<Button size="sm" variant="outline" disabled={offset === 0} onclick={prevPage}>
-				Previous
+				{m.admin_audit_previous()}
 			</Button>
 			<Button
 				size="sm"
@@ -227,7 +228,7 @@
 				disabled={offset + limit >= total}
 				onclick={nextPage}
 			>
-				Next
+				{m.admin_audit_next()}
 			</Button>
 		</div>
 	</div>

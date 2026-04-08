@@ -5,6 +5,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { apiFetch, apiJson, type AdminUser, type Role } from './admin-api';
 	import { toast } from 'svelte-sonner';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		open: boolean;
@@ -19,7 +20,6 @@
 	let saving = $state<string | null>(null);
 	let error = $state<string | null>(null);
 
-	// Sync local state when dialog opens or user changes
 	$effect(() => {
 		if (open) {
 			userRoles = [...user.roles];
@@ -35,11 +35,11 @@
 			if (hasRole) {
 				await apiFetch(`/admin/users/${user.id}/roles/${roleId}`, { method: 'DELETE' });
 				userRoles = userRoles.filter((r) => r !== roleId);
-				toast.success(`Removed ${roleName} from @${user.username}`);
+				toast.success(m.admin_manage_roles_removed({ role: roleName, user: `@${user.username}` }));
 			} else {
 				await apiJson(`/admin/users/${user.id}/roles`, 'POST', { role: roleId });
 				userRoles = [...userRoles, roleId];
-				toast.success(`Added ${roleName} to @${user.username}`);
+				toast.success(m.admin_manage_roles_added({ role: roleName, user: `@${user.username}` }));
 			}
 			onRolesChanged();
 		} catch (err: any) {
@@ -53,9 +53,9 @@
 <Dialog.Root bind:open>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Manage Roles</Dialog.Title>
+			<Dialog.Title>{m.admin_manage_roles_title()}</Dialog.Title>
 			<Dialog.Description>
-				Assign roles to <span class="font-semibold">@{user.username}</span>
+					{m.admin_manage_roles_description({ user: `@${user.username}` })}
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -78,7 +78,7 @@
 						<Label class="flex items-center gap-2 text-sm font-medium">
 							{role.name}
 							{#if hasRole}
-								<Badge variant="default" class="text-xs">Active</Badge>
+								<Badge variant="default" class="text-xs">{m.admin_manage_roles_active()}</Badge>
 							{/if}
 						</Label>
 						{#if role.description}
@@ -86,7 +86,7 @@
 						{/if}
 					</div>
 					{#if saving === role.id}
-						<span class="text-xs text-muted-foreground">Saving...</span>
+						<span class="text-xs text-muted-foreground">{m.admin_manage_roles_saving()}</span>
 					{/if}
 				</div>
 			{/each}

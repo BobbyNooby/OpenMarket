@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { banUser, type AdminUser } from './admin-api';
 	import { toast } from 'svelte-sonner';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		open: boolean;
@@ -31,7 +32,7 @@
 
 	async function handleBan() {
 		if (!reason.trim()) {
-			error = 'Reason is required';
+			error = m.admin_reason_required();
 			return;
 		}
 
@@ -46,15 +47,15 @@
 			);
 
 			if (!result.success) {
-				throw new Error(result.error || 'Failed to ban user');
+				throw new Error(result.error || m.admin_ban_error());
 			}
 
-			toast.success(`@${user.username} has been banned`);
+			toast.success(m.admin_ban_success({ user: `@${user.username}` }));
 			onBanned();
 			resetForm();
 			open = false;
 		} catch (err: any) {
-			toast.error(err.message || 'Failed to ban user');
+			toast.error(err.message || m.admin_ban_error());
 		} finally {
 			saving = false;
 		}
@@ -64,9 +65,9 @@
 <Dialog.Root bind:open onOpenChange={(o) => { if (!o) resetForm(); }}>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Ban User</Dialog.Title>
+			<Dialog.Title>{m.admin_ban_title()}</Dialog.Title>
 			<Dialog.Description>
-				Ban <span class="font-semibold">@{user.username}</span> from the marketplace.
+					{m.admin_ban_description({ user: `@${user.username}` })}
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -78,8 +79,8 @@
 
 		<div class="space-y-4 py-2">
 			<div class="space-y-2">
-				<Label>Reason <span class="text-destructive">*</span></Label>
-				<Textarea bind:value={reason} placeholder="Reason for banning this user..." rows={3} />
+				<Label>{m.admin_ban_reason()} <span class="text-destructive">*</span></Label>
+				<Textarea bind:value={reason} placeholder={m.admin_ban_reason_placeholder()} rows={3} />
 			</div>
 
 			<div class="flex items-center gap-2">
@@ -87,12 +88,12 @@
 					checked={isPermanent}
 					onCheckedChange={(v) => { isPermanent = !!v; }}
 				/>
-				<Label class="text-sm">Permanent ban</Label>
+				<Label class="text-sm">{m.admin_ban_permanent()}</Label>
 			</div>
 
 			{#if !isPermanent}
 				<div class="space-y-2">
-					<Label>Expires at</Label>
+					<Label>{m.admin_ban_expires()}</Label>
 					<Input type="datetime-local" bind:value={expiresAt} />
 				</div>
 			{/if}
@@ -100,10 +101,10 @@
 
 		<Dialog.Footer>
 			<Button variant="outline" onclick={() => { open = false; }} disabled={saving}>
-				Cancel
+				{m.button_cancel()}
 			</Button>
 			<Button variant="destructive" onclick={handleBan} disabled={saving || !reason.trim()}>
-				{saving ? 'Banning...' : 'Ban User'}
+				{saving ? m.admin_ban_banning() : m.admin_ban_button()}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

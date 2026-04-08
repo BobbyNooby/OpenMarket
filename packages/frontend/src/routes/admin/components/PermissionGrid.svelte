@@ -2,6 +2,7 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Label } from '$lib/components/ui/label';
 	import type { Permission } from './admin-api';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		permissions: Permission[];
@@ -11,7 +12,6 @@
 
 	let { permissions, checked, onToggle }: Props = $props();
 
-	// Group permissions by category (prefix before ":")
 	const grouped = $derived(() => {
 		const groups: Record<string, Permission[]> = {};
 		for (const perm of permissions) {
@@ -25,7 +25,7 @@
 </script>
 
 <div class="space-y-4">
-	<h3 class="text-lg font-semibold text-foreground">Permissions</h3>
+	<h3 class="text-lg font-semibold text-foreground">{m.admin_role_editor_permissions()}</h3>
 
 	<div class="space-y-6 max-h-[400px] overflow-y-auto pr-2">
 		{#each grouped() as [category, perms]}

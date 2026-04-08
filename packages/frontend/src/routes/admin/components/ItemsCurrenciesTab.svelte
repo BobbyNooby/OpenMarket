@@ -5,6 +5,7 @@
 	import type { ItemFormData, GenericItem } from '$lib/api/types';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		data: {
@@ -68,7 +69,7 @@
 
 			await invalidateAll();
 
-			toast.success(editingItem ? `"${formDataInput.name}" updated` : `"${formDataInput.name}" created`);
+			toast.success(editingItem ? m.admin_item_updated({ name: formDataInput.name }) : m.admin_item_created({ name: formDataInput.name }));
 			showForm = false;
 			editingItem = null;
 		} catch (err: any) {
@@ -92,7 +93,7 @@
 	}
 
 	async function handleDelete(item: GenericItem) {
-		if (!confirm(`Are you sure you want to delete "${item.name}"?`)) {
+		if (!confirm(m.admin_item_delete_confirm({ name: item.name }))) {
 			return;
 		}
 
@@ -110,7 +111,7 @@
 			}
 
 			await invalidateAll();
-			toast.success(`"${item.name}" deleted`);
+			toast.success(m.admin_item_deleted({ name: item.name }));
 		} catch (err: any) {
 			error = err.message || 'An error occurred';
 			toast.error(error!);
@@ -127,18 +128,17 @@
 </script>
 
 <div class="flex items-center justify-between mb-6">
-	<p class="text-muted-foreground">Manage items and currencies</p>
+	<p class="text-muted-foreground">{m.admin_items_manage()}</p>
 	<Button onclick={handleCreate} disabled={isLoading}>
-		+ Create Item/Currency
+		+ {m.admin_items_create()}
 	</Button>
 </div>
 
-<!-- Dialog for Form -->
 <Dialog.Root bind:open={showForm}>
 	<Dialog.Content class="sm:max-w-4xl">
 		<Dialog.Header>
 			<Dialog.Title>
-				{editingItem ? 'Edit Item/Currency' : 'Create New Item/Currency'}
+				{editingItem ? m.admin_item_edit_title() : m.admin_item_create_title()}
 			</Dialog.Title>
 		</Dialog.Header>
 		{#if error}
@@ -155,24 +155,23 @@
 		/>
 		{#if isLoading}
 			<div class="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
-				<div class="text-foreground">Saving...</div>
+				<div class="text-foreground">{m.admin_item_saving()}</div>
 			</div>
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
 
-<!-- Items Section -->
 <div class="mb-8 rounded-lg border border-border bg-card shadow-md">
 	<div class="border-b border-border p-6">
 		<h2 class="text-2xl font-semibold text-foreground">
-			Items ({data.items?.length || 0})
+			{m.admin_items_section_items({ count: data.items?.length || 0 })}
 		</h2>
 	</div>
 
 	{#if !data.items?.length}
 		<div class="p-12 text-center">
 			<p class="text-lg text-muted-foreground">
-				No items yet. Create one to get started!
+				{m.admin_item_no_items()}
 			</p>
 		</div>
 	{:else}
@@ -197,14 +196,14 @@
 									disabled={isLoading}
 									class="text-xs text-primary hover:underline disabled:opacity-50"
 								>
-									Edit
+									{m.button_edit()}
 								</button>
 								<button
 									onclick={() => handleDelete(item)}
 									disabled={isLoading}
 									class="text-xs text-destructive hover:underline disabled:opacity-50"
 								>
-									Delete
+									{m.admin_item_delete()}
 								</button>
 							</div>
 						</div>
@@ -215,18 +214,17 @@
 	{/if}
 </div>
 
-<!-- Currencies Section -->
 <div class="rounded-lg border border-border bg-card shadow-md">
 	<div class="border-b border-border p-6">
 		<h2 class="text-2xl font-semibold text-foreground">
-			Currencies ({data.currencies?.length || 0})
+			{m.admin_items_section_currencies({ count: data.currencies?.length || 0 })}
 		</h2>
 	</div>
 
 	{#if !data.currencies?.length}
 		<div class="p-12 text-center">
 			<p class="text-lg text-muted-foreground">
-				No currencies yet. Create one to get started!
+				{m.admin_item_no_currencies()}
 			</p>
 		</div>
 	{:else}
@@ -251,14 +249,14 @@
 									disabled={isLoading}
 									class="text-xs text-primary hover:underline disabled:opacity-50"
 								>
-									Edit
+									{m.button_edit()}
 								</button>
 								<button
 									onclick={() => handleDelete(currency)}
 									disabled={isLoading}
 									class="text-xs text-destructive hover:underline disabled:opacity-50"
 								>
-									Delete
+									{m.admin_item_delete()}
 								</button>
 							</div>
 						</div>

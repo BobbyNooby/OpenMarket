@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { warnUser, type AdminUser } from './admin-api';
 	import { toast } from 'svelte-sonner';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		open: boolean;
@@ -25,7 +26,7 @@
 
 	async function handleWarn() {
 		if (!reason.trim()) {
-			error = 'Reason is required';
+			error = m.admin_reason_required();
 			return;
 		}
 
@@ -36,15 +37,15 @@
 			const result = await warnUser(user.id, reason.trim());
 
 			if (!result.success) {
-				throw new Error(result.error || 'Failed to warn user');
+				throw new Error(result.error || m.admin_warn_error());
 			}
 
-			toast.success(`Warning issued to @${user.username}`);
+			toast.success(m.admin_warn_success({ user: `@${user.username}` }));
 			onWarned();
 			resetForm();
 			open = false;
 		} catch (err: any) {
-			toast.error(err.message || 'Failed to warn user');
+			toast.error(err.message || m.admin_warn_error());
 		} finally {
 			saving = false;
 		}
@@ -54,9 +55,9 @@
 <Dialog.Root bind:open onOpenChange={(o) => { if (!o) resetForm(); }}>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Warn User</Dialog.Title>
+			<Dialog.Title>{m.admin_warn_title()}</Dialog.Title>
 			<Dialog.Description>
-				Issue a warning to <span class="font-semibold">@{user.username}</span>.
+					{m.admin_warn_description({ user: `@${user.username}` })}
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -68,17 +69,17 @@
 
 		<div class="space-y-4 py-2">
 			<div class="space-y-2">
-				<Label>Reason <span class="text-destructive">*</span></Label>
-				<Textarea bind:value={reason} placeholder="Reason for warning this user..." rows={3} />
+				<Label>{m.admin_warn_reason()} <span class="text-destructive">*</span></Label>
+				<Textarea bind:value={reason} placeholder={m.admin_warn_reason_placeholder()} rows={3} />
 			</div>
 		</div>
 
 		<Dialog.Footer>
 			<Button variant="outline" onclick={() => { open = false; }} disabled={saving}>
-				Cancel
+				{m.button_cancel()}
 			</Button>
 			<Button onclick={handleWarn} disabled={saving || !reason.trim()}>
-				{saving ? 'Sending...' : 'Send Warning'}
+				{saving ? m.admin_warn_sending() : m.admin_warn_button()}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

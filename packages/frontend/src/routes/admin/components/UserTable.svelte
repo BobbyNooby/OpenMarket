@@ -12,6 +12,7 @@
 	import UserCog from '@lucide/svelte/icons/user-cog';
 	import History from '@lucide/svelte/icons/history';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		users: AdminUser[];
@@ -39,12 +40,12 @@
 	<Table.Root>
 		<Table.Header>
 			<Table.Row>
-				<Table.Head>User</Table.Head>
-				<Table.Head>Email</Table.Head>
-				<Table.Head>Roles</Table.Head>
-				<Table.Head>Status</Table.Head>
-				<Table.Head>Joined</Table.Head>
-				<Table.Head class="text-right">Actions</Table.Head>
+				<Table.Head>{m.admin_users_column_user()}</Table.Head>
+				<Table.Head>{m.admin_users_column_email()}</Table.Head>
+				<Table.Head>{m.admin_users_column_roles()}</Table.Head>
+				<Table.Head>{m.admin_users_column_status()}</Table.Head>
+				<Table.Head>{m.admin_users_column_joined()}</Table.Head>
+				<Table.Head class="text-right">{m.admin_users_column_actions()}</Table.Head>
 			</Table.Row>
 		</Table.Header>
 		<Table.Body>
@@ -94,9 +95,9 @@
 						</Table.Cell>
 						<Table.Cell>
 							{#if user.is_banned}
-								<Badge variant="destructive" class="text-xs">Banned</Badge>
+								<Badge variant="destructive" class="text-xs">{m.admin_users_status_banned()}</Badge>
 							{:else}
-								<Badge variant="outline" class="text-xs text-green-600 border-green-600">Active</Badge>
+								<Badge variant="outline" class="text-xs text-green-600 border-green-600">{m.admin_users_status_active()}</Badge>
 							{/if}
 						</Table.Cell>
 						<Table.Cell class="text-sm text-muted-foreground">
@@ -114,32 +115,32 @@
 								<DropdownMenu.Content align="end">
 									<DropdownMenu.Item onclick={() => onManageRoles(user)}>
 										<UserCog class="h-4 w-4" />
-										Manage Roles
+										{m.admin_users_action_manage_roles()}
 									</DropdownMenu.Item>
 									<DropdownMenu.Item onclick={() => onViewHistory(user)}>
 										<History class="h-4 w-4" />
-										View History
+										{m.admin_users_action_view_history()}
 									</DropdownMenu.Item>
 									<DropdownMenu.Separator />
 									<DropdownMenu.Item onclick={() => onWarnUser(user)}>
 										<TriangleAlert class="h-4 w-4" />
-										Warn User
+										{m.admin_users_action_warn()}
 									</DropdownMenu.Item>
 									{#if user.is_banned}
 										<DropdownMenu.Item onclick={() => onUnbanUser(user)}>
 											<ShieldCheck class="h-4 w-4" />
-											Unban User
+											{m.admin_users_action_unban()}
 										</DropdownMenu.Item>
 									{:else}
 										<DropdownMenu.Item variant="destructive" onclick={() => onBanUser(user)}>
 											<ShieldAlert class="h-4 w-4" />
-											Ban User
+											{m.admin_users_action_ban()}
 										</DropdownMenu.Item>
 									{/if}
 									<DropdownMenu.Separator />
 									<DropdownMenu.Item variant="destructive" onclick={() => onDeleteUser(user)}>
 										<Trash2 class="h-4 w-4" />
-										Delete User
+										{m.admin_users_action_delete()}
 									</DropdownMenu.Item>
 								</DropdownMenu.Content>
 							</DropdownMenu.Root>

@@ -10,6 +10,7 @@
 	import WarnUserDialog from './WarnUserDialog.svelte';
 	import UserHistoryDialog from './UserHistoryDialog.svelte';
 	import DeleteUserDialog from './DeleteUserDialog.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		dataVersion: number;
@@ -114,14 +115,14 @@
 	}
 
 	async function handleUnban(user: AdminUser) {
-		if (!confirm(`Unban @${user.username}?`)) return;
+		if (!confirm(m.admin_user_unban_confirm({ user: `@${user.username}` }))) return;
 
 		const result = await unbanUser(user.id);
 		if (result.success) {
-			toast.success(`@${user.username} has been unbanned`);
+			toast.success(m.admin_user_unban_success({ user: `@${user.username}` }));
 			handleDataChanged();
 		} else {
-			toast.error(result.error || 'Failed to unban user');
+			toast.error(result.error || m.admin_user_unban_error());
 		}
 	}
 
@@ -144,7 +145,7 @@
 	<!-- Filters -->
 	<div class="flex items-center gap-4">
 		<Input
-			placeholder="Search users..."
+			placeholder={m.admin_users_search()}
 			oninput={handleSearch}
 			class="max-w-sm"
 		/>
@@ -155,11 +156,11 @@
 		>
 			<Select.Trigger class="w-48">
 				<span class={roleFilter ? '' : 'text-muted-foreground'}>
-					{roleFilter ? roles.find(r => r.id === roleFilter)?.name ?? 'Filter by role' : 'All roles'}
+					{roleFilter ? roles.find(r => r.id === roleFilter)?.name ?? m.admin_users_filter_role() : m.admin_users_filter_all()}
 				</span>
 			</Select.Trigger>
 			<Select.Content>
-				<Select.Item value="__all__" label="All roles" />
+				<Select.Item value="__all__" label={m.admin_users_filter_all()} />
 				{#each roles as role}
 					<Select.Item value={role.id} label={role.name} />
 				{/each}

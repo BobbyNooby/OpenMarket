@@ -11,15 +11,17 @@
 	import { hexToHsl, hslToHex } from '$lib/utils/color';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import { m } from '$lib/paraglide/messages.js';
 
 	type Variant = 'light' | 'dark';
 	type ThemeMap = Record<string, string>;
+	type SectionKey = 'surfaces' | 'text' | 'brand' | 'states';
 
 	// Variables grouped by visual purpose
-	const SECTIONS: { name: string; variables: string[] }[] = [
-		{ name: 'Surfaces', variables: ['background', 'card', 'popover', 'muted'] },
+	const SECTIONS: { key: SectionKey; variables: string[] }[] = [
+		{ key: 'surfaces', variables: ['background', 'card', 'popover', 'muted'] },
 		{
-			name: 'Text',
+			key: 'text',
 			variables: [
 				'foreground',
 				'card-foreground',
@@ -31,9 +33,18 @@
 				'primary-foreground',
 			],
 		},
-		{ name: 'Brand', variables: ['primary', 'secondary', 'accent'] },
-		{ name: 'States', variables: ['destructive', 'border', 'input', 'ring'] },
+		{ key: 'brand', variables: ['primary', 'secondary', 'accent'] },
+		{ key: 'states', variables: ['destructive', 'border', 'input', 'ring'] },
 	];
+
+	function sectionTitle(key: SectionKey): string {
+		switch (key) {
+			case 'surfaces': return m.admin_theme_section_surfaces();
+			case 'text': return m.admin_theme_section_text();
+			case 'brand': return m.admin_theme_section_brand();
+			case 'states': return m.admin_theme_section_states();
+		}
+	}
 
 	let loading = $state(true);
 	let saving = $state(false);
@@ -55,7 +66,7 @@
 				dark: { ...result.data.theme.dark },
 			};
 		} else {
-			toast.error(result.error ?? 'Failed to load theme');
+			toast.error(result.error ?? m.admin_theme_load_error());
 		}
 		loading = false;
 	}
@@ -92,23 +103,23 @@
 	async function resetVariable(variant: Variant, variable: string) {
 		const result = await apiJson('/admin/site-theme/reset', 'POST', { variant, variable });
 		if (result.success) {
-			toast.success(`Reset ${variable}`);
+			toast.success(m.admin_theme_reset_variable_success({ variable }));
 			await loadTheme();
 			await invalidateAll();
 		} else {
-			toast.error(result.error ?? 'Failed to reset');
+			toast.error(result.error ?? m.admin_theme_reset_error());
 		}
 	}
 
 	async function resetVariant(variant: Variant) {
-		if (!confirm(`Reset all ${variant} theme variables to defaults?`)) return;
+		if (!confirm(m.admin_theme_reset_variant_confirm({ variant }))) return;
 		const result = await apiJson('/admin/site-theme/reset', 'POST', { variant });
 		if (result.success) {
-			toast.success(`Reset ${variant} theme`);
+			toast.success(m.admin_theme_reset_variant_success({ variant }));
 			await loadTheme();
 			await invalidateAll();
 		} else {
-			toast.error(result.error ?? 'Failed to reset');
+			toast.error(result.error ?? m.admin_theme_reset_error());
 		}
 	}
 
@@ -119,11 +130,11 @@
 			variables: theme[variant],
 		});
 		if (result.success) {
-			toast.success(`${variant} theme saved`);
+			toast.success(m.admin_theme_variant_saved({ variant }));
 			initial[variant] = { ...theme[variant] };
 			await invalidateAll();
 		} else {
-			toast.error(result.error ?? 'Failed to save');
+			toast.error(result.error ?? m.admin_theme_save_error());
 		}
 		saving = false;
 	}
@@ -133,18 +144,18 @@
 		try {
 			if (lightDirty) {
 				const r1 = await apiJson('/admin/site-theme', 'PUT', { variant: 'light', variables: theme.light });
-				if (!r1.success) throw new Error(r1.error ?? 'Failed to save light');
+				if (!r1.success) throw new Error(r1.error ?? m.admin_theme_save_error());
 				initial.light = { ...theme.light };
 			}
 			if (darkDirty) {
 				const r2 = await apiJson('/admin/site-theme', 'PUT', { variant: 'dark', variables: theme.dark });
-				if (!r2.success) throw new Error(r2.error ?? 'Failed to save dark');
+				if (!r2.success) throw new Error(r2.error ?? m.admin_theme_save_error());
 				initial.dark = { ...theme.dark };
 			}
-			toast.success('Theme saved');
+			toast.success(m.admin_theme_saved());
 			await invalidateAll();
 		} catch (err: any) {
-			toast.error(err?.message ?? 'Failed to save');
+			toast.error(err?.message ?? m.admin_theme_save_error());
 		} finally {
 			saving = false;
 		}
@@ -162,9 +173,9 @@
 
 <div class="space-y-6">
 	<div>
-		<h2 class="text-xl font-semibold text-foreground">Theme Editor</h2>
+		<h2 class="text-xl font-semibold text-foreground">{m.admin_theme_title()}</h2>
 		<p class="text-sm text-muted-foreground">
-			Customize every shadcn color variable for both light and dark mode.
+			{m.admin_theme_subtitle()}
 		</p>
 	</div>
 
@@ -176,12 +187,12 @@
 		<Tabs.Root bind:value={activeVariant}>
 			<div class="flex items-center justify-between">
 				<Tabs.List>
-					<Tabs.Trigger value="light">Light{lightDirty ? ' *' : ''}</Tabs.Trigger>
-					<Tabs.Trigger value="dark">Dark{darkDirty ? ' *' : ''}</Tabs.Trigger>
+					<Tabs.Trigger value="light">{m.admin_theme_tab_light()}{lightDirty ? ' *' : ''}</Tabs.Trigger>
+					<Tabs.Trigger value="dark">{m.admin_theme_tab_dark()}{darkDirty ? ' *' : ''}</Tabs.Trigger>
 				</Tabs.List>
 				<Button variant="outline" size="sm" onclick={() => resetVariant(activeVariant)}>
 					<RotateCcw class="mr-1.5 h-3.5 w-3.5" />
-					Reset {activeVariant} to defaults
+					{m.admin_theme_reset_variant({ variant: activeVariant })}
 				</Button>
 			</div>
 
@@ -193,7 +204,7 @@
 							{#each SECTIONS as section}
 								<Card.Root>
 									<Card.Header>
-										<Card.Title class="text-base">{section.name}</Card.Title>
+										<Card.Title class="text-base">{sectionTitle(section.key)}</Card.Title>
 									</Card.Header>
 									<Card.Content class="space-y-3">
 										{#each section.variables as variable}
@@ -216,7 +227,7 @@
 													size="icon"
 													class="h-8 w-8 shrink-0 text-muted-foreground"
 													onclick={() => resetVariable(variant as Variant, variable)}
-													title="Reset to default"
+													title={m.admin_theme_reset_to_default()}
 												>
 													<RotateCcw class="h-3.5 w-3.5" />
 												</Button>
@@ -232,56 +243,56 @@
 							<div class="sticky top-4">
 								<Card.Root>
 									<Card.Header>
-										<Card.Title class="text-base">Live preview</Card.Title>
-										<Card.Description>Reflects unsaved changes</Card.Description>
+										<Card.Title class="text-base">{m.admin_theme_live_preview()}</Card.Title>
+										<Card.Description>{m.admin_theme_live_preview_hint()}</Card.Description>
 									</Card.Header>
 									<Card.Content>
 										<div
 											class="space-y-3 rounded-lg border border-border p-4"
 											style={`${previewStyle} background: hsl(var(--background)); color: hsl(var(--foreground));`}
 										>
-											<p class="text-sm font-semibold" style="color: hsl(var(--foreground));">Sample text</p>
-											<p class="text-xs" style="color: hsl(var(--muted-foreground));">Muted helper text</p>
+											<p class="text-sm font-semibold" style="color: hsl(var(--foreground));">{m.admin_theme_preview_sample_text()}</p>
+											<p class="text-xs" style="color: hsl(var(--muted-foreground));">{m.admin_theme_preview_muted_text()}</p>
 											<div class="flex flex-wrap gap-2">
 												<button
 													type="button"
 													class="rounded-md px-3 py-1.5 text-xs font-medium"
 													style="background: hsl(var(--primary)); color: hsl(var(--primary-foreground));"
 												>
-													Primary
+													{m.admin_theme_preview_button_primary()}
 												</button>
 												<button
 													type="button"
 													class="rounded-md px-3 py-1.5 text-xs font-medium"
 													style="background: hsl(var(--secondary)); color: hsl(var(--secondary-foreground));"
 												>
-													Secondary
+													{m.admin_theme_preview_button_secondary()}
 												</button>
 												<button
 													type="button"
 													class="rounded-md border px-3 py-1.5 text-xs font-medium"
 													style="border-color: hsl(var(--border)); color: hsl(var(--foreground));"
 												>
-													Outline
+													{m.admin_theme_preview_button_outline()}
 												</button>
 												<button
 													type="button"
 													class="rounded-md px-3 py-1.5 text-xs font-medium"
 													style="background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground));"
 												>
-													Destructive
+													{m.admin_theme_preview_button_destructive()}
 												</button>
 											</div>
 											<div
 												class="rounded-md p-3"
 												style="background: hsl(var(--card)); color: hsl(var(--card-foreground)); border: 1px solid hsl(var(--border));"
 											>
-												<p class="text-xs font-semibold">Card surface</p>
-												<p class="text-xs" style="color: hsl(var(--muted-foreground));">With subtle border</p>
+												<p class="text-xs font-semibold">{m.admin_theme_preview_card_title()}</p>
+												<p class="text-xs" style="color: hsl(var(--muted-foreground));">{m.admin_theme_preview_card_subtitle()}</p>
 											</div>
 											<input
 												type="text"
-												placeholder="Input field"
+												placeholder={m.admin_theme_preview_input_placeholder()}
 												class="w-full rounded-md border px-3 py-1.5 text-xs"
 												style="background: hsl(var(--background)); border-color: hsl(var(--input)); color: hsl(var(--foreground));"
 											/>
@@ -298,17 +309,17 @@
 		<div class="sticky bottom-4 flex items-center justify-between rounded-lg border border-border bg-card p-4 shadow-lg">
 			<div class="flex items-center gap-2">
 				{#if isDirty}
-					<Badge variant="secondary">Unsaved changes</Badge>
+					<Badge variant="secondary">{m.common_unsaved_changes()}</Badge>
 				{:else}
-					<span class="text-sm text-muted-foreground">All changes saved</span>
+					<span class="text-sm text-muted-foreground">{m.common_all_changes_saved()}</span>
 				{/if}
 			</div>
 			<Button onclick={saveAll} disabled={!isDirty || saving}>
 				{#if saving}
 					<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-					Saving...
+					{m.button_saving()}
 				{:else}
-					Save changes
+					{m.button_save_changes()}
 				{/if}
 			</Button>
 		</div>

@@ -12,6 +12,7 @@
 	import Clock from '@lucide/svelte/icons/clock';
 	import TrendingUp from '@lucide/svelte/icons/trending-up';
 	import { apiFetch } from './admin-api';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props { dataVersion: number; }
 	let { dataVersion }: Props = $props();
@@ -98,9 +99,9 @@
 
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
-		<h3 class="text-lg font-semibold text-foreground">Analytics</h3>
+		<h3 class="text-lg font-semibold text-foreground">{m.admin_analytics_title()}</h3>
 		<div class="flex gap-1">
-			{#each [{ value: '7d', label: '7 days' }, { value: '30d', label: '30 days' }, { value: '90d', label: '90 days' }] as preset}
+			{#each [{ value: '7d', label: m.admin_analytics_7days() }, { value: '30d', label: m.admin_analytics_30days() }, { value: '90d', label: m.admin_analytics_90days() }] as preset}
 				<Button size="sm" variant={selectedRange === preset.value ? 'default' : 'outline'} onclick={() => { selectedRange = preset.value as RangePreset; loadData(); }}>
 					{preset.label}
 				</Button>
@@ -109,57 +110,55 @@
 	</div>
 
 	{#if loading}
-		<div class="flex items-center justify-center py-12 text-muted-foreground">Loading...</div>
+		<div class="flex items-center justify-center py-12 text-muted-foreground">{m.common_loading()}</div>
 	{:else}
-		<!-- Summary Cards -->
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 			<Card.Root>
 				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-					<Card.Title class="text-sm font-medium">Total Users</Card.Title>
+					<Card.Title class="text-sm font-medium">{m.admin_analytics_total_users()}</Card.Title>
 					<Users class="h-4 w-4 text-muted-foreground" />
 				</Card.Header>
 				<Card.Content>
 					<div class="text-2xl font-bold">{overview?.total_users ?? 0}</div>
-					<p class="text-xs text-muted-foreground">{overview?.new_registrations ?? 0} new registrations</p>
+					<p class="text-xs text-muted-foreground">{overview?.new_registrations ?? 0} {m.admin_analytics_new_registrations()}</p>
 				</Card.Content>
 			</Card.Root>
 			<Card.Root>
 				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-					<Card.Title class="text-sm font-medium">Active Users</Card.Title>
+					<Card.Title class="text-sm font-medium">{m.admin_analytics_active_users()}</Card.Title>
 					<TrendingUp class="h-4 w-4 text-muted-foreground" />
 				</Card.Header>
 				<Card.Content>
 					<div class="text-2xl font-bold">{overview?.active_users ?? 0}</div>
-					<p class="text-xs text-muted-foreground">in selected period</p>
+					<p class="text-xs text-muted-foreground">{m.admin_analytics_in_period()}</p>
 				</Card.Content>
 			</Card.Root>
 			<Card.Root>
 				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-					<Card.Title class="text-sm font-medium">Total Listings</Card.Title>
+					<Card.Title class="text-sm font-medium">{m.admin_analytics_total_listings()}</Card.Title>
 					<Package class="h-4 w-4 text-muted-foreground" />
 				</Card.Header>
 				<Card.Content>
 					<div class="text-2xl font-bold">{overview?.total_listings ?? 0}</div>
-					<p class="text-xs text-muted-foreground">{overview?.active_listings ?? 0} active</p>
+					<p class="text-xs text-muted-foreground">{m.admin_analytics_active_count({ count: overview?.active_listings ?? 0 })}</p>
 				</Card.Content>
 			</Card.Root>
 			<Card.Root>
 				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-					<Card.Title class="text-sm font-medium">Total Searches</Card.Title>
+					<Card.Title class="text-sm font-medium">{m.admin_analytics_total_searches()}</Card.Title>
 					<Search class="h-4 w-4 text-muted-foreground" />
 				</Card.Header>
 				<Card.Content>
 					<div class="text-2xl font-bold">{overview?.total_searches ?? 0}</div>
-					<p class="text-xs text-muted-foreground">{overview?.total_reviews ?? 0} reviews, {overview?.total_messages ?? 0} messages</p>
+					<p class="text-xs text-muted-foreground">{m.admin_analytics_reviews_messages({ reviews: overview?.total_reviews ?? 0, messages: overview?.total_messages ?? 0 })}</p>
 				</Card.Content>
 			</Card.Root>
 		</div>
 
-		<!-- Area Charts -->
 		{@const areaCharts = [
-			{ title: 'Total Events', data: eventsPerDay, config: eventsConfig, total: eventsPerDay.reduce((s, d) => s + d.count, 0) },
-			{ title: 'Unique Users', data: uniqueUsersPerDay, config: usersConfig, total: uniqueUsersPerDay.reduce((s, d) => s + d.count, 0) },
-			{ title: 'Page Views', data: pageViewsPerDay, config: viewsConfig, total: pageViewsPerDay.reduce((s, d) => s + d.count, 0) },
+			{ title: m.admin_analytics_total_events(), data: eventsPerDay, config: eventsConfig, total: eventsPerDay.reduce((s, d) => s + d.count, 0) },
+			{ title: m.admin_analytics_unique_users(), data: uniqueUsersPerDay, config: usersConfig, total: uniqueUsersPerDay.reduce((s, d) => s + d.count, 0) },
+			{ title: m.admin_analytics_page_views(), data: pageViewsPerDay, config: viewsConfig, total: pageViewsPerDay.reduce((s, d) => s + d.count, 0) },
 		]}
 		<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
 			{#each areaCharts as chart}
@@ -180,22 +179,21 @@
 								/>
 							</Chart.Container>
 						{:else}
-							<p class="py-4 text-center text-sm text-muted-foreground">No data</p>
+							<p class="py-4 text-center text-sm text-muted-foreground">{m.admin_analytics_no_data()}</p>
 						{/if}
 					</Card.Content>
 				</Card.Root>
 			{/each}
 		</div>
 
-		<!-- Event Types + Peak Hours side by side -->
 		<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			<Card.Root>
 				<Card.Header>
-					<Card.Title class="flex items-center gap-2"><BarChart3 class="h-4 w-4" /> Event Types</Card.Title>
+					<Card.Title class="flex items-center gap-2"><BarChart3 class="h-4 w-4" /> {m.admin_analytics_event_types()}</Card.Title>
 				</Card.Header>
 				<Card.Content>
 					{#if topEventTypes.length === 0}
-						<p class="py-4 text-center text-sm text-muted-foreground">No event data available.</p>
+						<p class="py-4 text-center text-sm text-muted-foreground">{m.admin_analytics_no_event_data()}</p>
 					{:else}
 						<div class="space-y-2">
 							{#each topEventTypes as item}
@@ -214,11 +212,11 @@
 
 			<Card.Root>
 				<Card.Header>
-					<Card.Title class="flex items-center gap-2"><Clock class="h-4 w-4" /> Peak Hours</Card.Title>
+					<Card.Title class="flex items-center gap-2"><Clock class="h-4 w-4" /> {m.admin_analytics_peak_hours()}</Card.Title>
 				</Card.Header>
 				<Card.Content>
 					{#if peakHours.length === 0}
-						<p class="py-4 text-center text-sm text-muted-foreground">No activity data available.</p>
+						<p class="py-4 text-center text-sm text-muted-foreground">{m.admin_analytics_no_activity_data()}</p>
 					{:else}
 						<div class="space-y-2">
 							{#each peakHours as item}
@@ -236,18 +234,17 @@
 			</Card.Root>
 		</div>
 
-		<!-- Top Pages + Popular Items -->
 		<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			<Card.Root>
 				<Card.Header>
-					<Card.Title class="flex items-center gap-2"><TrendingUp class="h-4 w-4" /> Top Pages</Card.Title>
+					<Card.Title class="flex items-center gap-2"><TrendingUp class="h-4 w-4" /> {m.admin_analytics_top_pages()}</Card.Title>
 				</Card.Header>
 				<Card.Content>
 					{#if topPages.length === 0}
-						<p class="py-4 text-center text-sm text-muted-foreground">No page data.</p>
+						<p class="py-4 text-center text-sm text-muted-foreground">{m.admin_analytics_no_page_data()}</p>
 					{:else}
 						<Table.Root>
-							<Table.Header><Table.Row><Table.Head>Page</Table.Head><Table.Head class="text-right">Views</Table.Head></Table.Row></Table.Header>
+							<Table.Header><Table.Row><Table.Head>{m.admin_analytics_column_page()}</Table.Head><Table.Head class="text-right">{m.admin_analytics_column_views()}</Table.Head></Table.Row></Table.Header>
 							<Table.Body>
 								{#each topPages as page}
 									<Table.Row>
@@ -263,14 +260,14 @@
 
 			<Card.Root>
 				<Card.Header>
-					<Card.Title class="flex items-center gap-2"><Package class="h-4 w-4" /> Most Popular Items</Card.Title>
+					<Card.Title class="flex items-center gap-2"><Package class="h-4 w-4" /> {m.admin_analytics_most_popular_items()}</Card.Title>
 				</Card.Header>
 				<Card.Content>
 					{#if popularItems.length === 0}
-						<p class="py-4 text-center text-sm text-muted-foreground">No item data.</p>
+						<p class="py-4 text-center text-sm text-muted-foreground">{m.admin_analytics_no_item_data()}</p>
 					{:else}
 						<Table.Root>
-							<Table.Header><Table.Row><Table.Head>Item</Table.Head><Table.Head class="text-right">Views</Table.Head></Table.Row></Table.Header>
+							<Table.Header><Table.Row><Table.Head>{m.admin_analytics_column_item()}</Table.Head><Table.Head class="text-right">{m.admin_analytics_column_views()}</Table.Head></Table.Row></Table.Header>
 							<Table.Body>
 								{#each popularItems as item}
 									<Table.Row>
@@ -292,18 +289,17 @@
 			</Card.Root>
 		</div>
 
-		<!-- Tables -->
 		<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
 			<Card.Root>
 				<Card.Header>
-					<Card.Title class="flex items-center gap-2"><Search class="h-4 w-4" /> Top Searches</Card.Title>
+					<Card.Title class="flex items-center gap-2"><Search class="h-4 w-4" /> {m.admin_analytics_top_searches()}</Card.Title>
 				</Card.Header>
 				<Card.Content>
 					{#if topQueries.length === 0}
-						<p class="py-4 text-center text-sm text-muted-foreground">No search data.</p>
+						<p class="py-4 text-center text-sm text-muted-foreground">{m.admin_analytics_no_search_data()}</p>
 					{:else}
 						<Table.Root>
-							<Table.Header><Table.Row><Table.Head>Query</Table.Head><Table.Head class="text-right">Count</Table.Head></Table.Row></Table.Header>
+							<Table.Header><Table.Row><Table.Head>{m.admin_analytics_column_query()}</Table.Head><Table.Head class="text-right">{m.admin_analytics_column_count()}</Table.Head></Table.Row></Table.Header>
 							<Table.Body>
 								{#each topQueries as item}
 									<Table.Row><Table.Cell class="font-medium">{item.query}</Table.Cell><Table.Cell class="text-right">{item.count}</Table.Cell></Table.Row>
@@ -316,14 +312,14 @@
 
 			<Card.Root>
 				<Card.Header>
-					<Card.Title class="flex items-center gap-2"><BarChart3 class="h-4 w-4" /> Top Listings</Card.Title>
+					<Card.Title class="flex items-center gap-2"><BarChart3 class="h-4 w-4" /> {m.admin_analytics_top_listings()}</Card.Title>
 				</Card.Header>
 				<Card.Content>
 					{#if topViewedListings.length === 0}
-						<p class="py-4 text-center text-sm text-muted-foreground">No view data.</p>
+						<p class="py-4 text-center text-sm text-muted-foreground">{m.admin_analytics_no_view_data()}</p>
 					{:else}
 						<Table.Root>
-							<Table.Header><Table.Row><Table.Head>Listing</Table.Head><Table.Head class="text-right">Views</Table.Head></Table.Row></Table.Header>
+							<Table.Header><Table.Row><Table.Head>{m.admin_analytics_column_item()}</Table.Head><Table.Head class="text-right">{m.admin_analytics_column_views()}</Table.Head></Table.Row></Table.Header>
 							<Table.Body>
 								{#each topViewedListings as item}
 									<Table.Row><Table.Cell class="font-medium">{item.name}</Table.Cell><Table.Cell class="text-right">{item.count}</Table.Cell></Table.Row>
@@ -336,14 +332,14 @@
 
 			<Card.Root>
 				<Card.Header>
-					<Card.Title class="flex items-center gap-2"><Users class="h-4 w-4" /> Most Active</Card.Title>
+					<Card.Title class="flex items-center gap-2"><Users class="h-4 w-4" /> {m.admin_analytics_most_active()}</Card.Title>
 				</Card.Header>
 				<Card.Content>
 					{#if activeUsersTop10.length === 0}
-						<p class="py-4 text-center text-sm text-muted-foreground">No user data.</p>
+						<p class="py-4 text-center text-sm text-muted-foreground">{m.admin_analytics_no_user_data()}</p>
 					{:else}
 						<Table.Root>
-							<Table.Header><Table.Row><Table.Head>User</Table.Head><Table.Head class="text-right">Activity</Table.Head></Table.Row></Table.Header>
+							<Table.Header><Table.Row><Table.Head>{m.admin_analytics_column_user()}</Table.Head><Table.Head class="text-right">{m.admin_analytics_column_activity()}</Table.Head></Table.Row></Table.Header>
 							<Table.Body>
 								{#each activeUsersTop10 as item}
 									<Table.Row>

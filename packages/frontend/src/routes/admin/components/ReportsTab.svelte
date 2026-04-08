@@ -18,6 +18,7 @@
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Flag from '@lucide/svelte/icons/flag';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		dataVersion: number;
@@ -26,7 +27,6 @@
 
 	let { dataVersion, onDataChanged }: Props = $props();
 
-	// Reports state
 	let reports = $state<AdminReport[]>([]);
 	let reportsTotal = $state(0);
 	let reportsLimit = $state(20);
@@ -34,7 +34,6 @@
 	let statusFilter = $state('pending');
 	let reportsLoading = $state(false);
 
-	// Resolve dialog state
 	let selectedReport = $state<AdminReport | null>(null);
 	let resolveDialogOpen = $state(false);
 
@@ -49,7 +48,6 @@
 		onDataChanged();
 	}
 
-	// Moderation log state
 	let logEvents = $state<ModerationEvent[]>([]);
 	let logTotal = $state(0);
 	let logLimit = $state(20);
@@ -100,12 +98,12 @@
 	async function handleDismiss(report: AdminReport) {
 		const result = await updateReportStatus(report.id, 'dismissed');
 		if (result.success) {
-			toast.success('Report dismissed');
+			toast.success(m.admin_reports_dismiss_success());
 			loadReports();
 			loadLog();
 			onDataChanged();
 		} else {
-			toast.error(result.error || 'Failed to dismiss report');
+			toast.error(result.error || m.admin_reports_dismiss_error());
 		}
 	}
 
@@ -145,9 +143,9 @@
 	}
 
 	function targetLabel(report: AdminReport): string {
-		if (report.target_type === 'listing') return 'Listing';
-		if (report.target_type === 'user') return 'User';
-		return 'Review';
+		if (report.target_type === 'listing') return m.admin_reports_type_listing();
+		if (report.target_type === 'user') return m.admin_reports_type_user();
+		return m.admin_reports_type_review();
 	}
 
 	$effect(() => {
@@ -163,9 +161,8 @@
 </script>
 
 <div class="space-y-8">
-	<!-- Reports Section -->
 	<div class="space-y-4">
-		<h3 class="text-lg font-semibold text-foreground">User Reports</h3>
+		<h3 class="text-lg font-semibold text-foreground">{m.admin_reports_user_reports()}</h3>
 
 		<div class="flex items-center gap-4">
 			<Select.Root
@@ -177,34 +174,34 @@
 					<span class={statusFilter ? '' : 'text-muted-foreground'}>
 						{statusFilter
 							? statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)
-							: 'All statuses'}
+							: m.admin_reports_filter_all()}
 					</span>
 				</Select.Trigger>
 				<Select.Content>
-					<Select.Item value="__all__" label="All statuses" />
-					<Select.Item value="pending" label="Pending" />
-					<Select.Item value="resolved" label="Resolved" />
-					<Select.Item value="dismissed" label="Dismissed" />
+					<Select.Item value="__all__" label={m.admin_reports_filter_all()} />
+					<Select.Item value="pending" label={m.admin_reports_status_pending()} />
+					<Select.Item value="resolved" label={m.admin_reports_status_resolved()} />
+					<Select.Item value="dismissed" label={m.admin_reports_status_dismissed()} />
 				</Select.Content>
 			</Select.Root>
 		</div>
 
 		{#if reportsLoading}
-			<div class="flex items-center justify-center py-12 text-muted-foreground">Loading...</div>
+			<div class="flex items-center justify-center py-12 text-muted-foreground">{m.common_loading()}</div>
 		{:else if reports.length === 0}
-			<div class="py-8 text-center text-muted-foreground">No reports found.</div>
+			<div class="py-8 text-center text-muted-foreground">{m.admin_reports_no_reports()}</div>
 		{:else}
 			<Table.Root>
 				<Table.Header>
 					<Table.Row>
-						<Table.Head>Reporter</Table.Head>
-						<Table.Head>Target</Table.Head>
-						<Table.Head>Type</Table.Head>
-						<Table.Head>Reason</Table.Head>
-						<Table.Head>Reports</Table.Head>
-						<Table.Head>Status</Table.Head>
-						<Table.Head>Date</Table.Head>
-						<Table.Head class="text-right">Actions</Table.Head>
+						<Table.Head>{m.admin_reports_column_reporter()}</Table.Head>
+						<Table.Head>{m.admin_reports_column_target()}</Table.Head>
+						<Table.Head>{m.admin_reports_column_type()}</Table.Head>
+						<Table.Head>{m.admin_reports_column_reason()}</Table.Head>
+						<Table.Head>{m.admin_reports_column_reports()}</Table.Head>
+						<Table.Head>{m.admin_reports_column_status()}</Table.Head>
+						<Table.Head>{m.admin_reports_column_date()}</Table.Head>
+						<Table.Head class="text-right">{m.admin_reports_column_actions()}</Table.Head>
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
@@ -245,7 +242,7 @@
 										</a>
 									</div>
 								{:else}
-									<span class="text-xs text-muted-foreground italic">Unknown</span>
+									<span class="text-xs text-muted-foreground italic">{m.admin_reports_unknown()}</span>
 								{/if}
 							</Table.Cell>
 							<Table.Cell>
@@ -265,11 +262,11 @@
 							</Table.Cell>
 							<Table.Cell>
 								{#if report.status === 'pending'}
-									<Badge class="bg-amber-500 text-white hover:bg-amber-500">Pending</Badge>
+									<Badge class="bg-amber-500 text-white hover:bg-amber-500">{m.admin_reports_status_pending()}</Badge>
 								{:else if report.status === 'resolved'}
-									<Badge class="bg-green-500 text-white hover:bg-green-500">Resolved</Badge>
+									<Badge class="bg-green-500 text-white hover:bg-green-500">{m.admin_reports_status_resolved()}</Badge>
 								{:else}
-									<Badge variant="secondary">Dismissed</Badge>
+									<Badge variant="secondary">{m.admin_reports_status_dismissed()}</Badge>
 								{/if}
 							</Table.Cell>
 							<Table.Cell>
@@ -285,24 +282,24 @@
 											variant="outline"
 											class="h-8"
 											onclick={() => openResolveDialog(report)}
-											title="Review"
+											title={m.admin_reports_review()}
 										>
 											<Search class="mr-1 h-3.5 w-3.5" />
-											Review
+												{m.admin_reports_review()}
 										</Button>
 										<Button
 											size="sm"
 											variant="outline"
 											class="h-8 text-muted-foreground hover:text-foreground"
 											onclick={() => handleDismiss(report)}
-											title="Quick dismiss"
+											title={m.admin_reports_quick_dismiss()}
 										>
 											<X class="h-3.5 w-3.5" />
 										</Button>
 									</div>
 								{:else if report.resolved_by}
 									<span class="text-xs text-muted-foreground">
-										by @{report.resolved_by.username ?? report.resolved_by.name}
+										{m.admin_reports_by({ user: `@${report.resolved_by.username ?? report.resolved_by.name}` })}
 									</span>
 								{/if}
 							</Table.Cell>
@@ -314,11 +311,11 @@
 
 		<div class="flex items-center justify-between">
 			<p class="text-sm text-muted-foreground">
-				Showing {reportsShowingFrom}–{reportsShowingTo} of {reportsTotal}
+				{m.admin_analytics_showing({ from: reportsShowingFrom, to: reportsShowingTo, total: reportsTotal })}
 			</p>
 			<div class="flex gap-2">
 				<Button size="sm" variant="outline" disabled={reportsOffset === 0} onclick={reportsPrevPage}>
-					Previous
+					{m.admin_audit_previous()}
 				</Button>
 				<Button
 					size="sm"
@@ -326,7 +323,7 @@
 					disabled={reportsOffset + reportsLimit >= reportsTotal}
 					onclick={reportsNextPage}
 				>
-					Next
+					{m.admin_audit_next()}
 				</Button>
 			</div>
 		</div>
@@ -334,9 +331,8 @@
 
 	<Separator />
 
-	<!-- Moderation Log Section -->
 	<div class="space-y-4">
-		<h3 class="text-lg font-semibold text-foreground">Moderation Log</h3>
+		<h3 class="text-lg font-semibold text-foreground">{m.admin_reports_moderation_log()}</h3>
 
 		<div class="flex items-center gap-4">
 			<Select.Root
@@ -348,22 +344,22 @@
 					<span class={logTypeFilter ? '' : 'text-muted-foreground'}>
 						{logTypeFilter
 							? logTypeFilter.charAt(0).toUpperCase() + logTypeFilter.slice(1) + 's'
-							: 'All events'}
+							: m.admin_reports_filter_events()}
 					</span>
 				</Select.Trigger>
 				<Select.Content>
-					<Select.Item value="__all__" label="All events" />
-					<Select.Item value="report" label="Reports" />
-					<Select.Item value="ban" label="Bans" />
-					<Select.Item value="warning" label="Warnings" />
+					<Select.Item value="__all__" label={m.admin_reports_filter_events()} />
+					<Select.Item value="report" label={m.admin_reports_filter_reports()} />
+					<Select.Item value="ban" label={m.admin_reports_filter_bans()} />
+					<Select.Item value="warning" label={m.admin_reports_filter_warnings()} />
 				</Select.Content>
 			</Select.Root>
 		</div>
 
 		{#if logLoading}
-			<div class="flex items-center justify-center py-12 text-muted-foreground">Loading...</div>
+			<div class="flex items-center justify-center py-12 text-muted-foreground">{m.common_loading()}</div>
 		{:else if logEvents.length === 0}
-			<div class="py-8 text-center text-muted-foreground">No moderation events found.</div>
+			<div class="py-8 text-center text-muted-foreground">{m.admin_reports_no_events()}</div>
 		{:else}
 			<div class="space-y-3">
 				{#each logEvents as event}
@@ -371,20 +367,20 @@
 						<div class="mb-2 flex items-center gap-2">
 							{#if event.event_type === 'ban'}
 								<ShieldAlert class="h-4 w-4 text-destructive" />
-								<Badge variant="destructive">Ban</Badge>
+								<Badge variant="destructive">{m.admin_reports_event_ban()}</Badge>
 							{:else if event.event_type === 'warning'}
 								<TriangleAlert class="h-4 w-4 text-amber-500" />
-								<Badge class="bg-amber-500 text-white hover:bg-amber-500">Warning</Badge>
+								<Badge class="bg-amber-500 text-white hover:bg-amber-500">{m.admin_reports_event_warning()}</Badge>
 							{:else}
 								<Flag class="h-4 w-4 text-blue-500" />
-								<Badge variant="outline">Report</Badge>
+								<Badge variant="outline">{m.admin_reports_event_report()}</Badge>
 								{#if event.status}
 									{#if event.status === 'pending'}
-										<Badge class="bg-amber-500/20 text-amber-600">Pending</Badge>
+										<Badge class="bg-amber-500/20 text-amber-600">{m.admin_reports_status_pending()}</Badge>
 									{:else if event.status === 'resolved'}
-										<Badge class="bg-green-500/20 text-green-600">Resolved</Badge>
+										<Badge class="bg-green-500/20 text-green-600">{m.admin_reports_status_resolved()}</Badge>
 									{:else if event.status === 'dismissed'}
-										<Badge variant="secondary">Dismissed</Badge>
+										<Badge variant="secondary">{m.admin_reports_status_dismissed()}</Badge>
 									{/if}
 								{/if}
 							{/if}
@@ -393,33 +389,33 @@
 						{#if event.reason}
 							<p class="mb-2 text-sm text-foreground">{event.reason}</p>
 						{:else}
-							<p class="mb-2 text-sm italic text-muted-foreground">No reason provided</p>
+							<p class="mb-2 text-sm italic text-muted-foreground">{m.admin_reports_no_reason()}</p>
 						{/if}
 
 						<div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
 							<span>
-								By:
+								{m.admin_history_by({ name: '' })}
 								<a href="/profile/{event.actor.username}" class="hover:text-primary">
 									@{event.actor.username}
 								</a>
 							</span>
 							{#if event.event_type !== 'report'}
 								<span>
-									Target:
+									{m.admin_resolve_report_target()}:
 									<a href="/profile/{event.target_name}" class="hover:text-primary">
 										@{event.target_name}
 									</a>
 								</span>
 							{:else}
 								<span>
-									Target: {event.target_type}
+									{m.admin_resolve_report_target()}: {event.target_type}
 								</span>
 							{/if}
 							<span>{formatDate(event.created_at)}</span>
 							{#if event.event_type === 'ban' && event.expires_at}
-								<span>Expires: {formatDate(event.expires_at)}</span>
+								<span>{m.admin_history_expires()}: {formatDate(event.expires_at)}</span>
 							{:else if event.event_type === 'ban' && !event.expires_at}
-								<span>Permanent</span>
+								<span>{m.admin_history_permanent()}</span>
 							{/if}
 						</div>
 					</div>
@@ -429,11 +425,11 @@
 
 		<div class="flex items-center justify-between">
 			<p class="text-sm text-muted-foreground">
-				Showing {logShowingFrom}–{logShowingTo} of {logTotal}
+				{m.admin_analytics_showing({ from: logShowingFrom, to: logShowingTo, total: logTotal })}
 			</p>
 			<div class="flex gap-2">
 				<Button size="sm" variant="outline" disabled={logOffset === 0} onclick={logPrevPage}>
-					Previous
+					{m.admin_audit_previous()}
 				</Button>
 				<Button
 					size="sm"
@@ -441,7 +437,7 @@
 					disabled={logOffset + logLimit >= logTotal}
 					onclick={logNextPage}
 				>
-					Next
+					{m.admin_audit_next()}
 				</Button>
 			</div>
 		</div>

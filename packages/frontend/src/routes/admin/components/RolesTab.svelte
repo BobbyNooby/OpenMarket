@@ -8,6 +8,7 @@
 	const EVERYONE_ID = '@everyone';
 	import RoleEditor from './RoleEditor.svelte';
 	import CreateRoleDialog from './CreateRoleDialog.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		dataVersion: number;
@@ -74,12 +75,12 @@
 				name: editName,
 				description: editDescription
 			});
-			if (!updateResult.success) throw new Error(updateResult.error || 'Failed to update role');
+			if (!updateResult.success) throw new Error(updateResult.error || m.admin_role_save_error());
 
 			const permsResult = await apiJson(`/admin/roles/${selectedRoleId}/permissions`, 'PUT', {
 				permissions: [...checkedPermissions]
 			});
-			if (!permsResult.success) throw new Error(permsResult.error || 'Failed to update permissions');
+			if (!permsResult.success) throw new Error(permsResult.error || m.admin_role_save_error());
 
 			await loadRoles();
 			roleDetail = {
@@ -88,10 +89,10 @@
 				description: editDescription,
 				permissions: [...checkedPermissions]
 			};
-			toast.success('Role saved');
+			toast.success(m.admin_role_saved());
 			onDataChanged();
 		} catch (err: any) {
-			toast.error(err.message || 'Failed to save role');
+			toast.error(err.message || m.admin_role_save_error());
 		} finally {
 			isSaving = false;
 		}
@@ -99,22 +100,22 @@
 
 	async function deleteRole() {
 		if (!selectedRoleId) return;
-		if (!confirm('Are you sure you want to delete this role? This cannot be undone.')) return;
+		if (!confirm(m.admin_role_delete_confirm())) return;
 
 		isSaving = true;
 		error = null;
 
 		try {
 			const result = await apiFetch(`/admin/roles/${selectedRoleId}`, { method: 'DELETE' });
-			if (!result.success) throw new Error(result.error || 'Failed to delete role');
+			if (!result.success) throw new Error(result.error || m.admin_role_delete_error());
 
 			selectedRoleId = null;
 			roleDetail = null;
 			await loadRoles();
-			toast.success('Role deleted');
+			toast.success(m.admin_role_deleted());
 			onDataChanged();
 		} catch (err: any) {
-			toast.error(err.message || 'Failed to delete role');
+			toast.error(err.message || m.admin_role_delete_error());
 		} finally {
 			isSaving = false;
 		}
@@ -156,7 +157,7 @@
 	<!-- Left Panel: Role List -->
 	<div class="w-64 shrink-0 space-y-3">
 		<Button class="w-full" onclick={() => createDialogOpen = true}>
-			+ Create Role
+			+ {m.admin_roles_create()}
 		</Button>
 
 		<div class="space-y-1">
@@ -190,7 +191,7 @@
 	<div class="flex-1 rounded-lg border border-border p-6">
 		{#if !selectedRoleId}
 			<div class="flex h-full items-center justify-center text-muted-foreground">
-				Select a role to view and edit its details
+				{m.admin_roles_select_prompt()}
 			</div>
 		{:else if selectedRoleId === EVERYONE_ID}
 			<div class="space-y-6">
@@ -200,51 +201,51 @@
 						<h3 class="text-lg font-semibold text-foreground">@everyone</h3>
 					</div>
 					<p class="text-sm text-muted-foreground">
-						Base permissions for unauthenticated visitors. These apply to anyone browsing the site without an account.
+						{m.admin_roles_everyone_description()}
 					</p>
 				</div>
 
 				<div class="space-y-4 rounded-md border border-border p-4">
-					<h4 class="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Public Access</h4>
+					<h4 class="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{m.admin_roles_everyone_public_access_title()}</h4>
 					<ul class="space-y-2 text-sm text-foreground">
 						<li class="flex items-center gap-2">
 							<span class="size-1.5 rounded-full bg-green-500"></span>
-							Browse and search listings
+							{m.admin_roles_everyone_browse_listings()}
 						</li>
 						<li class="flex items-center gap-2">
 							<span class="size-1.5 rounded-full bg-green-500"></span>
-							View item and currency details
+							{m.admin_roles_everyone_view_items()}
 						</li>
 						<li class="flex items-center gap-2">
 							<span class="size-1.5 rounded-full bg-green-500"></span>
-							View user profiles and reviews
+							{m.admin_roles_everyone_view_profiles()}
 						</li>
 					</ul>
 
-					<h4 class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mt-4">Requires Login</h4>
+					<h4 class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mt-4">{m.admin_roles_everyone_requires_login_title()}</h4>
 					<ul class="space-y-2 text-sm text-muted-foreground">
 						<li class="flex items-center gap-2">
 							<span class="size-1.5 rounded-full bg-border"></span>
-							Create or manage listings
+							{m.admin_roles_everyone_create_listings()}
 						</li>
 						<li class="flex items-center gap-2">
 							<span class="size-1.5 rounded-full bg-border"></span>
-							Leave reviews on profiles
+							{m.admin_roles_everyone_leave_reviews()}
 						</li>
 						<li class="flex items-center gap-2">
 							<span class="size-1.5 rounded-full bg-border"></span>
-							Contact sellers
+							{m.admin_roles_everyone_contact_sellers()}
 						</li>
 					</ul>
 				</div>
 
 				<p class="text-xs text-muted-foreground">
-					This role is virtual and cannot be edited. Public access is controlled by route-level authentication.
+					{m.admin_roles_everyone_footer()}
 				</p>
 			</div>
 		{:else if isLoading}
 			<div class="flex h-full items-center justify-center text-muted-foreground">
-				Loading...
+				{m.common_loading()}
 			</div>
 		{:else if roleDetail}
 			<RoleEditor

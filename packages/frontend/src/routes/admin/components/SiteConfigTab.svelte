@@ -9,21 +9,55 @@
 	import { apiFetch, apiJson } from './admin-api';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import { m } from '$lib/paraglide/messages.js';
 
-	const FIELDS: { key: string; label: string; placeholder: string; section: string; multiline?: boolean }[] = [
-		// Identity
-		{ key: 'site_name', label: 'Site name', placeholder: 'OpenMarket', section: 'Identity' },
-		{ key: 'site_tagline', label: 'Tagline', placeholder: 'The marketplace for trading game items', section: 'Identity' },
-		// Branding
-		{ key: 'site_logo_url', label: 'Logo URL', placeholder: 'https://...', section: 'Branding' },
-		{ key: 'site_favicon_url', label: 'Favicon URL', placeholder: 'https://...', section: 'Branding' },
-		// Footer & Links
-		{ key: 'footer_text', label: 'Footer text', placeholder: '© 2026 OpenMarket', section: 'Footer & Links', multiline: true },
-		{ key: 'support_url', label: 'Support URL', placeholder: 'https://...', section: 'Footer & Links' },
-		{ key: 'discord_url', label: 'Discord invite URL', placeholder: 'https://discord.gg/...', section: 'Footer & Links' },
+	type SectionKey = 'identity' | 'branding' | 'footer';
+
+	const FIELDS: { key: string; labelKey: string; placeholderKey: string; section: SectionKey; multiline?: boolean }[] = [
+		{ key: 'site_name', labelKey: 'admin_site_config_site_name', placeholderKey: 'admin_site_config_site_name_placeholder', section: 'identity' },
+		{ key: 'site_tagline', labelKey: 'admin_site_config_tagline', placeholderKey: 'admin_site_config_tagline_placeholder', section: 'identity' },
+		{ key: 'site_logo_url', labelKey: 'admin_site_config_logo_url', placeholderKey: 'admin_site_config_logo_url_placeholder', section: 'branding' },
+		{ key: 'site_favicon_url', labelKey: 'admin_site_config_favicon_url', placeholderKey: 'admin_site_config_favicon_url_placeholder', section: 'branding' },
+		{ key: 'footer_text', labelKey: 'admin_site_config_footer_text', placeholderKey: 'admin_site_config_footer_text_placeholder', section: 'footer', multiline: true },
+		{ key: 'support_url', labelKey: 'admin_site_config_support_url', placeholderKey: 'admin_site_config_support_url_placeholder', section: 'footer' },
+		{ key: 'discord_url', labelKey: 'admin_site_config_discord_url', placeholderKey: 'admin_site_config_discord_url_placeholder', section: 'footer' },
 	];
 
-	const SECTIONS = ['Identity', 'Branding', 'Footer & Links'];
+	const SECTIONS: SectionKey[] = ['identity', 'branding', 'footer'];
+
+	function sectionTitle(key: SectionKey): string {
+		switch (key) {
+			case 'identity': return m.admin_site_config_section_identity();
+			case 'branding': return m.admin_site_config_section_branding();
+			case 'footer': return m.admin_site_config_section_footer();
+		}
+	}
+
+	function getLabel(field: typeof FIELDS[0]): string {
+		switch (field.labelKey) {
+			case 'admin_site_config_site_name': return m.admin_site_config_site_name();
+			case 'admin_site_config_tagline': return m.admin_site_config_tagline();
+			case 'admin_site_config_logo_url': return m.admin_site_config_logo_url();
+			case 'admin_site_config_favicon_url': return m.admin_site_config_favicon_url();
+			case 'admin_site_config_footer_text': return m.admin_site_config_footer_text();
+			case 'admin_site_config_support_url': return m.admin_site_config_support_url();
+			case 'admin_site_config_discord_url': return m.admin_site_config_discord_url();
+			default: return field.key;
+		}
+	}
+
+	function getPlaceholder(field: typeof FIELDS[0]): string {
+		switch (field.placeholderKey) {
+			case 'admin_site_config_site_name_placeholder': return m.admin_site_config_site_name_placeholder();
+			case 'admin_site_config_tagline_placeholder': return m.admin_site_config_tagline_placeholder();
+			case 'admin_site_config_logo_url_placeholder': return m.admin_site_config_logo_url_placeholder();
+			case 'admin_site_config_favicon_url_placeholder': return m.admin_site_config_favicon_url_placeholder();
+			case 'admin_site_config_footer_text_placeholder': return m.admin_site_config_footer_text_placeholder();
+			case 'admin_site_config_support_url_placeholder': return m.admin_site_config_support_url_placeholder();
+			case 'admin_site_config_discord_url_placeholder': return m.admin_site_config_discord_url_placeholder();
+			default: return '';
+		}
+	}
 
 	let loading = $state(true);
 	let saving = $state(false);
@@ -37,7 +71,7 @@
 			values = { ...result.data.config };
 			initial = { ...result.data.config };
 		} else {
-			toast.error(result.error ?? 'Failed to load config');
+			toast.error(result.error ?? m.admin_site_config_error());
 		}
 		loading = false;
 	}
@@ -55,17 +89,16 @@
 
 	async function handleSave() {
 		saving = true;
-		// Only send the keys that exist in our form to avoid sending unrelated keys
 		const updates: Record<string, string> = {};
 		for (const f of FIELDS) updates[f.key] = values[f.key] ?? '';
 
 		const result = await apiJson('/admin/site-config', 'PUT', updates);
 		if (result.success) {
-			toast.success('Site config saved');
+			toast.success(m.admin_site_config_saved());
 			initial = { ...values };
 			await invalidateAll();
 		} else {
-			toast.error(result.error ?? 'Failed to save');
+			toast.error(result.error ?? m.admin_site_config_error());
 		}
 		saving = false;
 	}
@@ -73,9 +106,9 @@
 
 <div class="space-y-6">
 	<div>
-		<h2 class="text-xl font-semibold text-foreground">Site Config</h2>
+		<h2 class="text-xl font-semibold text-foreground">{m.admin_site_config_title()}</h2>
 		<p class="text-sm text-muted-foreground">
-			Customize the platform's name, branding, and footer.
+			{m.admin_site_config_subtitle()}
 		</p>
 	</div>
 
@@ -87,23 +120,23 @@
 		{#each SECTIONS as section}
 			<Card.Root>
 				<Card.Header>
-					<Card.Title>{section}</Card.Title>
+					<Card.Title>{sectionTitle(section)}</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-4">
 					{#each FIELDS.filter((f) => f.section === section) as field}
 						<div class="space-y-2">
-							<Label for={field.key}>{field.label}</Label>
+							<Label for={field.key}>{getLabel(field)}</Label>
 							{#if field.multiline}
 								<Textarea
 									id={field.key}
-									placeholder={field.placeholder}
+									placeholder={getPlaceholder(field)}
 									bind:value={values[field.key]}
 									rows={3}
 								/>
 							{:else}
 								<Input
 									id={field.key}
-									placeholder={field.placeholder}
+									placeholder={getPlaceholder(field)}
 									bind:value={values[field.key]}
 								/>
 							{/if}
@@ -116,17 +149,17 @@
 		<div class="sticky bottom-4 flex items-center justify-between rounded-lg border border-border bg-card p-4 shadow-lg">
 			<div class="flex items-center gap-2">
 				{#if isDirty}
-					<Badge variant="secondary">Unsaved changes</Badge>
+					<Badge variant="secondary">{m.common_unsaved_changes()}</Badge>
 				{:else}
-					<span class="text-sm text-muted-foreground">All changes saved</span>
+					<span class="text-sm text-muted-foreground">{m.common_all_changes_saved()}</span>
 				{/if}
 			</div>
 			<Button onclick={handleSave} disabled={!isDirty || saving}>
 				{#if saving}
 					<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-					Saving...
+					{m.button_saving()}
 				{:else}
-					Save changes
+					{m.button_save_changes()}
 				{/if}
 			</Button>
 		</div>

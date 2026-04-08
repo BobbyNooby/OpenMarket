@@ -5,6 +5,7 @@
 	import { getUserHistory, type AdminUser, type BanHistoryEntry, type WarningHistoryEntry } from './admin-api';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		open: boolean;
@@ -69,10 +70,8 @@
 <Dialog.Root bind:open>
 	<Dialog.Content class="sm:max-w-lg max-h-[80vh] overflow-y-auto">
 		<Dialog.Header>
-			<Dialog.Title>Moderation History</Dialog.Title>
-			<Dialog.Description>
-				Ban and warning history for <span class="font-semibold">@{user.username}</span>
-			</Dialog.Description>
+			<Dialog.Title>{m.admin_history_title()}</Dialog.Title>
+			<Dialog.Description>{m.admin_history_description({ user: `@${user.username}` })}</Dialog.Description>
 		</Dialog.Header>
 
 		{#if error}
@@ -82,13 +81,9 @@
 		{/if}
 
 		{#if loading}
-			<div class="flex items-center justify-center py-8 text-muted-foreground">
-				Loading...
-			</div>
+			<div class="flex items-center justify-center py-8 text-muted-foreground">{m.common_loading()}</div>
 		{:else if timeline.length === 0}
-			<div class="py-8 text-center text-muted-foreground">
-				No moderation history for this user.
-			</div>
+			<div class="py-8 text-center text-muted-foreground">{m.admin_history_empty()}</div>
 		{:else}
 			<div class="space-y-3 py-2">
 				{#each timeline as entry}
@@ -97,30 +92,30 @@
 							{#if entry.type === 'ban'}
 								<ShieldAlert class="h-4 w-4 text-destructive" />
 								<Badge variant={entry.isActive ? 'destructive' : 'secondary'}>
-									{entry.isActive ? 'Active Ban' : 'Expired Ban'}
+									{entry.isActive ? m.admin_history_ban_active() : m.admin_history_ban_expired()}
 								</Badge>
 							{:else}
 								<TriangleAlert class="h-4 w-4 text-amber-500" />
-								<Badge variant="outline">Warning</Badge>
+								<Badge variant="outline">{m.admin_history_warning()}</Badge>
 							{/if}
 						</div>
 
 						{#if entry.reason}
 							<p class="mb-2 text-sm text-foreground">{entry.reason}</p>
 						{:else}
-							<p class="mb-2 text-sm italic text-muted-foreground">No reason provided</p>
+							<p class="mb-2 text-sm italic text-muted-foreground">{m.admin_history_no_reason()}</p>
 						{/if}
 
 						<div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
 							<span>
-								By: {entry.issuedBy.name}
+								{m.admin_history_by({ name: entry.issuedBy.name })}
 							</span>
 							{#if entry.type === 'ban'}
-								<span>Banned: {formatDate(entry.bannedAt)}</span>
+								<span>{m.admin_history_banned()}: {formatDate(entry.bannedAt)}</span>
 								{#if entry.expiresAt}
-									<span>Expires: {formatDate(entry.expiresAt)}</span>
+									<span>{m.admin_history_expires()}: {formatDate(entry.expiresAt)}</span>
 								{:else}
-									<span>Permanent</span>
+									<span>{m.admin_history_permanent()}</span>
 								{/if}
 							{:else}
 								<span>{formatDate(entry.createdAt)}</span>
