@@ -22,6 +22,7 @@
 	}
 
 	const suggestedUsername = sanitizeUsername(data.user?.name || '');
+	const siteName = $derived(data.siteConfig?.site_name ?? 'OpenMarket');
 	let username = $state(suggestedUsername);
 	let loading = $state(false);
 	let checkingUsername = $state(false);
@@ -91,7 +92,7 @@
 				return;
 			}
 
-			toast.success('Welcome to OpenMarket!');
+			toast.success(`Welcome to ${siteName}!`);
 			goto('/');
 		} catch {
 			toast.error('Failed to complete setup');
@@ -104,7 +105,7 @@
 <div class="flex min-h-screen items-center justify-center bg-background px-4 py-12">
 	<Card.Root class="w-full max-w-md">
 		<Card.Header class="text-center">
-			<Card.Title class="text-2xl">Welcome to OpenMarket</Card.Title>
+			<Card.Title class="text-2xl">Welcome to {siteName}</Card.Title>
 			<Card.Description>Choose a username to complete your profile</Card.Description>
 		</Card.Header>
 		<Card.Content>

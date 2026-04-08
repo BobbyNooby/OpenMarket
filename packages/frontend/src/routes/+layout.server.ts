@@ -6,6 +6,22 @@ import { PUBLIC_API_URL } from "$env/static/public";
 // Everything else triggers a forced redirect to /onboarding.
 const ONBOARDING_ALLOWED = ["/onboarding", "/login"];
 
+// Default fallback if the public site config endpoint fails — keeps SSR working
+// even when the API is down on first boot.
+const FALLBACK_SITE_CONFIG = {
+  site_name: "OpenMarket",
+  site_tagline: "The marketplace for trading game items and currencies",
+  site_logo_url: "",
+  site_favicon_url: "",
+  footer_text: "",
+  support_url: "",
+  discord_url: "",
+};
+
+type ThemeVariables = Record<string, string>;
+type SiteTheme = { light: ThemeVariables; dark: ThemeVariables };
+const FALLBACK_THEME: SiteTheme = { light: {}, dark: {} };
+
 export const load: LayoutServerLoad = async ({ fetch, cookies, url }) => {
   let session = null;
   try {
@@ -57,5 +73,21 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, url }) => {
     }
   }
 
-  return { session, unreadMessageCount };
+  // Fetch site config + theme — drives white-label branding everywhere
+  let siteConfig: Record<string, string> = FALLBACK_SITE_CONFIG;
+  let siteTheme: SiteTheme = FALLBACK_THEME;
+  try {
+    const res = await fetch(`${PUBLIC_API_URL}/site-config/public`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data) {
+        siteConfig = { ...FALLBACK_SITE_CONFIG, ...(json.data.config ?? {}) };
+        siteTheme = json.data.theme ?? FALLBACK_THEME;
+      }
+    }
+  } catch {
+    // fallback already set
+  }
+
+  return { session, unreadMessageCount, siteConfig, siteTheme };
 };

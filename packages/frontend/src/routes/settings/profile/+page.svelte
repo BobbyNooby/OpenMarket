@@ -165,14 +165,14 @@
 </script>
 
 <svelte:head>
-	<title>Profile Settings · OpenMarket</title>
+	<title>Profile Settings · {data.siteConfig?.site_name ?? 'OpenMarket'}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<div class="mb-8">
 		<h1 class="text-3xl font-bold text-foreground">Profile Settings</h1>
 		<p class="mt-1 text-sm text-muted-foreground">
-			Customize how others see you on OpenMarket.
+			Customize how others see you on {data.siteConfig?.site_name ?? 'OpenMarket'}.
 		</p>
 	</div>
 

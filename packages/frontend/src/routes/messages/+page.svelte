@@ -297,7 +297,7 @@
 </script>
 
 <svelte:head>
-	<title>Messages | OpenMarket</title>
+	<title>Messages | {data.siteConfig?.site_name ?? 'OpenMarket'}</title>
 </svelte:head>
 
 <div class="flex h-[calc(100vh-4rem)] bg-background">

@@ -77,7 +77,7 @@
 </script>
 
 <svelte:head>
-	<title>Notifications · OpenMarket</title>
+	<title>Notifications · {data.siteConfig?.site_name ?? 'OpenMarket'}</title>
 </svelte:head>
 
 <div class="space-y-6">

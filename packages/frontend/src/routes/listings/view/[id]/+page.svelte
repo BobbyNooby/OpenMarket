@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head>
-	<title>{(listing as TransformedListing | null)?.requested_item?.name ?? (listing as TransformedListing | null)?.requested_currency?.name ?? 'Listing'} · OpenMarket</title>
+	<title>{(listing as TransformedListing | null)?.requested_item?.name ?? (listing as TransformedListing | null)?.requested_currency?.name ?? 'Listing'} · {data.siteConfig?.site_name ?? 'OpenMarket'}</title>
 </svelte:head>
 
 <div class="min-h-screen text-foreground">

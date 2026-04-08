@@ -142,9 +142,9 @@
 	<div class="relative z-10 bg-card py-32 shadow-sm overflow-visible">
 		<div class="mx-auto max-w-7xl px-8">
 			<div class="text-center">
-				<h1 class="mb-6 text-7xl font-bold text-primary">OpenMarket</h1>
+				<h1 class="mb-6 text-7xl font-bold text-primary">{data.siteConfig?.site_name ?? 'OpenMarket'}</h1>
 				<p class="mb-8 text-xl text-muted-foreground">
-					The marketplace for trading game items and currencies
+					{data.siteConfig?.site_tagline ?? 'The marketplace for trading game items and currencies'}
 				</p>
 				<div class="relative mx-auto max-w-2xl">
 					<div class="relative">

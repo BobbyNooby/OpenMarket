@@ -12,9 +12,10 @@
 
 	interface Props {
 		session: Session;
+		siteName?: string;
 	}
 
-	let { session }: Props = $props();
+	let { session, siteName = 'OpenMarket' }: Props = $props();
 
 	let dropdownOpen = $state(false);
 
@@ -44,7 +45,7 @@
 	<div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-8">
 		<!-- Left: Logo and Navigation -->
 		<div class="flex items-center gap-8">
-			<a href="/" class="text-2xl font-bold text-primary">OpenMarket</a>
+			<a href="/" class="text-2xl font-bold text-primary">{siteName}</a>
 
 			<nav class="flex items-center gap-6">
 				{#each leftLinks as { href, label }}

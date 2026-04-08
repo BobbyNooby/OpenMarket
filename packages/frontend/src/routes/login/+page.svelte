@@ -13,6 +13,8 @@
 	import Check from '@lucide/svelte/icons/check';
 	import X from '@lucide/svelte/icons/x';
 
+	let { data } = $props();
+
 	let tab = $state<'signin' | 'register'>('signin');
 	let email = $state('');
 	let password = $state('');
@@ -20,6 +22,8 @@
 	let loading = $state(false);
 	let checkingUsername = $state(false);
 	let usernameAvailable = $state<boolean | null>(null);
+
+	const siteName = $derived(data.siteConfig?.site_name ?? 'OpenMarket');
 
 	let usernameCheckTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -149,7 +153,7 @@
 <div class="flex min-h-screen items-center justify-center bg-background px-4 py-12">
 	<Card.Root class="w-full max-w-md">
 		<Card.Header class="text-center">
-			<Card.Title class="text-2xl">OpenMarket</Card.Title>
+			<Card.Title class="text-2xl">{siteName}</Card.Title>
 			<Card.Description>Sign in to continue</Card.Description>
 		</Card.Header>
 		<Card.Content>

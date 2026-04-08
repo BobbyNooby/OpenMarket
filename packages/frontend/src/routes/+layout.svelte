@@ -23,6 +23,24 @@
 		page.url.pathname.startsWith('/login') || page.url.pathname.startsWith('/onboarding'),
 	);
 
+	// Build the dynamic <style> block from the site theme — overrides app.css for both
+	// :root (light) and .dark variants. Falls back to nothing when the API is unreachable.
+	const themeCss = $derived.by(() => {
+		const light = data.siteTheme?.light ?? {};
+		const dark = data.siteTheme?.dark ?? {};
+		const lightVars = Object.entries(light).map(([k, v]) => `--${k}: ${v};`).join(' ');
+		const darkVars = Object.entries(dark).map(([k, v]) => `--${k}: ${v};`).join(' ');
+		if (!lightVars && !darkVars) return '';
+		return `:root { ${lightVars} } .dark { ${darkVars} }`;
+	});
+
+	const siteName = $derived(data.siteConfig?.site_name ?? 'OpenMarket');
+	const faviconUrl = $derived(data.siteConfig?.site_favicon_url || favicon);
+	const footerText = $derived(data.siteConfig?.footer_text ?? '');
+	const supportUrl = $derived(data.siteConfig?.support_url ?? '');
+	const discordUrl = $derived(data.siteConfig?.discord_url ?? '');
+	const showFooter = $derived(!!(footerText || supportUrl || discordUrl));
+
 	onMount(() => {
 		initTheme();
 		track('page_view');
@@ -45,13 +63,17 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<title>{siteName}</title>
+	<link rel="icon" href={faviconUrl} />
+	{#if themeCss}
+		{@html '<' + 'style>' + themeCss + '</' + 'style>'}
+	{/if}
 </svelte:head>
 
 <Tooltip.Provider delayDuration={0}>
 	<div class="relative min-h-screen bg-background">
 		{#if !isAuthPage}
-			<Header session={data.session} />
+			<Header session={data.session} {siteName} />
 		{/if}
 
 		<div class="fixed right-4 top-4 z-50">
@@ -88,6 +110,26 @@
 		{/if}
 
 		{@render children?.()}
+
+		{#if !isAuthPage && showFooter}
+			<footer class="border-t border-border bg-card px-8 py-6 mt-12">
+				<div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 text-sm text-muted-foreground sm:flex-row">
+					{#if footerText}
+						<p>{footerText}</p>
+					{:else}
+						<span></span>
+					{/if}
+					<div class="flex items-center gap-4">
+						{#if supportUrl}
+							<a href={supportUrl} target="_blank" rel="noopener noreferrer" class="hover:text-primary">Support</a>
+						{/if}
+						{#if discordUrl}
+							<a href={discordUrl} target="_blank" rel="noopener noreferrer" class="hover:text-primary">Discord</a>
+						{/if}
+					</div>
+				</div>
+			</footer>
+		{/if}
 	</div>
 	<Toaster richColors />
 </Tooltip.Provider>
