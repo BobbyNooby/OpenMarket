@@ -155,6 +155,44 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 			}),
 		},
 	)
+	// Update only the language preference for the authenticated user
+	.put(
+		'/language',
+		async ({ body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+
+			// Whitelist supported locales — keep in sync with project.inlang/settings.json
+			const SUPPORTED_LOCALES = new Set(['en', 'es']);
+			if (!SUPPORTED_LOCALES.has(body.language)) {
+				set.status = 400;
+				return { success: false, error: 'Unsupported language' };
+			}
+
+			try {
+				const result = await db
+					.update(userProfilesTable)
+					.set({ language: body.language })
+					.where(eq(userProfilesTable.userId, session.user.id))
+					.returning({ userId: userProfilesTable.userId });
+
+				if (result.length === 0) {
+					set.status = 404;
+					return { success: false, error: 'Profile not found' };
+				}
+
+				return { success: true };
+			} catch (err: any) {
+				console.error('Language update error:', err);
+				set.status = 500;
+				return { success: false, error: err?.message ?? 'Unknown error' };
+			}
+		},
+		{
+			body: t.Object({
+				language: t.String(),
+			}),
+		},
+	)
 	// Check if a username is available (used by settings + future registration flow)
 	.get(
 		'/username-available',
@@ -334,6 +372,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 						social_links: userProfilesTable.social_links,
 						accent_color: userProfilesTable.accent_color,
 						notification_preferences: userProfilesTable.notification_preferences,
+						language: userProfilesTable.language,
 						is_active: usersActivityTable.is_active,
 						last_activity_at: usersActivityTable.last_activity_at
 					})
@@ -454,6 +493,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 						social_links: socialLinks,
 						accent_color: userRow.accent_color ?? undefined,
 						notification_preferences: userRow.notification_preferences ?? '{}',
+					language: userRow.language ?? 'en',
 						is_active: userRow.is_active ?? false,
 						last_activity_at: userRow.last_activity_at?.toISOString() ?? undefined,
 						listing_stats: listingStats,

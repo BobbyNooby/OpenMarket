@@ -49,6 +49,20 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, url }) => {
     if (!allowed) throw redirect(302, "/onboarding");
   }
 
+  // Sync the paraglide cookie to the user's saved language preference if logged in.
+  // This makes the language follow them across devices.
+  if (session?.user && session.language) {
+    const currentCookie = cookies.get("PARAGLIDE_LOCALE");
+    if (currentCookie !== session.language) {
+      cookies.set("PARAGLIDE_LOCALE", session.language, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 400,
+        httpOnly: false,
+        sameSite: "lax",
+      });
+    }
+  }
+
   // Once onboarded, bounce users away from /onboarding if they revisit it
   if (session?.user && session.hasProfile === true && url.pathname.startsWith("/onboarding")) {
     throw redirect(302, "/");

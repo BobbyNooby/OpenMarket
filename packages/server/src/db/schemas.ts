@@ -34,6 +34,7 @@ export const userProfilesTable = pgTable("user_profiles", {
   social_links: text("social_links"), // JSON string of {discord, twitter, ...}
   accent_color: text("accent_color"), // hex color
   notification_preferences: text("notification_preferences").notNull().default('{}'), // JSON string of Record<NotificationType, boolean>
+  language: text("language").notNull().default('en'), // BCP-47 locale, syncs language preference across devices
 });
 
 // --- activity ---

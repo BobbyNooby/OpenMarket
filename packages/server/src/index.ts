@@ -75,11 +75,11 @@ const app = new Elysia()
 
     // Check if the user has completed onboarding (has a marketplace profile)
     const [existing] = await db
-      .select({ userId: userProfilesTable.userId })
+      .select({ userId: userProfilesTable.userId, language: userProfilesTable.language })
       .from(userProfilesTable)
       .where(eq(userProfilesTable.userId, session.user.id));
 
-    return { ...session, hasProfile: !!existing };
+    return { ...session, hasProfile: !!existing, language: existing?.language ?? null };
   })
   // Global ban guard — blocks all write, update, delete operations for banned users
   .onBeforeHandle(({ session, set, request }) => {
