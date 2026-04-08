@@ -2,11 +2,9 @@
 	import { onMount, tick } from 'svelte';
 	import { PUBLIC_APP_URL } from '$env/static/public';
 	import * as Avatar from '$lib/components/ui/avatar';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Loader2 from '@lucide/svelte/icons/loader-2';
-	import ItemImage from '$lib/components/item/ItemImage.svelte';
 	import ListingEmbed from '$lib/components/listing/ListingEmbed.svelte';
 
 	// Build a regex that only matches our own app's listing URLs
@@ -57,16 +55,6 @@
 		avatar: string | null;
 	}
 
-	interface ListingContext {
-		id: string;
-		amount: number;
-		order_type: 'buy' | 'sell';
-		status: 'active' | 'sold' | 'paused' | 'expired';
-		requested_name: string;
-		requested_image: string | null;
-		requested_kind: 'item' | 'currency';
-	}
-
 	interface Message {
 		id: string;
 		conversation_id: string;
@@ -87,7 +75,6 @@
 		messages: Message[];
 		currentUserId: string;
 		otherUser: Participant | null;
-		listingContext?: ListingContext | null;
 		loading: boolean;
 		hasMore: boolean;
 		onLoadMore: () => void;
@@ -99,7 +86,6 @@
 		messages,
 		currentUserId,
 		otherUser,
-		listingContext = null,
 		loading,
 		hasMore,
 		onLoadMore,
@@ -209,36 +195,6 @@
 			</div>
 		</a>
 	</div>
-
-	<!-- Pinned listing context (when conversation is linked to a listing) -->
-	{#if listingContext}
-		<div class="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-3">
-			<ItemImage
-				src={listingContext.requested_image ?? ''}
-				alt={listingContext.requested_name}
-				size="sm"
-			/>
-			<div class="min-w-0 flex-1">
-				<div class="flex items-center gap-2">
-					<p class="truncate text-sm font-semibold">
-						{listingContext.amount}× {listingContext.requested_name}
-					</p>
-					{#if listingContext.order_type === 'buy'}
-						<Badge class="bg-green-500 text-white hover:bg-green-500">Buy</Badge>
-					{:else}
-						<Badge class="bg-amber-500 text-white hover:bg-amber-500">Sell</Badge>
-					{/if}
-					{#if listingContext.status !== 'active'}
-						<Badge variant="secondary" class="capitalize">{listingContext.status}</Badge>
-					{/if}
-				</div>
-				<p class="text-xs text-muted-foreground">Conversation about this listing</p>
-			</div>
-			<Button variant="outline" size="sm" href="/listings/view/{listingContext.id}">
-				View
-			</Button>
-		</div>
-	{/if}
 
 	<!-- Messages -->
 	<div
