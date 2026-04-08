@@ -45,6 +45,7 @@ const permissions = [
   // Admin
   { id: "admin:users", name: "admin:users", description: "Manage all users" },
   { id: "admin:roles", name: "admin:roles", description: "Manage roles" },
+  { id: "admin:settings", name: "admin:settings", description: "Manage site config and theme" },
 
   // Audit
   { id: "audit:read", name: "audit:read", description: "View audit logs" },

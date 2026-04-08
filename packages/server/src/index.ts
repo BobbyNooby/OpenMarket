@@ -19,6 +19,7 @@ import { db } from "./db/db";
 import { userProfilesTable, usersActivityTable } from "./db/schemas";
 import { userRolesTable } from "./db/rbac-schema";
 import { startExpiryJob } from "./jobs/expiry";
+import { loadSiteConfig, getSiteConfig, getSiteTheme } from "./services/site-config";
 
 const methodColors: Record<string, string> = {
   GET: "\x1b[32m",     // green
@@ -63,6 +64,11 @@ const app = new Elysia()
   )
   .get("/", () => "OpenMarket API")
   .get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }))
+  // Public site config + theme — served on every page load by the SvelteKit root layout
+  .get("/site-config/public", () => ({
+    success: true,
+    data: { config: getSiteConfig(), theme: getSiteTheme() },
+  }))
   .use(authMiddleware)
   .get("/api/auth/get-session", async ({ session }) => {
     if (!session.user) return session;
@@ -112,5 +118,6 @@ console.log(
 );
 
 startExpiryJob();
+loadSiteConfig().catch((err) => console.error('Failed to load site config:', err));
 
 export type App = typeof app;
