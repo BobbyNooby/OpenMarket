@@ -1,4 +1,4 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect, fail } from '@sveltejs/kit';
 import { api } from '$lib/api/server';
 
 export const load = async ({ request, parent }) => {
@@ -24,4 +24,29 @@ export const load = async ({ request, parent }) => {
 	const lists = listsRes.data?.success ? listsRes.data.data : { have: [], want: [] };
 
 	return { session, profile, items, currencies, lists };
+};
+
+export const actions = {
+	save: async ({ request }) => {
+		const cookie = request.headers.get('cookie') || '';
+		const formData = await request.formData();
+
+		const username = (formData.get('username') as string ?? '').trim().toLowerCase();
+		const description = (formData.get('description') as string) || undefined;
+		const bio = (formData.get('bio') as string) || undefined;
+		const social_links = (formData.get('social_links') as string) || undefined;
+		const accent_color = (formData.get('accent_color') as string) || undefined;
+
+		const result = await api.users.profile.post(
+			{ username, description, bio, social_links, accent_color },
+			{ headers: { cookie } },
+		);
+
+		const payload = result.data as { success: boolean; error?: string } | null;
+		if (!payload?.success) {
+			return fail(400, { error: payload?.error || 'Failed to save profile' });
+		}
+
+		return { success: true };
+	},
 };

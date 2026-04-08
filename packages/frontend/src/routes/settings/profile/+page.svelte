@@ -6,9 +6,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Switch } from '$lib/components/ui/switch';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Separator } from '$lib/components/ui/separator';
 	import HaveWantEditor from '$lib/components/profile/HaveWantEditor.svelte';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -19,37 +17,10 @@
 
 	let { data } = $props();
 
-	type NotificationKey =
-		| 'new_review'
-		| 'listing_expired'
-		| 'role_changed'
-		| 'warning_received'
-		| 'report_resolved';
-
-	const NOTIFICATION_TYPES: { key: NotificationKey; label: string; description: string }[] = [
-		{ key: 'new_review', label: 'Profile Reviews', description: 'When someone leaves a review on your profile' },
-		{ key: 'listing_expired', label: 'Listing Expiry', description: 'When one of your listings expires' },
-		{ key: 'role_changed', label: 'Role Changes', description: 'When an admin updates your role' },
-		{ key: 'warning_received', label: 'Warnings', description: 'When a moderator issues you a warning' },
-		{ key: 'report_resolved', label: 'Report Resolved', description: 'When a report you filed is resolved' },
-	];
-
 	// Parse initial values from the loaded profile
 	function parseSocial(): { key: string; value: string }[] {
 		const links = data.profile?.social_links ?? {};
 		return Object.entries(links).map(([key, value]) => ({ key, value: String(value) }));
-	}
-
-	function parsePrefs(): Record<NotificationKey, boolean> {
-		const raw = data.profile?.notification_preferences ?? '{}';
-		let prefs: Record<string, boolean> = {};
-		try { prefs = JSON.parse(raw); } catch { /* ignore */ }
-		const out = {} as Record<NotificationKey, boolean>;
-		for (const { key } of NOTIFICATION_TYPES) {
-			// Empty/missing means enabled by default
-			out[key] = prefs[key] !== false;
-		}
-		return out;
 	}
 
 	// Form state
@@ -58,7 +29,6 @@
 	let description = $state(data.profile?.description ?? '');
 	let accentColor = $state(data.profile?.accent_color ?? '#6366f1');
 	let socialLinks = $state(parseSocial());
-	let notificationPrefs = $state(parsePrefs());
 
 	// Snapshot of initial values for dirty tracking
 	const initial = {
@@ -67,7 +37,6 @@
 		description: data.profile?.description ?? '',
 		accentColor: data.profile?.accent_color ?? '#6366f1',
 		socialLinks: JSON.stringify(parseSocial()),
-		prefs: JSON.stringify(parsePrefs()),
 	};
 
 	// Username availability state
@@ -113,8 +82,7 @@
 		bio !== initial.bio ||
 		description !== initial.description ||
 		accentColor !== initial.accentColor ||
-		JSON.stringify(socialLinks) !== initial.socialLinks ||
-		JSON.stringify(notificationPrefs) !== initial.prefs,
+		JSON.stringify(socialLinks) !== initial.socialLinks,
 	);
 
 	// Profile completeness — fraction of optional fields filled
@@ -169,7 +137,6 @@
 		formData.set('bio', bio);
 		formData.set('social_links', JSON.stringify(linksObject));
 		formData.set('accent_color', accentColor);
-		formData.set('notification_preferences', JSON.stringify(notificationPrefs));
 
 		try {
 			const res = await fetch('?/save', { method: 'POST', body: formData });
@@ -186,7 +153,6 @@
 				initial.description = description;
 				initial.accentColor = accentColor;
 				initial.socialLinks = JSON.stringify(socialLinks);
-				initial.prefs = JSON.stringify(notificationPrefs);
 				availabilityState = 'idle';
 				availabilityMessage = null;
 			}
@@ -325,7 +291,7 @@
 				<Card.Description>Add links to your profiles on other platforms.</Card.Description>
 			</Card.Header>
 			<Card.Content class="space-y-3">
-				{#each socialLinks as link, idx (idx)}
+				{#each socialLinks as _, idx (idx)}
 					<div class="flex items-center gap-2">
 						<Input
 							placeholder="Platform (discord, twitter, ...)"
@@ -386,28 +352,6 @@
 						description: e.description,
 					}))}
 				/>
-			</Card.Content>
-		</Card.Root>
-
-		<!-- Notification preferences -->
-		<Card.Root>
-			<Card.Header>
-				<Card.Title>Notifications</Card.Title>
-				<Card.Description>Choose which alerts you receive.</Card.Description>
-			</Card.Header>
-			<Card.Content class="space-y-4">
-				{#each NOTIFICATION_TYPES as { key, label, description: desc }, i}
-					<div class="flex items-center justify-between gap-4">
-						<div class="flex-1">
-							<Label class="text-sm font-medium">{label}</Label>
-							<p class="text-xs text-muted-foreground">{desc}</p>
-						</div>
-						<Switch bind:checked={notificationPrefs[key]} />
-					</div>
-					{#if i < NOTIFICATION_TYPES.length - 1}
-						<Separator />
-					{/if}
-				{/each}
 			</Card.Content>
 		</Card.Root>
 
