@@ -5,11 +5,60 @@ import {
   conversationParticipantsTable,
   messagesTable,
   userProfilesTable,
+  listingsTable,
+  itemsTable,
+  currenciesTable,
 } from "../../db/schemas";
 import { user as userTable } from "../../db/auth-schema";
 import { and, eq, inArray, ne, desc, sql } from "drizzle-orm";
 import { authMiddleware } from "../../middleware/rbac";
 import { trackEvent } from "../../services/analytics";
+
+// Slim listing context returned alongside conversations for the pinned chat header
+type ListingContext = {
+  id: string;
+  amount: number;
+  order_type: "buy" | "sell";
+  status: "active" | "sold" | "paused" | "expired";
+  requested_name: string;
+  requested_image: string | null;
+  requested_kind: "item" | "currency";
+};
+
+async function fetchListingContexts(listingIds: string[]): Promise<Map<string, ListingContext>> {
+  if (listingIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({
+      id: listingsTable.id,
+      amount: listingsTable.amount,
+      order_type: listingsTable.order_type,
+      status: listingsTable.status,
+      item_name: itemsTable.name,
+      item_image: itemsTable.image_url,
+      currency_name: currenciesTable.name,
+      currency_image: currenciesTable.image_url,
+    })
+    .from(listingsTable)
+    .leftJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
+    .leftJoin(currenciesTable, eq(listingsTable.requested_currency_id, currenciesTable.id))
+    .where(inArray(listingsTable.id, listingIds));
+
+  const map = new Map<string, ListingContext>();
+  for (const r of rows) {
+    const isItem = !!r.item_name;
+    map.set(r.id, {
+      id: r.id,
+      amount: r.amount,
+      order_type: r.order_type,
+      status: r.status,
+      requested_name: (isItem ? r.item_name : r.currency_name) ?? "Unknown",
+      requested_image: (isItem ? r.item_image : r.currency_image) ?? null,
+      requested_kind: isItem ? "item" : "currency",
+    });
+  }
+  return map;
+}
 
 export const conversationRoutes = new Elysia()
   .use(authMiddleware)
@@ -195,6 +244,12 @@ export const conversationRoutes = new Elysia()
       messagesByConv.get(msg.conversation_id)!.push(msg);
     }
 
+    // 4b. Batch: fetch listing contexts for any conversation linked to a listing
+    const listingIds = conversations
+      .map((c) => c.listing_id)
+      .filter((id): id is string => !!id);
+    const listingContextMap = await fetchListingContexts(listingIds);
+
     // 5. Build response
     const data = conversations.map((conv) => {
       const other = participantMap.get(conv.id);
@@ -213,6 +268,7 @@ export const conversationRoutes = new Elysia()
         created_at: conv.created_at.toISOString(),
         updated_at: conv.updated_at.toISOString(),
         listing_id: conv.listing_id,
+        listing_context: conv.listing_id ? listingContextMap.get(conv.listing_id) ?? null : null,
         other_participant: other
           ? { user_id: other.user_id, username: other.username, display_name: other.name, avatar: other.image }
           : null,
