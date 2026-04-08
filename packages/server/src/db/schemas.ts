@@ -366,3 +366,30 @@ export type MessageInsert = typeof messagesTable.$inferInsert;
 export type MessageSelect = typeof messagesTable.$inferSelect;
 export type NotificationInsert = typeof notificationsTable.$inferInsert;
 export type NotificationSelect = typeof notificationsTable.$inferSelect;
+
+// --- site config (white-label branding) ---
+// Non-theme key/value config: site_name, tagline, logo URL, footer text, links, etc.
+export const siteConfigTable = pgTable("site_config", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull().default(''),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+  updated_by: text("updated_by").references(() => user.id, { onDelete: "set null", onUpdate: "cascade" }),
+});
+
+// Per-variant theme variables — one row per (light|dark, variable_name)
+export const themeVariant = pgEnum("theme_variant", ["light", "dark"]);
+
+export const siteThemeTable = pgTable("site_theme", {
+  variant: themeVariant("variant").notNull(),
+  variable: text("variable").notNull(), // 'primary', 'background', 'card-foreground', etc.
+  value: text("value").notNull(),         // HSL triplet like '217.2 91.2% 59.8%'
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+  updated_by: text("updated_by").references(() => user.id, { onDelete: "set null", onUpdate: "cascade" }),
+}, (t) => [
+  primaryKey({ columns: [t.variant, t.variable] }),
+]);
+
+export type SiteConfigInsert = typeof siteConfigTable.$inferInsert;
+export type SiteConfigSelect = typeof siteConfigTable.$inferSelect;
+export type SiteThemeInsert = typeof siteThemeTable.$inferInsert;
+export type SiteThemeSelect = typeof siteThemeTable.$inferSelect;
