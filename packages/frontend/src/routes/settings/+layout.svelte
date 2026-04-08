@@ -1,13 +1,14 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { Button } from '$lib/components/ui/button';
+	import { page } from '$app/state';
 	import User from '@lucide/svelte/icons/user';
 	import Shield from '@lucide/svelte/icons/shield';
+	import Bell from '@lucide/svelte/icons/bell';
 
-	let { children, data } = $props();
+	let { children } = $props();
 
 	const tabs = [
 		{ href: '/settings/profile', label: 'Profile', icon: User },
+		{ href: '/settings/notifications', label: 'Notifications', icon: Bell },
 		{ href: '/settings/account', label: 'Account', icon: Shield },
 	];
 </script>
@@ -26,7 +27,7 @@
 					{#each tabs as tab}
 						<a
 							href={tab.href}
-							class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors {$page.url.pathname === tab.href
+							class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors {page.url.pathname === tab.href
 								? 'bg-primary text-primary-foreground'
 								: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
 						>
