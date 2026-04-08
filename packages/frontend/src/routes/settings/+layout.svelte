@@ -3,21 +3,24 @@
 	import User from '@lucide/svelte/icons/user';
 	import Shield from '@lucide/svelte/icons/shield';
 	import Bell from '@lucide/svelte/icons/bell';
+	import Languages from '@lucide/svelte/icons/languages';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { children } = $props();
 
-	const tabs = [
-		{ href: '/settings/profile', label: 'Profile', icon: User },
-		{ href: '/settings/notifications', label: 'Notifications', icon: Bell },
-		{ href: '/settings/account', label: 'Account', icon: Shield },
-	];
+	const tabs = $derived([
+		{ href: '/settings/profile', label: m.settings_tab_profile(), icon: User },
+		{ href: '/settings/notifications', label: m.settings_tab_notifications(), icon: Bell },
+		{ href: '/settings/language', label: m.settings_tab_language(), icon: Languages },
+		{ href: '/settings/account', label: m.settings_tab_account(), icon: Shield },
+	]);
 </script>
 
 <div class="min-h-screen bg-background">
 	<div class="mx-auto max-w-4xl px-4 py-8">
 		<div class="mb-8">
-			<h1 class="text-2xl font-bold text-foreground">Settings</h1>
-			<p class="text-muted-foreground">Manage your account and preferences</p>
+			<h1 class="text-2xl font-bold text-foreground">{m.settings_title()}</h1>
+			<p class="text-muted-foreground">{m.settings_subtitle()}</p>
 		</div>
 
 		<div class="flex gap-8">

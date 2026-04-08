@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ListingCard, CommentCard, ReportDialog, ItemImage } from '$lib/components';
+	import { m } from '$lib/paraglide/messages.js';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Badge } from '$lib/components/ui/badge';
@@ -307,44 +308,38 @@
 			<div class="mx-auto max-w-7xl">
 				<Tabs.Root value="listings">
 					<Tabs.List class="mb-8">
-						<Tabs.Trigger value="listings">Listings</Tabs.Trigger>
-						<Tabs.Trigger value="havewant">Have / Want ({haveCount + wantCount})</Tabs.Trigger>
-						<Tabs.Trigger value="reviews">Reviews ({totalReviews})</Tabs.Trigger>
+						<Tabs.Trigger value="listings">{m.profile_view_listings()}</Tabs.Trigger>
+						<Tabs.Trigger value="havewant">{m.profile_view_have_want()} ({haveCount + wantCount})</Tabs.Trigger>
+						<Tabs.Trigger value="reviews">{m.profile_view_reviews()} ({totalReviews})</Tabs.Trigger>
 					</Tabs.List>
 
 					<!-- Listings Tab -->
 					<Tabs.Content value="listings">
 						{#if buyOrders.length === 0 && sellOrders.length === 0}
 							<div class="py-12 text-center">
-								<p class="text-lg text-muted-foreground">This user has no listings yet.</p>
+								<p class="text-lg text-muted-foreground">{m.profile_no_listings()}</p>
 							</div>
 						{:else}
 							<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 								<div>
 									<h3 class="mb-4 rounded-t-lg bg-green-500 p-3 text-center text-xl font-semibold text-white">
-										<ShoppingCart class="inline h-5 w-5" /> Buy Orders ({buyOrders.length})
+										<ShoppingCart class="inline h-5 w-5" /> {m.listings_buy_orders()} ({buyOrders.length})
 									</h3>
 									<div class="space-y-4">
 										{#each buyOrders as order}
 											<ListingCard {order} sessionUserId={data.session?.user?.id} />
 										{/each}
-										{#if buyOrders.length === 0}
-											<p class="py-4 text-center text-muted-foreground">No buy orders</p>
-										{/if}
 									</div>
 								</div>
 
 								<div>
 									<h3 class="mb-4 rounded-t-lg bg-amber-500 p-3 text-center text-xl font-semibold text-white">
-										<Coins class="inline h-5 w-5" /> Sell Orders ({sellOrders.length})
+										<Coins class="inline h-5 w-5" /> {m.listings_sell_orders()} ({sellOrders.length})
 									</h3>
 									<div class="space-y-4">
 										{#each sellOrders as order}
 											<ListingCard {order} sessionUserId={data.session?.user?.id} />
 										{/each}
-										{#if sellOrders.length === 0}
-											<p class="py-4 text-center text-muted-foreground">No sell orders</p>
-										{/if}
 									</div>
 								</div>
 							</div>
@@ -356,11 +351,11 @@
 						{#if haveCount === 0 && wantCount === 0}
 							<div class="py-12 text-center">
 								<p class="text-lg text-muted-foreground">
-									{isOwnProfile ? "You haven't added any items yet." : "This user hasn't added any items yet."}
+									{isOwnProfile ? m.profile_have_want_empty_self() : m.profile_have_want_empty_other()}
 								</p>
 								{#if isOwnProfile}
 									<a href="/settings/profile" class="mt-4 inline-block text-primary hover:underline">
-										Edit your lists →
+										{m.profile_edit_lists()}
 									</a>
 								{/if}
 							</div>
@@ -368,10 +363,10 @@
 							<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 								<div>
 									<h3 class="mb-4 rounded-t-lg bg-emerald-600 p-3 text-center text-xl font-semibold text-white">
-										Have ({haveCount})
+										{m.profile_have_count({ count: haveCount })}
 									</h3>
 									{#if haveEntries.length === 0}
-										<p class="py-6 text-center text-muted-foreground">Nothing here yet.</p>
+										<p class="py-6 text-center text-muted-foreground">{m.profile_have_empty()}</p>
 									{:else}
 										<div class="grid grid-cols-4 gap-3 sm:grid-cols-6">
 											{#each haveEntries as entry (entry.id)}
@@ -388,10 +383,10 @@
 								</div>
 								<div>
 									<h3 class="mb-4 rounded-t-lg bg-sky-600 p-3 text-center text-xl font-semibold text-white">
-										Want ({wantCount})
+										{m.profile_want_count({ count: wantCount })}
 									</h3>
 									{#if wantEntries.length === 0}
-										<p class="py-6 text-center text-muted-foreground">Nothing here yet.</p>
+										<p class="py-6 text-center text-muted-foreground">{m.profile_want_empty()}</p>
 									{:else}
 										<div class="grid grid-cols-4 gap-3 sm:grid-cols-6">
 											{#each wantEntries as entry (entry.id)}
@@ -421,15 +416,15 @@
 										You must be signed in to leave a review.
 									</p>
 									<a
-										href="/auth/signin"
+										href="/login"
 										class="inline-block rounded-md bg-primary px-6 py-2 font-semibold text-primary-foreground transition-colors hover:opacity-90"
 									>
-										Sign In
+										{m.nav_sign_in()}
 									</a>
 								</div>
 							{:else if isOwnProfile}
 								<div class="py-4 text-center">
-									<p class="text-muted-foreground">You cannot review your own profile.</p>
+									<p class="text-muted-foreground">{m.profile_review_self()}</p>
 								</div>
 							{:else}
 								{#if submitError}
@@ -461,7 +456,7 @@
 								<div class="mb-4">
 									<Textarea
 										bind:value={reviewComment}
-										placeholder="Share your experience with this user (optional)..."
+										placeholder={m.profile_review_placeholder()}
 										rows={3}
 										disabled={submitting}
 									/>
@@ -469,11 +464,7 @@
 
 								<div class="flex justify-end">
 									<Button onclick={handleSubmitReview} disabled={submitting}>
-										{#if submitting}
-											Submitting...
-										{:else}
-											Submit Review
-										{/if}
+										{submitting ? m.profile_review_submitting() : m.profile_review_submit()}
 									</Button>
 								</div>
 							{/if}
@@ -481,7 +472,7 @@
 
 						{#if reviews.length === 0}
 							<div class="py-12 text-center">
-								<p class="text-lg text-muted-foreground">No reviews yet.</p>
+								<p class="text-lg text-muted-foreground">{m.profile_no_reviews()}</p>
 							</div>
 						{:else}
 							<div class="space-y-4">

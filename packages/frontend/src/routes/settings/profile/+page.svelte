@@ -8,6 +8,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Badge } from '$lib/components/ui/badge';
 	import HaveWantEditor from '$lib/components/profile/HaveWantEditor.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Check from '@lucide/svelte/icons/check';
@@ -145,7 +146,7 @@
 			if (result.type === 'failure') {
 				toast.error(result.data?.error || 'Failed to save');
 			} else {
-				toast.success('Profile updated');
+				toast.success(m.settings_profile_updated());
 				await invalidateAll();
 				// Reset dirty snapshot to current values
 				initial.username = username;
@@ -170,9 +171,9 @@
 
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<div class="mb-8">
-		<h1 class="text-3xl font-bold text-foreground">Profile Settings</h1>
+		<h1 class="text-3xl font-bold text-foreground">{m.settings_profile_title()}</h1>
 		<p class="mt-1 text-sm text-muted-foreground">
-			Customize how others see you on {data.siteConfig?.site_name ?? 'OpenMarket'}.
+			{m.settings_profile_subtitle({ site: data.siteConfig?.site_name ?? 'OpenMarket' })}
 		</p>
 	</div>
 
@@ -180,7 +181,7 @@
 	<Card.Root class="mb-6">
 		<Card.Content class="py-4">
 			<div class="mb-2 flex items-center justify-between">
-				<span class="text-sm font-medium text-foreground">Profile completeness</span>
+				<span class="text-sm font-medium text-foreground">{m.settings_profile_completeness()}</span>
 				<span class="text-sm text-muted-foreground">{completeness}%</span>
 			</div>
 			<div class="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -196,12 +197,11 @@
 		<!-- Identity -->
 		<Card.Root>
 			<Card.Header>
-				<Card.Title>Identity</Card.Title>
-				<Card.Description>Your public-facing name and visual style.</Card.Description>
+				<Card.Title>{m.settings_profile_section_identity()}</Card.Title>
 			</Card.Header>
 			<Card.Content class="space-y-5">
 				<div class="space-y-2">
-					<Label for="username">Username</Label>
+					<Label for="username">{m.settings_profile_username()}</Label>
 					<div class="relative">
 						<Input
 							id="username"
@@ -232,13 +232,13 @@
 						</p>
 					{:else}
 						<p class="text-xs text-muted-foreground">
-							3-20 characters, lowercase letters, numbers, and underscores.
+							{m.settings_profile_username_hint()}
 						</p>
 					{/if}
 				</div>
 
 				<div class="space-y-2">
-					<Label for="accent">Accent color</Label>
+					<Label for="accent">{m.settings_profile_accent_color()}</Label>
 					<div class="flex items-center gap-3">
 						<input
 							id="accent"
@@ -248,7 +248,7 @@
 						/>
 						<Input bind:value={accentColor} class="font-mono" maxlength={7} />
 					</div>
-					<p class="text-xs text-muted-foreground">Used as a highlight on your public profile.</p>
+					<p class="text-xs text-muted-foreground">{m.settings_profile_accent_hint()}</p>
 				</div>
 			</Card.Content>
 		</Card.Root>
@@ -256,26 +256,25 @@
 		<!-- About -->
 		<Card.Root>
 			<Card.Header>
-				<Card.Title>About you</Card.Title>
-				<Card.Description>Tell other traders a little about yourself.</Card.Description>
+				<Card.Title>{m.settings_profile_section_about()}</Card.Title>
 			</Card.Header>
 			<Card.Content class="space-y-5">
 				<div class="space-y-2">
-					<Label for="description">Tagline</Label>
+					<Label for="description">{m.settings_profile_tagline()}</Label>
 					<Input
 						id="description"
 						bind:value={description}
-						placeholder="Short tagline shown under your name"
+						placeholder={m.settings_profile_tagline_placeholder()}
 						maxlength={120}
 					/>
 				</div>
 
 				<div class="space-y-2">
-					<Label for="bio">Bio</Label>
+					<Label for="bio">{m.settings_profile_bio()}</Label>
 					<Textarea
 						id="bio"
 						bind:value={bio}
-						placeholder="A longer description of yourself, what you trade, etc."
+						placeholder={m.settings_profile_bio_placeholder()}
 						rows={5}
 						maxlength={500}
 					/>
@@ -287,19 +286,18 @@
 		<!-- Social links -->
 		<Card.Root>
 			<Card.Header>
-				<Card.Title>Social links</Card.Title>
-				<Card.Description>Add links to your profiles on other platforms.</Card.Description>
+				<Card.Title>{m.settings_profile_section_social()}</Card.Title>
 			</Card.Header>
 			<Card.Content class="space-y-3">
 				{#each socialLinks as _, idx (idx)}
 					<div class="flex items-center gap-2">
 						<Input
-							placeholder="Platform (discord, twitter, ...)"
+							placeholder={m.settings_profile_social_platform()}
 							bind:value={socialLinks[idx].key}
 							class="w-1/3"
 						/>
 						<Input
-							placeholder="Username or URL"
+							placeholder={m.settings_profile_social_value()}
 							bind:value={socialLinks[idx].value}
 							class="flex-1"
 						/>
@@ -314,11 +312,11 @@
 					</div>
 				{/each}
 				{#if socialLinks.length === 0}
-					<p class="text-sm text-muted-foreground">No social links added yet.</p>
+					<p class="text-sm text-muted-foreground">{m.settings_profile_social_empty()}</p>
 				{/if}
 				<Button type="button" variant="outline" size="sm" onclick={addSocialLink}>
 					<Plus class="mr-1.5 h-4 w-4" />
-					Add link
+					{m.settings_profile_add_link()}
 				</Button>
 			</Card.Content>
 		</Card.Root>
@@ -326,9 +324,9 @@
 		<!-- Have / Want lists -->
 		<Card.Root>
 			<Card.Header>
-				<Card.Title>Have / Want lists</Card.Title>
+				<Card.Title>{m.settings_profile_section_havewant()}</Card.Title>
 				<Card.Description>
-					Public lists of items you have and items you're looking for. Other traders can find you by these.
+					{m.settings_profile_havewant_description()}
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>
@@ -359,17 +357,17 @@
 		<div class="sticky bottom-4 flex items-center justify-between rounded-lg border border-border bg-card p-4 shadow-lg">
 			<div class="flex items-center gap-2">
 				{#if isDirty}
-					<Badge variant="secondary">Unsaved changes</Badge>
+					<Badge variant="secondary">{m.common_unsaved_changes()}</Badge>
 				{:else}
-					<span class="text-sm text-muted-foreground">All changes saved</span>
+					<span class="text-sm text-muted-foreground">{m.common_all_changes_saved()}</span>
 				{/if}
 			</div>
 			<Button type="submit" disabled={!isDirty || saving || availabilityState === 'taken' || availabilityState === 'invalid'}>
 				{#if saving}
 					<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-					Saving...
+					{m.button_saving()}
 				{:else}
-					Save changes
+					{m.button_save_changes()}
 				{/if}
 			</Button>
 		</div>

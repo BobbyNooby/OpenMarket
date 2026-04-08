@@ -9,6 +9,10 @@
 	import { chatManager } from '$lib/stores/chat.svelte';
 	import NotificationDropdown from './NotificationDropdown.svelte';
 	import MessageSquare from '@lucide/svelte/icons/message-square';
+	import Languages from '@lucide/svelte/icons/languages';
+	import { m } from '$lib/paraglide/messages.js';
+	import { setLocale } from '$lib/paraglide/runtime.js';
+	import { PUBLIC_API_URL } from '$env/static/public';
 
 	interface Props {
 		session: Session;
@@ -23,21 +27,39 @@
 	const userImage = $derived(session?.user?.image);
 	const perms = $derived(createPermissionChecker(session));
 
-	const leftLinks = [
-		{ href: '/', label: 'Home' },
-		{ href: '/listings', label: 'Listings' },
-		{ href: '/items', label: 'Items' }
-	];
+	const leftLinks = $derived([
+		{ href: '/', label: m.nav_home() },
+		{ href: '/listings', label: m.nav_listings() },
+		{ href: '/items', label: m.nav_items() }
+	]);
 
 	const rightLinks = $derived(
 		perms.canAccessAdmin || perms.canManageItems
-			? [{ href: '/admin', label: 'Admin' }]
+			? [{ href: '/admin', label: m.nav_admin() }]
 			: []
 	);
 
 	async function signOut() {
 		await authClient.signOut();
 		window.location.href = '/';
+	}
+
+	async function changeLanguage(locale: 'en' | 'es') {
+		// Sync to backend if logged in (cross-device persistence)
+		if (session?.user) {
+			try {
+				await fetch(`${PUBLIC_API_URL}/users/language`, {
+					method: 'PUT',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ language: locale }),
+				});
+			} catch {
+				// fall through to client-side switch anyway
+			}
+		}
+		// setLocale writes the cookie + reloads so SSR picks up the new locale
+		setLocale(locale);
 	}
 </script>
 
@@ -125,25 +147,39 @@
 						</DropdownMenu.Label>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item onclick={() => goto(`/profile/${username}`)}>
-							View Profile
+							{m.nav_profile_view()}
 						</DropdownMenu.Item>
 						<DropdownMenu.Item onclick={() => goto('/dashboard')}>
-							Dashboard
+							{m.nav_dashboard()}
 						</DropdownMenu.Item>
 						<DropdownMenu.Item onclick={() => goto('/watchlist')}>
-							Watchlist
+							{m.nav_watchlist()}
 						</DropdownMenu.Item>
 						<DropdownMenu.Item onclick={() => goto('/settings/profile')}>
-							Settings
+							{m.nav_settings()}
 						</DropdownMenu.Item>
+						<DropdownMenu.Sub>
+							<DropdownMenu.SubTrigger>
+								<Languages class="mr-2 h-4 w-4" />
+								{m.language_switcher_label()}
+							</DropdownMenu.SubTrigger>
+							<DropdownMenu.SubContent>
+								<DropdownMenu.Item onclick={() => changeLanguage('en')}>
+									{m.language_english_native()}
+								</DropdownMenu.Item>
+								<DropdownMenu.Item onclick={() => changeLanguage('es')}>
+									{m.language_spanish_native()}
+								</DropdownMenu.Item>
+							</DropdownMenu.SubContent>
+						</DropdownMenu.Sub>
 						<DropdownMenu.Item variant="destructive" onclick={signOut}>
-							Sign Out
+							{m.nav_sign_out()}
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 			{:else}
 				<a href="/login">
-					<Button>Sign In</Button>
+					<Button>{m.nav_sign_in()}</Button>
 				</a>
 			{/if}
 		</div>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ItemButton } from '$lib/components';
 	import { Input } from '$lib/components/ui/input';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { data } = $props();
 
@@ -22,13 +23,13 @@
 <div class="min-h-screen text-foreground">
 	<div class="bg-card py-8 shadow-sm">
 		<div class="mx-auto max-w-7xl px-8">
-			<h1 class="text-4xl font-bold text-primary">Items & Currencies</h1>
+			<h1 class="text-4xl font-bold text-primary">{m.items_title()}</h1>
 			<p class="mt-2 text-muted-foreground">
-				Browse all tradeable items and currencies
+				{m.items_subtitle()}
 			</p>
 
 			<div class="mt-6 max-w-md">
-				<Input type="search" placeholder="Search..." bind:value={searchQuery} />
+				<Input type="search" placeholder={m.items_search_placeholder()} bind:value={searchQuery} />
 			</div>
 		</div>
 	</div>
@@ -37,10 +38,10 @@
 		<div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
 			<div>
 				<h2 class="mb-4 text-2xl font-bold text-foreground">
-					Items ({filteredItems.length})
+					{m.items_section_items({ count: filteredItems.length })}
 				</h2>
 				{#if filteredItems.length === 0}
-					<p class="text-muted-foreground">No items found.</p>
+					<p class="text-muted-foreground">{m.items_no_items()}</p>
 				{:else}
 					<div class="flex flex-wrap gap-2">
 						{#each filteredItems as item}
@@ -59,10 +60,10 @@
 
 			<div>
 				<h2 class="mb-4 text-2xl font-bold text-foreground">
-					Currencies ({filteredCurrencies.length})
+					{m.items_section_currencies({ count: filteredCurrencies.length })}
 				</h2>
 				{#if filteredCurrencies.length === 0}
-					<p class="text-muted-foreground">No currencies found.</p>
+					<p class="text-muted-foreground">{m.items_no_currencies()}</p>
 				{:else}
 					<div class="flex flex-wrap gap-2">
 						{#each filteredCurrencies as currency}

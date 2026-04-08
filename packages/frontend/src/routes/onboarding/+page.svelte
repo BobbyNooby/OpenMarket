@@ -9,6 +9,7 @@
 	import Loader2 from '@lucide/svelte/icons/loader-2';
 	import Check from '@lucide/svelte/icons/check';
 	import X from '@lucide/svelte/icons/x';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { data } = $props();
 
@@ -23,6 +24,7 @@
 
 	const suggestedUsername = sanitizeUsername(data.user?.name || '');
 	const siteName = $derived(data.siteConfig?.site_name ?? 'OpenMarket');
+	const welcomeText = $derived(m.onboarding_welcome({ site: siteName }));
 	let username = $state(suggestedUsername);
 	let loading = $state(false);
 	let checkingUsername = $state(false);
@@ -92,7 +94,7 @@
 				return;
 			}
 
-			toast.success(`Welcome to ${siteName}!`);
+			toast.success(m.onboarding_welcome_toast({ site: siteName }));
 			goto('/');
 		} catch {
 			toast.error('Failed to complete setup');
@@ -105,8 +107,8 @@
 <div class="flex min-h-screen items-center justify-center bg-background px-4 py-12">
 	<Card.Root class="w-full max-w-md">
 		<Card.Header class="text-center">
-			<Card.Title class="text-2xl">Welcome to {siteName}</Card.Title>
-			<Card.Description>Choose a username to complete your profile</Card.Description>
+			<Card.Title class="text-2xl">{welcomeText}</Card.Title>
+			<Card.Description>{m.onboarding_subtitle()}</Card.Description>
 		</Card.Header>
 		<Card.Content>
 			<div class="mb-4 text-center">
@@ -114,13 +116,13 @@
 					{#if data.user?.image}
 						<img src={data.user.image} alt="Avatar" class="mx-auto mb-3 h-16 w-16 rounded-full" />
 					{/if}
-					Logged in as <span class="font-medium text-foreground">{data.user?.name || 'User'}</span>
+					<span class="font-medium text-foreground">{data.user?.name || 'User'}</span>
 				</p>
 			</div>
 
 			<div class="space-y-4">
 				<div class="space-y-2">
-					<Label for="username">Username</Label>
+					<Label for="username">{m.onboarding_username_label()}</Label>
 					<div class="relative">
 						<Input
 							id="username"
@@ -138,7 +140,7 @@
 						{/if}
 					</div>
 					<p class="text-xs text-muted-foreground">
-						3-20 characters, lowercase letters, numbers, and underscores only
+						{m.settings_profile_username_hint()}
 					</p>
 				</div>
 
@@ -146,7 +148,7 @@
 					{#if loading}
 						<Loader2 class="h-4 w-4 animate-spin" />
 					{/if}
-					Complete Setup
+					{loading ? m.onboarding_completing() : m.onboarding_complete_button()}
 				</Button>
 			</div>
 		</Card.Content>

@@ -2,6 +2,7 @@
 	import { ListingCard } from '$lib/components';
 	import { transformListing, type TransformedListing } from '$lib/utils/listings';
 	import Heart from '@lucide/svelte/icons/heart';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { data } = $props();
 
@@ -28,15 +29,15 @@
 	<div class="mx-auto max-w-7xl px-8 py-12">
 		<div class="mb-8 flex items-center gap-3">
 			<Heart class="h-8 w-8 text-rose-500" fill="currentColor" />
-			<h1 class="text-3xl font-bold">My Watchlist</h1>
+			<h1 class="text-3xl font-bold">{m.watchlist_title()}</h1>
 		</div>
 
 		{#if listings.length === 0}
 			<div class="rounded-lg border border-border bg-card p-12 text-center">
 				<Heart class="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-				<h2 class="mb-2 text-xl font-semibold">No saved listings yet</h2>
+				<h2 class="mb-2 text-xl font-semibold">{m.watchlist_empty()}</h2>
 				<p class="text-muted-foreground">
-					Click the heart icon on any listing to save it here for later.
+					<a href="/listings" class="text-primary hover:underline">{m.watchlist_browse_listings()}</a>
 				</p>
 			</div>
 		{:else}

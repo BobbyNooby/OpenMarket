@@ -18,6 +18,7 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import Link2 from '@lucide/svelte/icons/link-2';
+	import { m } from '$lib/paraglide/messages.js';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { toast } from 'svelte-sonner';
 	import { track } from '$lib/utils/analytics';
@@ -241,7 +242,7 @@
 		const url = `${window.location.origin}/listings/view/${order.id}`;
 		try {
 			await navigator.clipboard.writeText(url);
-			toast.success('Link copied');
+			toast.success(m.listings_link_copied());
 		} catch {
 			toast.error('Failed to copy link');
 		}
@@ -353,9 +354,9 @@
 					<Badge class={statusConfig[currentStatus]?.class}>{statusConfig[currentStatus]?.label}</Badge>
 				{/if}
 				{#if order.order_type === 'buy'}
-					<Badge class="bg-green-500 text-white hover:bg-green-500">Buy</Badge>
+					<Badge class="bg-green-500 text-white hover:bg-green-500">{m.listings_buying()}</Badge>
 				{:else}
-					<Badge class="bg-amber-500 text-white hover:bg-amber-500">Sell</Badge>
+					<Badge class="bg-amber-500 text-white hover:bg-amber-500">{m.listings_for_sale()}</Badge>
 				{/if}
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
@@ -366,43 +367,43 @@
 					<DropdownMenu.Content align="end">
 						<DropdownMenu.Item onclick={copyListingLink}>
 							<Link2 class="mr-2 h-4 w-4" />
-							Copy link
+							{m.listings_copy_link()}
 						</DropdownMenu.Item>
 						{#if canEdit}
 							<DropdownMenu.Separator />
 							{#if currentStatus === 'active'}
 								<DropdownMenu.Item onclick={() => updateStatus('paused')} disabled={statusUpdating}>
 									<CirclePause class="mr-2 h-4 w-4 text-yellow-500" />
-									Pause
+									{m.listings_pause()}
 								</DropdownMenu.Item>
 								<DropdownMenu.Item onclick={() => (soldDialogOpen = true)} disabled={statusUpdating}>
 									<CircleCheck class="mr-2 h-4 w-4 text-red-500" />
-									Mark as Sold
+									{m.listings_mark_sold()}
 								</DropdownMenu.Item>
 							{:else if currentStatus === 'paused' || currentStatus === 'expired'}
 								<DropdownMenu.Item onclick={() => updateStatus('active')} disabled={statusUpdating}>
 									<CirclePlay class="mr-2 h-4 w-4 text-green-500" />
-									Reactivate
+									{m.listings_reactivate()}
 								</DropdownMenu.Item>
 							{/if}
 							{#if showRenewButton()}
 								<DropdownMenu.Item onclick={renewListing} disabled={statusUpdating}>
 									<RefreshCw class="mr-2 h-4 w-4 text-blue-500" />
-									Renew (30 days)
+									{m.listings_renew()}
 								</DropdownMenu.Item>
 							{/if}
 							{#if currentStatus !== 'sold'}
 								<a href="/listings/{order.id}/edit" class="contents">
 									<DropdownMenu.Item>
 										<Pencil class="mr-2 h-4 w-4" />
-										Edit
+										{m.button_edit()}
 									</DropdownMenu.Item>
 								</a>
 							{/if}
 							<DropdownMenu.Separator />
 							<DropdownMenu.Item onclick={() => (deleteDialogOpen = true)} disabled={statusUpdating} class="text-destructive">
 								<Trash2 class="mr-2 h-4 w-4" />
-								Delete
+								{m.button_delete()}
 							</DropdownMenu.Item>
 						{/if}
 					</DropdownMenu.Content>
@@ -524,7 +525,7 @@
 				</Button>
 			{/if}
 			{#if canReport}
-			<Button size="sm" onclick={handleContact}>Contact</Button>
+			<Button size="sm" onclick={handleContact}>{m.listings_contact_seller()}</Button>
 		{/if}
 		</div>
 	</Card.Footer>

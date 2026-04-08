@@ -11,6 +11,7 @@
 	import { debounce } from '$lib/utils/debounce';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { track } from '$lib/utils/analytics';
+	import { m } from '$lib/paraglide/messages.js';
 	import Search from '@lucide/svelte/icons/search';
 	import Package from '@lucide/svelte/icons/package';
 	import Coins from '@lucide/svelte/icons/coins';
@@ -251,13 +252,10 @@
 		<div class="mx-auto max-w-7xl px-8">
 			<div class="flex items-center justify-between">
 				<div>
-					<h1 class="text-4xl font-bold text-primary">All Listings</h1>
-					<p class="mt-2 text-muted-foreground">
-						Browse and filter all marketplace listings
-					</p>
+					<h1 class="text-4xl font-bold text-primary">{m.listings_title()}</h1>
 				</div>
 				<a href="/listings/new">
-					<Button>+ Create Listing</Button>
+					<Button>+ {m.listings_create()}</Button>
 				</a>
 			</div>
 		</div>
@@ -525,7 +523,7 @@
 
 				{#if listings.length === 0 && !loading}
 					<div class="rounded-lg border border-border bg-card py-16 text-center">
-						<p class="text-lg text-muted-foreground">No listings found.</p>
+						<p class="text-lg text-muted-foreground">{m.listings_no_results()}</p>
 						<p class="mt-2 text-sm text-muted-foreground/70">
 							Try adjusting your filters or search query.
 						</p>

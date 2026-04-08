@@ -13,6 +13,7 @@
 	import TrendingUp from '@lucide/svelte/icons/trending-up';
 	import Eye from '@lucide/svelte/icons/eye';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { data } = $props();
 	let searchQuery = $state('');
@@ -151,7 +152,7 @@
 						<Search class="absolute left-4 top-3 h-5 w-5 text-muted-foreground" />
 						<Input
 							type="text"
-							placeholder="Search for items or currencies..."
+							placeholder={m.home_search_placeholder()}
 							bind:value={searchQuery}
 							bind:ref={searchInputRef}
 							class="h-12 pl-11 text-center text-lg"
@@ -171,7 +172,7 @@
 							onmousedown={(e: MouseEvent) => e.preventDefault()}
 						>
 							{#if suggestions().items.length > 0}
-								<div class="px-4 py-2 text-xs font-semibold text-muted-foreground">Items</div>
+								<div class="px-4 py-2 text-xs font-semibold text-muted-foreground">{m.nav_items()}</div>
 								{#each suggestions().items as item}
 									<button
 										class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-accent"
@@ -191,7 +192,7 @@
 								{#if suggestions().items.length > 0}
 									<div class="border-t border-border"></div>
 								{/if}
-								<div class="px-4 py-2 text-xs font-semibold text-muted-foreground">Currencies</div>
+								<div class="px-4 py-2 text-xs font-semibold text-muted-foreground">{m.items_section_currencies({ count: suggestions().currencies.length })}</div>
 								{#each suggestions().currencies as currency}
 									<button
 										class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-accent"
@@ -215,7 +216,7 @@
 
 	<div class="px-8 py-12">
 		<div class="mx-auto max-w-7xl">
-			<h2 class="mb-8 text-3xl font-bold text-foreground">Latest Orders</h2>
+			<h2 class="mb-8 text-3xl font-bold text-foreground">{m.home_recent_listings()}</h2>
 
 			{#if data.error}
 				<div class="rounded-lg bg-destructive/10 p-4 text-destructive">
@@ -223,14 +224,14 @@
 				</div>
 			{:else if listings.length === 0}
 				<div class="py-12 text-center">
-					<p class="text-lg text-muted-foreground">No listings found.</p>
+					<p class="text-lg text-muted-foreground">{m.listings_no_results()}</p>
 				</div>
 			{:else}
 				<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 					<div>
 						<h3 class="mb-4 flex items-center justify-center gap-2 rounded-t-lg bg-green-500 p-3 text-xl font-semibold text-white">
 							<ShoppingCart class="h-5 w-5" />
-							Buy Orders ({buyOrders.length})
+							{m.listings_buy_orders()} ({buyOrders.length})
 						</h3>
 						<div class="space-y-4">
 							{#each buyOrders as order (order.id)}
@@ -245,7 +246,7 @@
 					<div>
 						<h3 class="mb-4 flex items-center justify-center gap-2 rounded-t-lg bg-amber-500 p-3 text-xl font-semibold text-white">
 							<Coins class="h-5 w-5" />
-							Sell Orders ({sellOrders.length})
+							{m.listings_sell_orders()} ({sellOrders.length})
 						</h3>
 						<div class="space-y-4">
 							{#each sellOrders as order (order.id)}

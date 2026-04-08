@@ -15,6 +15,7 @@
 	import { track } from '$lib/utils/analytics';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { children, data } = $props();
 
@@ -121,10 +122,10 @@
 					{/if}
 					<div class="flex items-center gap-4">
 						{#if supportUrl}
-							<a href={supportUrl} target="_blank" rel="noopener noreferrer" class="hover:text-primary">Support</a>
+							<a href={supportUrl} target="_blank" rel="noopener noreferrer" class="hover:text-primary">{m.footer_support()}</a>
 						{/if}
 						{#if discordUrl}
-							<a href={discordUrl} target="_blank" rel="noopener noreferrer" class="hover:text-primary">Discord</a>
+							<a href={discordUrl} target="_blank" rel="noopener noreferrer" class="hover:text-primary">{m.footer_discord()}</a>
 						{/if}
 					</div>
 				</div>

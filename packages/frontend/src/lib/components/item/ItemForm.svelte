@@ -7,6 +7,7 @@
 	import ItemImage from './ItemImage.svelte';
 	import ItemTooltip from './ItemTooltip.svelte';
 	import type { ItemFormData } from '$lib/api/types';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Category {
 		id: string;
@@ -41,8 +42,8 @@
 	});
 
 	function validate(): boolean {
-		errors.name = formData.name.trim() === '' ? 'Name is required' : '';
-		errors.type = formData.type === '' ? 'Type is required' : '';
+		errors.name = formData.name.trim() === '' ? m.admin_item_name_required() : '';
+		errors.type = formData.type === '' ? m.admin_item_type_required() : '';
 
 		return !errors.name && !errors.type;
 	}
@@ -62,9 +63,8 @@
 
 <form onsubmit={handleSubmit} class="space-y-6">
 	<div class="grid grid-cols-1 gap-6 md:grid-cols-[200px_1fr]">
-		<!-- Left Column: Image Preview -->
 		<div class="space-y-3">
-			<h3 class="text-sm font-semibold text-foreground">Preview</h3>
+			<h3 class="text-sm font-semibold text-foreground">{m.admin_item_preview()}</h3>
 
 			<ItemImage src={formData.image_url} alt={formData.name || 'Item preview'} size="xl" />
 
@@ -75,29 +75,28 @@
 						type={formData.type || 'type'}
 						description={formData.description}
 					/>
-					<p class="mt-2 text-xs text-muted-foreground">Tooltip preview</p>
+					<p class="mt-2 text-xs text-muted-foreground">{m.admin_item_tooltip_preview()}</p>
 				</div>
 			{/if}
 		</div>
 
-		<!-- Right Column: Form Fields -->
 		<div class="space-y-4">
-			<h3 class="text-lg font-semibold text-foreground">Item Details</h3>
+			<h3 class="text-lg font-semibold text-foreground">{m.admin_item_details()}</h3>
 
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<div class="space-y-2">
-					<Label for="item-name">Name <span class="text-destructive">*</span></Label>
+					<Label for="item-name">{m.admin_item_name()} <span class="text-destructive">*</span></Label>
 					<Input
 						id="item-name"
 						bind:value={formData.name}
-						placeholder="Diamond Sword"
+						placeholder={m.admin_item_name_placeholder()}
 					/>
 					{#if errors.name}
 						<p class="text-sm text-destructive">{errors.name}</p>
 					{/if}
 				</div>
 				<div class="space-y-2">
-					<Label>Type <span class="text-destructive">*</span></Label>
+					<Label>{m.admin_item_type()} <span class="text-destructive">*</span></Label>
 					<Select.Root
 						type="single"
 						value={formData.type || undefined}
@@ -105,12 +104,12 @@
 					>
 						<Select.Trigger class="w-full">
 							<span class={formData.type ? '' : 'text-muted-foreground'}>
-								{formData.type === 'item' ? 'Item' : formData.type === 'currency' ? 'Currency' : 'Select type...'}
+								{formData.type === 'item' ? m.admin_item_type_item() : formData.type === 'currency' ? m.admin_item_type_currency() : m.admin_item_type_select()}
 							</span>
 						</Select.Trigger>
 						<Select.Content>
-							<Select.Item value="item" label="Item" />
-							<Select.Item value="currency" label="Currency" />
+							<Select.Item value="item" label={m.admin_item_type_item()} />
+							<Select.Item value="currency" label={m.admin_item_type_currency()} />
 						</Select.Content>
 					</Select.Root>
 					{#if errors.type}
@@ -121,7 +120,7 @@
 
 			{#if formData.type === 'item' && categories.length > 0}
 				<div class="space-y-2">
-					<Label>Category</Label>
+					<Label>{m.admin_item_category()}</Label>
 					<Select.Root
 						type="single"
 						value={formData.category_id || undefined}
@@ -129,7 +128,7 @@
 					>
 						<Select.Trigger class="w-full">
 							<span class={formData.category_id ? '' : 'text-muted-foreground'}>
-								{categories.find(c => c.id === formData.category_id)?.name || 'No category'}
+								{categories.find(c => c.id === formData.category_id)?.name || m.admin_item_category_none()}
 							</span>
 						</Select.Trigger>
 						<Select.Content>
@@ -142,40 +141,39 @@
 			{/if}
 
 			<div class="space-y-2">
-				<Label for="item-desc">Description</Label>
+				<Label for="item-desc">{m.admin_item_description()}</Label>
 				<Textarea
 					id="item-desc"
 					bind:value={formData.description}
-					placeholder="A powerful weapon forged from the finest diamonds..."
+					placeholder={m.admin_item_description_placeholder()}
 					rows={4}
 				/>
 			</div>
 
 			<div class="space-y-2">
-				<Label for="item-image">Image URL</Label>
+				<Label for="item-image">{m.admin_item_image_url()}</Label>
 				<Input
 					id="item-image"
 					bind:value={formData.image_url}
-					placeholder="https://example.com/images/diamond_sword.png"
+					placeholder={m.admin_item_image_placeholder()}
 				/>
 			</div>
 
 			<div class="space-y-2">
-				<Label for="item-wiki">Wiki Link</Label>
+				<Label for="item-wiki">{m.admin_item_wiki_link()}</Label>
 				<Input
 					id="item-wiki"
 					bind:value={formData.wiki_link}
-					placeholder="https://wiki.example.com/diamond_sword"
+					placeholder={m.admin_item_wiki_placeholder()}
 				/>
 			</div>
 		</div>
 	</div>
 
-	<!-- Actions -->
 	<div class="flex justify-end gap-3 border-t border-border pt-4">
-		<Button type="button" variant="outline" onclick={handleCancel}>Cancel</Button>
+		<Button type="button" variant="outline" onclick={handleCancel}>{m.button_cancel()}</Button>
 		<Button type="submit">
-			{mode === 'create' ? 'Create Item' : 'Save Changes'}
+			{mode === 'create' ? m.admin_item_create_button() : m.admin_item_save_button()}
 		</Button>
 	</div>
 </form>
