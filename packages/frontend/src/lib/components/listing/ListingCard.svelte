@@ -17,6 +17,7 @@
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import Link2 from '@lucide/svelte/icons/link-2';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { toast } from 'svelte-sonner';
 	import { track } from '$lib/utils/analytics';
@@ -218,6 +219,16 @@
 		await deleteListing(selectedBuyerId || null);
 	}
 
+	async function copyListingLink() {
+		const url = `${window.location.origin}/listings/view/${order.id}`;
+		try {
+			await navigator.clipboard.writeText(url);
+			toast.success('Link copied');
+		} catch {
+			toast.error('Failed to copy link');
+		}
+	}
+
 	async function renewListing() {
 		statusUpdating = true;
 		try {
@@ -328,14 +339,19 @@
 				{:else}
 					<Badge class="bg-amber-500 text-white hover:bg-amber-500">Sell</Badge>
 				{/if}
-				{#if canEdit}
-					<DropdownMenu.Root>
-						<DropdownMenu.Trigger>
-							<Button size="sm" variant="ghost" class="h-8 w-8 p-0 text-muted-foreground">
-								<Ellipsis class="h-4 w-4" />
-							</Button>
-						</DropdownMenu.Trigger>
-						<DropdownMenu.Content align="end">
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						<Button size="sm" variant="ghost" class="h-8 w-8 p-0 text-muted-foreground">
+							<Ellipsis class="h-4 w-4" />
+						</Button>
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end">
+						<DropdownMenu.Item onclick={copyListingLink}>
+							<Link2 class="mr-2 h-4 w-4" />
+							Copy link
+						</DropdownMenu.Item>
+						{#if canEdit}
+							<DropdownMenu.Separator />
 							{#if currentStatus === 'active'}
 								<DropdownMenu.Item onclick={() => updateStatus('paused')} disabled={statusUpdating}>
 									<CirclePause class="mr-2 h-4 w-4 text-yellow-500" />
@@ -370,9 +386,9 @@
 								<Trash2 class="mr-2 h-4 w-4" />
 								Delete
 							</DropdownMenu.Item>
-						</DropdownMenu.Content>
-					</DropdownMenu.Root>
-				{/if}
+						{/if}
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
 			</div>
 		</Card.Action>
 	</Card.Header>
