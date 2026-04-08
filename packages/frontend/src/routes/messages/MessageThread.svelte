@@ -1,16 +1,70 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
+	import { PUBLIC_APP_URL } from '$env/static/public';
 	import * as Avatar from '$lib/components/ui/avatar';
-	import * as ScrollArea from '$lib/components/ui/scroll-area';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Loader2 from '@lucide/svelte/icons/loader-2';
+	import ItemImage from '$lib/components/item/ItemImage.svelte';
+	import ListingEmbed from '$lib/components/listing/ListingEmbed.svelte';
+
+	// Build a regex that only matches our own app's listing URLs
+	const APP_ORIGIN = (PUBLIC_APP_URL ?? '').replace(/\/$/, '');
+	const LISTING_URL_RE = APP_ORIGIN
+		? new RegExp(
+				`${APP_ORIGIN.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}/listings/view/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})`,
+				'gi',
+			)
+		: /a^/;
+
+	type MessageChunk =
+		| { type: 'text'; value: string }
+		| { type: 'embed'; listingId: string };
+
+	function parseMessage(content: string): MessageChunk[] {
+		if (!content) return [{ type: 'text', value: '' }];
+		const chunks: MessageChunk[] = [];
+		let lastIndex = 0;
+		// Reset the regex state since it's stateful with /g
+		LISTING_URL_RE.lastIndex = 0;
+		let match: RegExpExecArray | null;
+		while ((match = LISTING_URL_RE.exec(content)) !== null) {
+			if (match.index > lastIndex) {
+				chunks.push({ type: 'text', value: content.slice(lastIndex, match.index) });
+			}
+			chunks.push({ type: 'embed', listingId: match[1] });
+			lastIndex = match.index + match[0].length;
+		}
+		if (lastIndex < content.length) {
+			chunks.push({ type: 'text', value: content.slice(lastIndex) });
+		}
+		return chunks;
+	}
+
+	// True when the message is *only* a listing URL (with optional whitespace)
+	function isPureEmbed(chunks: MessageChunk[]): boolean {
+		const meaningful = chunks.filter(
+			(c) => c.type === 'embed' || (c.type === 'text' && c.value.trim().length > 0),
+		);
+		return meaningful.length === 1 && meaningful[0].type === 'embed';
+	}
 
 	interface Participant {
 		user_id: string;
 		username: string;
 		display_name: string;
 		avatar: string | null;
+	}
+
+	interface ListingContext {
+		id: string;
+		amount: number;
+		order_type: 'buy' | 'sell';
+		status: 'active' | 'sold' | 'paused' | 'expired';
+		requested_name: string;
+		requested_image: string | null;
+		requested_kind: 'item' | 'currency';
 	}
 
 	interface Message {
@@ -33,6 +87,7 @@
 		messages: Message[];
 		currentUserId: string;
 		otherUser: Participant | null;
+		listingContext?: ListingContext | null;
 		loading: boolean;
 		hasMore: boolean;
 		onLoadMore: () => void;
@@ -44,6 +99,7 @@
 		messages,
 		currentUserId,
 		otherUser,
+		listingContext = null,
 		loading,
 		hasMore,
 		onLoadMore,
@@ -154,6 +210,36 @@
 		</a>
 	</div>
 
+	<!-- Pinned listing context (when conversation is linked to a listing) -->
+	{#if listingContext}
+		<div class="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-3">
+			<ItemImage
+				src={listingContext.requested_image ?? ''}
+				alt={listingContext.requested_name}
+				size="sm"
+			/>
+			<div class="min-w-0 flex-1">
+				<div class="flex items-center gap-2">
+					<p class="truncate text-sm font-semibold">
+						{listingContext.amount}× {listingContext.requested_name}
+					</p>
+					{#if listingContext.order_type === 'buy'}
+						<Badge class="bg-green-500 text-white hover:bg-green-500">Buy</Badge>
+					{:else}
+						<Badge class="bg-amber-500 text-white hover:bg-amber-500">Sell</Badge>
+					{/if}
+					{#if listingContext.status !== 'active'}
+						<Badge variant="secondary" class="capitalize">{listingContext.status}</Badge>
+					{/if}
+				</div>
+				<p class="text-xs text-muted-foreground">Conversation about this listing</p>
+			</div>
+			<Button variant="outline" size="sm" href="/listings/view/{listingContext.id}">
+				View
+			</Button>
+		</div>
+	{/if}
+
 	<!-- Messages -->
 	<div
 		class="flex-1 overflow-y-auto px-4 py-2"
@@ -202,17 +288,41 @@
 
 					<!-- Bubble -->
 					<div>
-						<div
-							class="rounded-2xl px-3 py-2 text-sm {isOwn
-								? 'rounded-br-md bg-primary text-primary-foreground'
-								: 'rounded-bl-md bg-muted text-foreground'}"
-						>
-							{#if msg.is_deleted}
+						{#if msg.is_deleted}
+							<div
+								class="rounded-2xl px-3 py-2 text-sm {isOwn
+									? 'rounded-br-md bg-primary text-primary-foreground'
+									: 'rounded-bl-md bg-muted text-foreground'}"
+							>
 								<span class="italic text-muted-foreground/70">Message deleted</span>
+							</div>
+						{:else}
+							{@const chunks = parseMessage(msg.content ?? '')}
+							{#if isPureEmbed(chunks)}
+								<!-- Drop the bubble wrapper for pure-embed messages -->
+								{#each chunks as chunk}
+									{#if chunk.type === 'embed'}
+										<ListingEmbed listingId={chunk.listingId} />
+									{/if}
+								{/each}
 							{:else}
-								<p class="whitespace-pre-wrap break-words">{msg.content}</p>
+								<div
+									class="rounded-2xl px-3 py-2 text-sm {isOwn
+										? 'rounded-br-md bg-primary text-primary-foreground'
+										: 'rounded-bl-md bg-muted text-foreground'}"
+								>
+									{#each chunks as chunk}
+										{#if chunk.type === 'text'}
+											<span class="whitespace-pre-wrap break-words">{chunk.value}</span>
+										{:else}
+											<div class="my-1">
+												<ListingEmbed listingId={chunk.listingId} />
+											</div>
+										{/if}
+									{/each}
+								</div>
 							{/if}
-						</div>
+						{/if}
 						{#if showAvatar}
 							<p
 								class="mt-0.5 text-[10px] text-muted-foreground {isOwn ? 'text-right' : 'text-left'}"

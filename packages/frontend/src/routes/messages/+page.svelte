@@ -21,11 +21,22 @@
 		created_at: string;
 	}
 
+	interface ListingContext {
+		id: string;
+		amount: number;
+		order_type: 'buy' | 'sell';
+		status: 'active' | 'sold' | 'paused' | 'expired';
+		requested_name: string;
+		requested_image: string | null;
+		requested_kind: 'item' | 'currency';
+	}
+
 	interface Conversation {
 		id: string;
 		created_at: string;
 		updated_at: string;
 		listing_id: string | null;
+		listing_context: ListingContext | null;
 		other_participant: Participant | null;
 		last_message: LastMessage | null;
 		unread_count: number;
@@ -327,6 +338,7 @@
 				{messages}
 				{currentUserId}
 				otherUser={activeConversation.other_participant}
+				listingContext={activeConversation.listing_context}
 				{loading}
 				{hasMore}
 				onLoadMore={loadOlderMessages}
