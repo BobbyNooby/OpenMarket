@@ -84,19 +84,18 @@
 			}
 
 			// Auto-send the listing URL as a message — the chat parser renders it as an embed,
-			// like attaching an image in Discord. Only do this for new conversations to avoid spam.
-			if (!json.existing) {
-				const listingUrl = `${window.location.origin}/listings/view/${order.id}`;
-				try {
-					await fetch(`${PUBLIC_API_URL}/api/conversations/${json.data.id}/messages`, {
-						method: 'POST',
-						credentials: 'include',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ content: listingUrl }),
-					});
-				} catch {
-					// Fire-and-forget: not worth blocking the navigation on
-				}
+			// like attaching an image in Discord. Always send so each Contact click surfaces the
+			// specific listing in the chat, even when reusing an existing conversation.
+			const listingUrl = `${window.location.origin}/listings/view/${order.id}`;
+			try {
+				await fetch(`${PUBLIC_API_URL}/api/conversations/${json.data.id}/messages`, {
+					method: 'POST',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ content: listingUrl }),
+				});
+			} catch {
+				// Fire-and-forget: not worth blocking the navigation on
 			}
 
 			goto(`/messages?conv=${json.data.id}`);
