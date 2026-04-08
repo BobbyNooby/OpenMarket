@@ -118,6 +118,43 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 			})
 		}
 	)
+	// Update only the notification preferences for the authenticated user
+	.put(
+		'/notification-preferences',
+		async ({ body, session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+
+			// Validate JSON shape upfront
+			try { JSON.parse(body.notification_preferences); } catch {
+				set.status = 400;
+				return { success: false, error: 'notification_preferences must be valid JSON' };
+			}
+
+			try {
+				const result = await db
+					.update(userProfilesTable)
+					.set({ notification_preferences: body.notification_preferences })
+					.where(eq(userProfilesTable.userId, session.user.id))
+					.returning({ userId: userProfilesTable.userId });
+
+				if (result.length === 0) {
+					set.status = 404;
+					return { success: false, error: 'Profile not found' };
+				}
+
+				return { success: true };
+			} catch (err: any) {
+				console.error('Notification preferences update error:', err);
+				set.status = 500;
+				return { success: false, error: err?.message ?? 'Unknown error' };
+			}
+		},
+		{
+			body: t.Object({
+				notification_preferences: t.String(),
+			}),
+		},
+	)
 	// Check if a username is available (used by settings + future registration flow)
 	.get(
 		'/username-available',
