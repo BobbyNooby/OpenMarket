@@ -390,6 +390,17 @@ export const uploadsTable = pgTable("uploads", {
 export type UploadInsert = typeof uploadsTable.$inferInsert;
 export type UploadSelect = typeof uploadsTable.$inferSelect;
 
+// --- site assets (branded image slots like hero, login illustration, etc.) ---
+export const siteAssetsTable = pgTable("site_assets", {
+  slot: text("slot").primaryKey(),
+  upload_id: uuid("upload_id").references(() => uploadsTable.id, { onDelete: "set null", onUpdate: "cascade" }),
+  url: text("url").notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type SiteAssetInsert = typeof siteAssetsTable.$inferInsert;
+export type SiteAssetSelect = typeof siteAssetsTable.$inferSelect;
+
 // --- site config (white-label branding) ---
 // Non-theme key/value config: site_name, tagline, logo URL, footer text, links, etc.
 export const siteConfigTable = pgTable("site_config", {

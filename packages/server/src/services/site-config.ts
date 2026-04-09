@@ -3,7 +3,7 @@
 // Reads are O(1) — perfect for the root layout request that hits this on every page load.
 
 import { db } from "../db/db";
-import { siteConfigTable, siteThemeTable } from "../db/schemas";
+import { siteConfigTable, siteThemeTable, siteAssetsTable } from "../db/schemas";
 import { eq, and } from "drizzle-orm";
 
 // --- defaults ---
@@ -85,18 +85,20 @@ export const THEME_DEFAULTS: Record<ThemeVariant, ThemeVariables> = {
 
 let configOverrides: Record<string, string> = {};
 let themeOverrides: Record<ThemeVariant, ThemeVariables> = { light: {}, dark: {} };
+let assetOverrides: Record<string, string> = {};
 let loaded = false;
 
 // --- public API ---
 
 export async function loadSiteConfig() {
-	const [configRows, themeRows] = await Promise.all([
+	const [configRows, themeRows, assetRows] = await Promise.all([
 		db.select({ key: siteConfigTable.key, value: siteConfigTable.value }).from(siteConfigTable),
 		db.select({
 			variant: siteThemeTable.variant,
 			variable: siteThemeTable.variable,
 			value: siteThemeTable.value,
 		}).from(siteThemeTable),
+		db.select({ slot: siteAssetsTable.slot, url: siteAssetsTable.url }).from(siteAssetsTable),
 	]);
 
 	configOverrides = {};
@@ -107,8 +109,11 @@ export async function loadSiteConfig() {
 		themeOverrides[row.variant as ThemeVariant][row.variable] = row.value;
 	}
 
+	assetOverrides = {};
+	for (const row of assetRows) assetOverrides[row.slot] = row.url;
+
 	loaded = true;
-	console.log(`Site config loaded: ${configRows.length} config row(s), ${themeRows.length} theme row(s)`);
+	console.log(`Site config loaded: ${configRows.length} config row(s), ${themeRows.length} theme row(s), ${assetRows.length} asset(s)`);
 }
 
 export function getSiteConfig(): Record<string, string> {
@@ -120,6 +125,10 @@ export function getSiteTheme(): Record<ThemeVariant, ThemeVariables> {
 		light: { ...THEME_DEFAULTS.light, ...themeOverrides.light },
 		dark: { ...THEME_DEFAULTS.dark, ...themeOverrides.dark },
 	};
+}
+
+export function getSiteAssets(): Record<string, string> {
+	return { ...assetOverrides };
 }
 
 export function isLoaded() {

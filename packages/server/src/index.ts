@@ -20,7 +20,7 @@ import { db } from "./db/db";
 import { userProfilesTable, usersActivityTable } from "./db/schemas";
 import { userRolesTable } from "./db/rbac-schema";
 import { startExpiryJob } from "./jobs/expiry";
-import { loadSiteConfig, getSiteConfig, getSiteTheme } from "./services/site-config";
+import { loadSiteConfig, getSiteConfig, getSiteTheme, getSiteAssets } from "./services/site-config";
 
 const methodColors: Record<string, string> = {
   GET: "\x1b[32m",     // green
@@ -68,7 +68,7 @@ const app = new Elysia()
   // Public site config + theme — served on every page load by the SvelteKit root layout
   .get("/site-config/public", () => ({
     success: true,
-    data: { config: getSiteConfig(), theme: getSiteTheme() },
+    data: { config: getSiteConfig(), theme: getSiteTheme(), assets: getSiteAssets() },
   }))
   .use(authMiddleware)
   .get("/api/auth/get-session", async ({ session }) => {
