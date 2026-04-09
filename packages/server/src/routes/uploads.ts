@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../db/db';
 import { uploadsTable } from '../db/schemas';
-import { and, count, eq, gt } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/rbac';
 import sharp from 'sharp';
 import { randomUUID } from 'node:crypto';
@@ -11,9 +11,8 @@ import { mkdir, writeFile, readFile, stat } from 'node:fs/promises';
 const UPLOAD_DIR = resolve(process.cwd(), 'uploads');
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const MAX_DIMENSION = 4000;
+const MAX_OUTPUT = 512;
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const RATE_LIMIT_MAX = 20;
 
 // Make sure the upload folder exists on startup so the first write doesn't fail
 await mkdir(UPLOAD_DIR, { recursive: true }).catch(() => {});
@@ -42,29 +41,13 @@ export const uploadsRoutes = new Elysia({ prefix: '/uploads' })
 				return { success: false, error: 'Only JPEG, PNG, and WebP images are allowed' };
 			}
 
-			// Rate limit: count this user's uploads in the last hour
-			const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
-			const [{ n }] = await db
-				.select({ n: count() })
-				.from(uploadsTable)
-				.where(
-					and(
-						eq(uploadsTable.user_id, session.user.id),
-						gt(uploadsTable.created_at, windowStart),
-					),
-				);
-			if (n >= RATE_LIMIT_MAX) {
-				set.status = 429;
-				return { success: false, error: `Upload limit reached (${RATE_LIMIT_MAX}/hour)` };
-			}
-
 			let buffer: Buffer;
 			let width: number;
 			let height: number;
 			try {
 				// Decode to validate it's actually an image, check dimensions, then re-encode as WebP
 				const input = Buffer.from(await file.arrayBuffer());
-				const pipeline = sharp(input, { failOn: 'error' });
+				let pipeline = sharp(input, { failOn: 'error' });
 				const metadata = await pipeline.metadata();
 				width = metadata.width ?? 0;
 				height = metadata.height ?? 0;
@@ -76,7 +59,15 @@ export const uploadsRoutes = new Elysia({ prefix: '/uploads' })
 					set.status = 400;
 					return { success: false, error: `Image exceeds ${MAX_DIMENSION}x${MAX_DIMENSION} limit` };
 				}
-				buffer = await pipeline.webp({ quality: 85 }).toBuffer();
+				// Resize to fit within 512px, preserving aspect ratio (never upscale)
+				if (width > MAX_OUTPUT || height > MAX_OUTPUT) {
+					pipeline = pipeline.resize(MAX_OUTPUT, MAX_OUTPUT, { fit: 'inside', withoutEnlargement: true });
+				}
+				buffer = await pipeline.webp({ quality: 80 }).toBuffer();
+				// Re-read actual output dimensions after resize
+				const outputMeta = await sharp(buffer).metadata();
+				width = outputMeta.width ?? width;
+				height = outputMeta.height ?? height;
 			} catch {
 				set.status = 400;
 				return { success: false, error: 'Invalid or corrupted image file' };
