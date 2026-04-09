@@ -368,6 +368,27 @@ export type MessageSelect = typeof messagesTable.$inferSelect;
 export type NotificationInsert = typeof notificationsTable.$inferInsert;
 export type NotificationSelect = typeof notificationsTable.$inferSelect;
 
+// --- uploads (locally-hosted user files) ---
+// Every uploaded image has a row here. Other features reference uploads by id
+// so deletion can cascade and ownership is tracked.
+export const uploadsTable = pgTable("uploads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  filename: text("filename").notNull(),
+  mime_type: text("mime_type").notNull(),
+  size_bytes: integer("size_bytes").notNull(),
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("idx_uploads_user_created").on(t.user_id, t.created_at),
+]);
+
+export type UploadInsert = typeof uploadsTable.$inferInsert;
+export type UploadSelect = typeof uploadsTable.$inferSelect;
+
 // --- site config (white-label branding) ---
 // Non-theme key/value config: site_name, tagline, logo URL, footer text, links, etc.
 export const siteConfigTable = pgTable("site_config", {
