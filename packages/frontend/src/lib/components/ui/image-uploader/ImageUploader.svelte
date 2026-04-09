@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { PUBLIC_API_URL } from '$env/static/public';
 	import { uploadImage, resolveUploadUrl } from '$lib/utils/upload';
 	import Upload from '@lucide/svelte/icons/upload';
+	import ImageIcon from '@lucide/svelte/icons/image';
 	import X from '@lucide/svelte/icons/x';
 	import Loader2 from '@lucide/svelte/icons/loader-2';
 
@@ -24,7 +27,11 @@
 	let error = $state('');
 	let inputEl: HTMLInputElement | undefined = $state();
 
-	// Resolve relative /uploads/... paths to full URLs for display
+	// Library picker state
+	let libraryOpen = $state(false);
+	let libraryImages = $state<{ id: string; filename: string; url: string; width: number; height: number }[]>([]);
+	let libraryLoading = $state(false);
+
 	const previewSrc = $derived(value ? resolveUploadUrl(value) : '');
 
 	async function handleFile(file: File) {
@@ -55,6 +62,23 @@
 	function clear() {
 		value = '';
 		error = '';
+	}
+
+	async function openLibrary() {
+		libraryOpen = true;
+		if (libraryImages.length > 0) return;
+		libraryLoading = true;
+		try {
+			const res = await fetch(`${PUBLIC_API_URL}/admin/media?limit=100`, { credentials: 'include' });
+			const result = await res.json();
+			if (result.success) libraryImages = result.data;
+		} catch { /* ignore */ }
+		libraryLoading = false;
+	}
+
+	function pickFromLibrary(img: typeof libraryImages[0]) {
+		value = resolveUploadUrl(img.url);
+		libraryOpen = false;
 	}
 </script>
 
@@ -104,11 +128,17 @@
 		{/if}
 	</div>
 
-	{#if previewSrc && !uploading}
-		<Button type="button" variant="outline" size="sm" onclick={() => inputEl?.click()}>
-			Change image
+	<div class="flex gap-2">
+		{#if previewSrc && !uploading}
+			<Button type="button" variant="outline" size="sm" onclick={() => inputEl?.click()}>
+				Change image
+			</Button>
+		{/if}
+		<Button type="button" variant="outline" size="sm" onclick={openLibrary}>
+			<ImageIcon class="mr-1.5 h-3.5 w-3.5" />
+			Library
 		</Button>
-	{/if}
+	</div>
 
 	{#if error}
 		<p class="text-xs text-destructive">{error}</p>
@@ -122,3 +152,48 @@
 		onchange={onFileChange}
 	/>
 </div>
+
+<!-- Library picker dialog -->
+<Dialog.Root bind:open={libraryOpen}>
+	<Dialog.Content class="max-w-2xl max-h-[80vh] overflow-y-auto">
+		<Dialog.Header>
+			<Dialog.Title>Choose from library</Dialog.Title>
+			<Dialog.Description>Select an existing image or upload a new one</Dialog.Description>
+		</Dialog.Header>
+
+		{#if libraryLoading}
+			<div class="flex justify-center py-12">
+				<Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
+			</div>
+		{:else if libraryImages.length === 0}
+			<p class="py-8 text-center text-sm text-muted-foreground">No images in the library yet. Upload one first.</p>
+		{:else}
+			<div class="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-6">
+				{#each libraryImages as img}
+					<button
+						type="button"
+						class="aspect-square overflow-hidden rounded-lg border-2 border-border transition-colors hover:border-primary"
+						onclick={() => pickFromLibrary(img)}
+					>
+						<img
+							src={resolveUploadUrl(img.url)}
+							alt={img.filename}
+							class="h-full w-full object-cover"
+							loading="lazy"
+						/>
+					</button>
+				{/each}
+			</div>
+		{/if}
+
+		<div class="mt-4 flex justify-between border-t border-border pt-4">
+			<Button type="button" variant="outline" size="sm" onclick={() => { libraryOpen = false; inputEl?.click(); }}>
+				<Upload class="mr-1.5 h-3.5 w-3.5" />
+				Upload new instead
+			</Button>
+			<Button type="button" variant="ghost" size="sm" onclick={() => { libraryOpen = false; }}>
+				Cancel
+			</Button>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>
