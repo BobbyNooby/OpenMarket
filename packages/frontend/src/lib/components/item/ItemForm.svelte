@@ -6,6 +6,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import ItemImage from './ItemImage.svelte';
 	import ItemTooltip from './ItemTooltip.svelte';
+	import { ImageUploader } from '$lib/components/ui/image-uploader';
 	import type { ItemFormData } from '$lib/api/types';
 	import { m } from '$lib/paraglide/messages.js';
 
@@ -32,7 +33,7 @@
 		type: data?.type || '',
 		description: data?.description || '',
 		wiki_link: data?.wiki_link || '',
-		image_url: data?.image_url || '',
+		image_url: data?.image_url ?? '',
 		category_id: data?.category_id || null
 	});
 
@@ -150,14 +151,7 @@
 				/>
 			</div>
 
-			<div class="space-y-2">
-				<Label for="item-image">{m.admin_item_image_url()}</Label>
-				<Input
-					id="item-image"
-					bind:value={formData.image_url}
-					placeholder={m.admin_item_image_placeholder()}
-				/>
-			</div>
+			<ImageUploader bind:value={formData.image_url} label={m.admin_item_image_url()} aspect="square" />
 
 			<div class="space-y-2">
 				<Label for="item-wiki">{m.admin_item_wiki_link()}</Label>
