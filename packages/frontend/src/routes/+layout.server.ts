@@ -90,6 +90,7 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, url }) => {
   // Fetch site config + theme — drives white-label branding everywhere
   let siteConfig: Record<string, string> = FALLBACK_SITE_CONFIG;
   let siteTheme: SiteTheme = FALLBACK_THEME;
+  let siteAssets: Record<string, string> = {};
   try {
     const res = await fetch(`${PUBLIC_API_URL}/site-config/public`);
     if (res.ok) {
@@ -97,11 +98,12 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, url }) => {
       if (json.success && json.data) {
         siteConfig = { ...FALLBACK_SITE_CONFIG, ...(json.data.config ?? {}) };
         siteTheme = json.data.theme ?? FALLBACK_THEME;
+        siteAssets = json.data.assets ?? {};
       }
     }
   } catch {
     // fallback already set
   }
 
-  return { session, unreadMessageCount, siteConfig, siteTheme };
+  return { session, unreadMessageCount, siteConfig, siteTheme, siteAssets };
 };

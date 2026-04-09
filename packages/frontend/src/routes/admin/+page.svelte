@@ -9,6 +9,7 @@
 	import AnalyticsTab from './components/AnalyticsTab.svelte';
 	import SiteConfigTab from './components/SiteConfigTab.svelte';
 	import ThemeTab from './components/ThemeTab.svelte';
+	import MediaTab from './components/MediaTab.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 
 	let { data } = $props();
@@ -34,6 +35,7 @@
 				<Tabs.Trigger value="analytics">{m.admin_tab_analytics()}</Tabs.Trigger>
 				<Tabs.Trigger value="site-config">{m.admin_tab_site_config()}</Tabs.Trigger>
 				<Tabs.Trigger value="theme">{m.admin_tab_theme()}</Tabs.Trigger>
+				<Tabs.Trigger value="media">{m.admin_tab_media()}</Tabs.Trigger>
 			</Tabs.List>
 
 			<Tabs.Content value="items" class="mt-6">
@@ -70,6 +72,10 @@
 
 			<Tabs.Content value="theme" class="mt-6">
 				<ThemeTab />
+			</Tabs.Content>
+
+			<Tabs.Content value="media" class="mt-6">
+				<MediaTab />
 			</Tabs.Content>
 		</Tabs.Root>
 	</div>
