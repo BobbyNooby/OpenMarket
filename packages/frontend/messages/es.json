@@ -197,6 +197,8 @@
 	"settings_language_description": "Tu selección se recuerda en todos los dispositivos cuando inicias sesión.",
 	"settings_language_english": "Inglés",
 	"settings_language_spanish": "Español",
+	"settings_language_french": "Francés",
+	"settings_language_japanese": "Japonés",
 	"settings_language_updated": "Idioma actualizado",
 
 	"login_title": "Inicia sesión para continuar",
@@ -238,6 +240,8 @@
 	"language_switcher_label": "Idioma",
 	"language_english_native": "English",
 	"language_spanish_native": "Español",
+	"language_french_native": "Français",
+	"language_japanese_native": "日本語",
 
 	"admin_panel_title": "Panel de administración",
 	"admin_tab_items": "Artículos y monedas",

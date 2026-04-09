@@ -197,6 +197,8 @@
 	"settings_language_description": "Your selection is remembered across devices when you're signed in.",
 	"settings_language_english": "English",
 	"settings_language_spanish": "Spanish",
+	"settings_language_french": "French",
+	"settings_language_japanese": "Japanese",
 	"settings_language_updated": "Language updated",
 
 	"login_title": "Sign in to continue",
@@ -238,6 +240,8 @@
 	"language_switcher_label": "Language",
 	"language_english_native": "English",
 	"language_spanish_native": "Español",
+	"language_french_native": "Français",
+	"language_japanese_native": "日本語",
 
 	"admin_panel_title": "Admin Panel",
 	"admin_tab_items": "Items & Currencies",

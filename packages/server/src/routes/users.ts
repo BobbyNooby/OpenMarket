@@ -167,7 +167,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
 
 			// Whitelist supported locales — keep in sync with project.inlang/settings.json
-			const SUPPORTED_LOCALES = new Set(['en', 'es']);
+			const SUPPORTED_LOCALES = new Set(['en', 'es', 'fr', 'ja']);
 			if (!SUPPORTED_LOCALES.has(body.language)) {
 				set.status = 400;
 				return { success: false, error: 'Unsupported language' };

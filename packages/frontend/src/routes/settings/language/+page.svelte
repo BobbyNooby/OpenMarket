@@ -9,7 +9,9 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 
-	let selected = $state<'en' | 'es'>(getLocale() === 'es' ? 'es' : 'en');
+	type Locale = 'en' | 'es' | 'fr' | 'ja';
+	const LOCALES: Locale[] = ['en', 'es', 'fr', 'ja'];
+	let selected = $state<Locale>((LOCALES.includes(getLocale() as Locale) ? getLocale() : 'en') as Locale);
 	let saving = $state(false);
 
 	async function handleSave() {
@@ -57,6 +59,18 @@
 					<RadioGroup.Item value="es" id="lang-es" />
 					<Label for="lang-es" class="flex-1 cursor-pointer">
 						{m.settings_language_spanish()} <span class="text-muted-foreground">— {m.language_spanish_native()}</span>
+					</Label>
+				</div>
+				<div class="flex items-center gap-3 rounded-md border border-border p-3">
+					<RadioGroup.Item value="fr" id="lang-fr" />
+					<Label for="lang-fr" class="flex-1 cursor-pointer">
+						{m.settings_language_french()} <span class="text-muted-foreground">— {m.language_french_native()}</span>
+					</Label>
+				</div>
+				<div class="flex items-center gap-3 rounded-md border border-border p-3">
+					<RadioGroup.Item value="ja" id="lang-ja" />
+					<Label for="lang-ja" class="flex-1 cursor-pointer">
+						{m.settings_language_japanese()} <span class="text-muted-foreground">— {m.language_japanese_native()}</span>
 					</Label>
 				</div>
 			</RadioGroup.Root>

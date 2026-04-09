@@ -44,7 +44,7 @@
 		window.location.href = '/';
 	}
 
-	async function changeLanguage(locale: 'en' | 'es') {
+	async function changeLanguage(locale: 'en' | 'es' | 'fr' | 'ja') {
 		// Sync to backend if logged in (cross-device persistence)
 		if (session?.user) {
 			try {
@@ -169,6 +169,12 @@
 								</DropdownMenu.Item>
 								<DropdownMenu.Item onclick={() => changeLanguage('es')}>
 									{m.language_spanish_native()}
+								</DropdownMenu.Item>
+								<DropdownMenu.Item onclick={() => changeLanguage('fr')}>
+									{m.language_french_native()}
+								</DropdownMenu.Item>
+								<DropdownMenu.Item onclick={() => changeLanguage('ja')}>
+									{m.language_japanese_native()}
 								</DropdownMenu.Item>
 							</DropdownMenu.SubContent>
 						</DropdownMenu.Sub>
