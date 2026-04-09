@@ -9,15 +9,16 @@
 	import { apiFetch, apiJson } from './admin-api';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import { ImageUploader } from '$lib/components/ui/image-uploader';
 	import { m } from '$lib/paraglide/messages.js';
 
 	type SectionKey = 'identity' | 'branding' | 'footer';
 
-	const FIELDS: { key: string; labelKey: string; placeholderKey: string; section: SectionKey; multiline?: boolean }[] = [
+	const FIELDS: { key: string; labelKey: string; placeholderKey: string; section: SectionKey; multiline?: boolean; isImage?: boolean }[] = [
 		{ key: 'site_name', labelKey: 'admin_site_config_site_name', placeholderKey: 'admin_site_config_site_name_placeholder', section: 'identity' },
 		{ key: 'site_tagline', labelKey: 'admin_site_config_tagline', placeholderKey: 'admin_site_config_tagline_placeholder', section: 'identity' },
-		{ key: 'site_logo_url', labelKey: 'admin_site_config_logo_url', placeholderKey: 'admin_site_config_logo_url_placeholder', section: 'branding' },
-		{ key: 'site_favicon_url', labelKey: 'admin_site_config_favicon_url', placeholderKey: 'admin_site_config_favicon_url_placeholder', section: 'branding' },
+		{ key: 'site_logo_url', labelKey: 'admin_site_config_logo_url', placeholderKey: 'admin_site_config_logo_url_placeholder', section: 'branding', isImage: true },
+		{ key: 'site_favicon_url', labelKey: 'admin_site_config_favicon_url', placeholderKey: 'admin_site_config_favicon_url_placeholder', section: 'branding', isImage: true },
 		{ key: 'footer_text', labelKey: 'admin_site_config_footer_text', placeholderKey: 'admin_site_config_footer_text_placeholder', section: 'footer', multiline: true },
 		{ key: 'support_url', labelKey: 'admin_site_config_support_url', placeholderKey: 'admin_site_config_support_url_placeholder', section: 'footer' },
 		{ key: 'discord_url', labelKey: 'admin_site_config_discord_url', placeholderKey: 'admin_site_config_discord_url_placeholder', section: 'footer' },
@@ -125,20 +126,24 @@
 				<Card.Content class="space-y-4">
 					{#each FIELDS.filter((f) => f.section === section) as field}
 						<div class="space-y-2">
-							<Label for={field.key}>{getLabel(field)}</Label>
-							{#if field.multiline}
-								<Textarea
-									id={field.key}
-									placeholder={getPlaceholder(field)}
-									bind:value={values[field.key]}
-									rows={3}
-								/>
+							{#if field.isImage}
+								<ImageUploader bind:value={values[field.key]} label={getLabel(field)} />
 							{:else}
-								<Input
-									id={field.key}
-									placeholder={getPlaceholder(field)}
-									bind:value={values[field.key]}
-								/>
+								<Label for={field.key}>{getLabel(field)}</Label>
+								{#if field.multiline}
+									<Textarea
+										id={field.key}
+										placeholder={getPlaceholder(field)}
+										bind:value={values[field.key]}
+										rows={3}
+									/>
+								{:else}
+									<Input
+										id={field.key}
+										placeholder={getPlaceholder(field)}
+										bind:value={values[field.key]}
+									/>
+								{/if}
 							{/if}
 						</div>
 					{/each}
