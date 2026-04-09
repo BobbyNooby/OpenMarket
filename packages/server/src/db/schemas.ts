@@ -35,6 +35,7 @@ export const userProfilesTable = pgTable("user_profiles", {
   accent_color: text("accent_color"), // hex color
   notification_preferences: text("notification_preferences").notNull().default('{}'), // JSON string of Record<NotificationType, boolean>
   language: text("language").notNull().default('en'), // BCP-47 locale, syncs language preference across devices
+  avatar_url: text("avatar_url"), // custom avatar upload, overrides the Discord CDN image when set
 });
 
 // --- activity ---

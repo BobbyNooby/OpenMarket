@@ -57,6 +57,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 							bio: body.bio,
 							social_links: body.social_links,
 							accent_color: body.accent_color,
+							avatar_url: body.avatar_url,
 							notification_preferences: body.notification_preferences ?? '{}',
 						})
 						.onConflictDoUpdate({
@@ -67,7 +68,10 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 								bio: body.bio,
 								social_links: body.social_links,
 								accent_color: body.accent_color,
-								// only overwrite prefs if the caller sent them
+								// only overwrite avatar/prefs if the caller sent them
+								...(body.avatar_url !== undefined
+									? { avatar_url: body.avatar_url }
+									: {}),
 								...(body.notification_preferences !== undefined
 									? { notification_preferences: body.notification_preferences }
 									: {}),
@@ -114,6 +118,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 				bio: t.Optional(t.String()),
 				social_links: t.Optional(t.String()),
 				accent_color: t.Optional(t.String()),
+				avatar_url: t.Optional(t.String()),
 				notification_preferences: t.Optional(t.String()),
 			})
 		}
@@ -371,6 +376,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 						bio: userProfilesTable.bio,
 						social_links: userProfilesTable.social_links,
 						accent_color: userProfilesTable.accent_color,
+						avatar_url: userProfilesTable.avatar_url,
 						notification_preferences: userProfilesTable.notification_preferences,
 						language: userProfilesTable.language,
 						is_active: usersActivityTable.is_active,
@@ -487,7 +493,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 						created_at: userRow.createdAt.toISOString(),
 						username: userRow.username,
 						display_name: userRow.name,
-						avatar_url: userRow.image ?? undefined,
+						avatar_url: userRow.avatar_url || userRow.image || undefined,
 						description: userRow.description ?? undefined,
 						bio: userRow.bio ?? undefined,
 						social_links: socialLinks,

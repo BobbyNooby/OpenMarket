@@ -15,6 +15,7 @@
 	import X from '@lucide/svelte/icons/x';
 	import Loader2 from '@lucide/svelte/icons/loader';
 	import { toast } from 'svelte-sonner';
+	import { ImageUploader } from '$lib/components/ui/image-uploader';
 
 	let { data } = $props();
 
@@ -29,6 +30,7 @@
 	let bio = $state(data.profile?.bio ?? '');
 	let description = $state(data.profile?.description ?? '');
 	let accentColor = $state(data.profile?.accent_color ?? '#6366f1');
+	let avatarUrl = $state(data.profile?.avatar_url ?? '');
 	let socialLinks = $state(parseSocial());
 
 	// Snapshot of initial values for dirty tracking
@@ -37,6 +39,7 @@
 		bio: data.profile?.bio ?? '',
 		description: data.profile?.description ?? '',
 		accentColor: data.profile?.accent_color ?? '#6366f1',
+		avatarUrl: data.profile?.avatar_url ?? '',
 		socialLinks: JSON.stringify(parseSocial()),
 	};
 
@@ -83,6 +86,7 @@
 		bio !== initial.bio ||
 		description !== initial.description ||
 		accentColor !== initial.accentColor ||
+		avatarUrl !== initial.avatarUrl ||
 		JSON.stringify(socialLinks) !== initial.socialLinks,
 	);
 
@@ -138,6 +142,7 @@
 		formData.set('bio', bio);
 		formData.set('social_links', JSON.stringify(linksObject));
 		formData.set('accent_color', accentColor);
+		formData.set('avatar_url', avatarUrl);
 
 		try {
 			const res = await fetch('?/save', { method: 'POST', body: formData });
@@ -153,6 +158,7 @@
 				initial.bio = bio;
 				initial.description = description;
 				initial.accentColor = accentColor;
+				initial.avatarUrl = avatarUrl;
 				initial.socialLinks = JSON.stringify(socialLinks);
 				availabilityState = 'idle';
 				availabilityMessage = null;
@@ -200,6 +206,8 @@
 				<Card.Title>{m.settings_profile_section_identity()}</Card.Title>
 			</Card.Header>
 			<Card.Content class="space-y-5">
+				<ImageUploader bind:value={avatarUrl} label={m.settings_profile_avatar()} aspect="square" />
+
 				<div class="space-y-2">
 					<Label for="username">{m.settings_profile_username()}</Label>
 					<div class="relative">

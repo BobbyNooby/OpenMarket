@@ -36,9 +36,10 @@ export const actions = {
 		const bio = (formData.get('bio') as string) || undefined;
 		const social_links = (formData.get('social_links') as string) || undefined;
 		const accent_color = (formData.get('accent_color') as string) || undefined;
+		const avatar_url = (formData.get('avatar_url') as string) || undefined;
 
 		const result = await api.users.profile.post(
-			{ username, description, bio, social_links, accent_color },
+			{ username, description, bio, social_links, accent_color, avatar_url },
 			{ headers: { cookie } },
 		);
 

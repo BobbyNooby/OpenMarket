@@ -76,11 +76,13 @@ const app = new Elysia()
 
     // Check if the user has completed onboarding (has a marketplace profile)
     const [existing] = await db
-      .select({ userId: userProfilesTable.userId, language: userProfilesTable.language })
+      .select({ userId: userProfilesTable.userId, language: userProfilesTable.language, avatar_url: userProfilesTable.avatar_url })
       .from(userProfilesTable)
       .where(eq(userProfilesTable.userId, session.user.id));
 
-    return { ...session, hasProfile: !!existing, language: existing?.language ?? null };
+    // Prefer the custom avatar over the Discord CDN image
+    const avatarUrl = existing?.avatar_url || session.user.image;
+    return { ...session, user: { ...session.user, image: avatarUrl }, hasProfile: !!existing, language: existing?.language ?? null };
   })
   // Global ban guard — blocks all write, update, delete operations for banned users
   .onBeforeHandle(({ session, set, request }) => {
