@@ -30,7 +30,6 @@ test.describe('Navigation', () => {
 		const page = await context.newPage();
 		await page.goto('/dashboard');
 		await page.waitForLoadState('networkidle');
-		// Should either redirect to login or show the page (depends on auth guard)
 		const url = page.url();
 		const hasSignIn = await page.getByText(/sign in/i).first().isVisible().catch(() => false);
 		expect(url.includes('/login') || hasSignIn || url.includes('/dashboard')).toBeTruthy();
@@ -39,16 +38,23 @@ test.describe('Navigation', () => {
 
 	test('dashboard is accessible when logged in', async ({ page }) => {
 		await page.goto('/dashboard');
-		await expect(page).not.toHaveURL(/\/login/);
+		await page.waitForLoadState('networkidle');
+		// In CI the user might not have a profile yet, so allow onboarding redirect too
+		const url = page.url();
+		expect(url.includes('/login')).toBeFalsy();
 	});
 
 	test('watchlist page loads', async ({ page }) => {
 		await page.goto('/watchlist');
-		await expect(page).not.toHaveURL(/\/login/);
+		await page.waitForLoadState('networkidle');
+		expect(page.url().includes('/login')).toBeFalsy();
 	});
 
 	test('settings page loads', async ({ page }) => {
 		await page.goto('/settings/profile');
-		await expect(page).not.toHaveURL(/\/login/);
+		await page.waitForLoadState('networkidle');
+		// Allow redirect to onboarding in CI (fresh DB, no profile yet)
+		const url = page.url();
+		expect(url.includes('/login')).toBeFalsy();
 	});
 });
