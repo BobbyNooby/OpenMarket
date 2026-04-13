@@ -1,6 +1,10 @@
 import type { LayoutServerLoad } from "./$types";
 import { redirect } from "@sveltejs/kit";
 import { PUBLIC_API_URL } from "$env/static/public";
+import { env } from "$env/dynamic/private";
+
+// Server-side fetch uses internal Docker URL when available
+const API_BASE = env.API_URL || PUBLIC_API_URL;
 
 // Paths that authenticated-but-no-profile users are allowed to access.
 // Everything else triggers a forced redirect to /onboarding.
@@ -26,7 +30,7 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, url }) => {
   let session = null;
   try {
     const sessionToken = cookies.get("better-auth.session_token");
-    const res = await fetch(`${PUBLIC_API_URL}/api/auth/get-session`, {
+    const res = await fetch(`${API_BASE}/api/auth/get-session`, {
       credentials: "include",
       headers: sessionToken
         ? { Cookie: `better-auth.session_token=${sessionToken}` }
@@ -73,7 +77,7 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, url }) => {
   if (session?.user) {
     try {
       const sessionToken = cookies.get("better-auth.session_token");
-      const unreadRes = await fetch(`${PUBLIC_API_URL}/api/conversations/unread-count`, {
+      const unreadRes = await fetch(`${API_BASE}/api/conversations/unread-count`, {
         headers: sessionToken
           ? { Cookie: `better-auth.session_token=${sessionToken}` }
           : {},
@@ -92,7 +96,7 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, url }) => {
   let siteTheme: SiteTheme = FALLBACK_THEME;
   let siteAssets: Record<string, string> = {};
   try {
-    const res = await fetch(`${PUBLIC_API_URL}/site-config/public`);
+    const res = await fetch(`${API_BASE}/site-config/public`);
     if (res.ok) {
       const json = await res.json();
       if (json.success && json.data) {
