@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia';
 import { db } from '../db/db';
 import { user, userProfilesTable, usersActivityTable, profileReviewsTable, listingsTable, tradesTable, account } from '../db/schemas';
 import { userRolesTable } from '../db/rbac-schema';
-import { eq, and, ne, desc, ilike, or, sql } from 'drizzle-orm';
+import { eq, and, ne, desc, ilike, or, sql, count } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { authMiddleware } from '../middleware/rbac';
 import { createNotification } from '../services/notifications';
@@ -99,6 +99,18 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 				});
 
 				console.log(`User profile upserted: ${result.userId} (${result.username})`);
+
+				// First user to create a profile gets admin + user roles automatically
+				const [{ profileCount }] = await db.select({ profileCount: count() }).from(userProfilesTable);
+				if (profileCount === 1) {
+					await db.insert(userRolesTable).values({ userId: session.user.id, roleId: 'admin' }).onConflictDoNothing();
+					await db.insert(userRolesTable).values({ userId: session.user.id, roleId: 'user' }).onConflictDoNothing();
+					console.log(`First user — assigned admin role to ${result.username}`);
+				} else {
+					// All other users get the default user role
+					await db.insert(userRolesTable).values({ userId: session.user.id, roleId: 'user' }).onConflictDoNothing();
+				}
+
 				return { success: true, data: result };
 			} catch (err: any) {
 				console.error('User profile upsert error:', err);

@@ -33,8 +33,7 @@ export const auth = betterAuth({
       trustedProviders: ["discord"],
     },
   },
-  trustedOrigins: [
-    process.env.PUBLIC_APP_URL ?? "http://localhost:5173",
-    "http://localhost:4173",
-  ],
+  trustedOrigins: process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+    : ["http://localhost:5173", "http://localhost:5174", "http://localhost:4173"],
 });
