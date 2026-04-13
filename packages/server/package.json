@@ -12,7 +12,8 @@
     "db:generate": "bun --env-file=../../.env drizzle-kit generate",
     "db:push": "bun --env-file=../../.env drizzle-kit push",
     "db:studio": "bun --env-file=../../.env drizzle-kit studio",
-    "db:seed:rbac": "bun --env-file=../../.env src/db/rbac-seed.ts"
+    "db:seed:rbac": "bun --env-file=../../.env src/db/rbac-seed.ts",
+    "db:seed": "bun --env-file=../../.env src/db/seed.ts"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.0",
