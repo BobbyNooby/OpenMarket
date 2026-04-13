@@ -1,20 +1,13 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import { PUBLIC_APP_URL } from '$env/static/public';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Button } from '$lib/components/ui/button';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Loader2 from '@lucide/svelte/icons/loader-2';
 	import ListingEmbed from '$lib/components/listing/ListingEmbed.svelte';
 
-	// Build a regex that only matches our own app's listing URLs
-	const APP_ORIGIN = (PUBLIC_APP_URL ?? '').replace(/\/$/, '');
-	const LISTING_URL_RE = APP_ORIGIN
-		? new RegExp(
-				`${APP_ORIGIN.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}/listings/view/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})`,
-				'gi',
-			)
-		: /a^/;
+	// Match any listing URL from any origin (localhost, deployed domain, etc.)
+	const LISTING_URL_RE = /https?:\/\/[^/]+\/listings\/view\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi;
 
 	type MessageChunk =
 		| { type: 'text'; value: string }
