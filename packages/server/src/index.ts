@@ -15,6 +15,7 @@ import { uploadsRoutes } from "./routes/uploads";
 import { adminRoutes } from "./routes/admin";
 import { auth } from "./auth";
 import { authMiddleware } from "./middleware/rbac";
+import { securityHeaders, authRateLimit, apiRateLimit } from "./middleware/security";
 import { eq } from "drizzle-orm";
 import { db } from "./db/db";
 import { userProfilesTable, usersActivityTable } from "./db/schemas";
@@ -65,6 +66,8 @@ const app = new Elysia()
       credentials: true,
     }),
   )
+  .use(securityHeaders)
+  .use(apiRateLimit)
   .get("/", () => "OpenMarket API")
   .get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }))
   // Public site config + theme — served on every page load by the SvelteKit root layout
@@ -102,6 +105,7 @@ const app = new Elysia()
       };
     }
   })
+  .use(authRateLimit)
   .all("/api/auth/*", ({ request }) => auth.handler(request))
   .use(itemsRoutes)
   .use(currenciesRoutes)

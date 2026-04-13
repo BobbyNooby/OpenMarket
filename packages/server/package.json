@@ -21,6 +21,7 @@
     "better-auth": "^1.4.15",
     "drizzle-orm": "^0.44.0",
     "elysia": "^1.4.18",
+    "elysia-rate-limit": "^4.5.1",
     "postgres": "^3.4.5",
     "satori": "^0.26.0",
     "sharp": "^0.34.5"

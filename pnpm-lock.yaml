@@ -34,7 +34,7 @@ importers:
         version: 4.0.9
       better-auth:
         specifier: ^1.4.15
-        version: 1.4.15(@sveltejs/kit@2.50.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.47.0)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.47.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(lightningcss@1.30.2)))(drizzle-orm@0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.10)(postgres@3.4.8))(svelte@5.47.0)
+        version: 1.4.15(@sveltejs/kit@2.50.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.47.0)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.47.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(lightningcss@1.30.2)))(drizzle-orm@0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.15)(postgres@3.4.8))(svelte@5.47.0)
       d3-scale:
         specifier: ^4.0.2
         version: 4.0.2
@@ -122,13 +122,16 @@ importers:
         version: link:../lib
       better-auth:
         specifier: ^1.4.15
-        version: 1.4.15(@sveltejs/kit@2.50.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.47.0)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.47.0)(typescript@5.9.3)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)))(drizzle-kit@0.30.6)(drizzle-orm@0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.15)(postgres@3.4.8))(svelte@5.47.0)
+        version: 1.4.15(@sveltejs/kit@2.50.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.47.0)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.47.0)(typescript@5.9.3)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)))(drizzle-kit@0.30.6)(drizzle-orm@0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.10)(postgres@3.4.8))(svelte@5.47.0)
       drizzle-orm:
         specifier: ^0.44.0
-        version: 0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.15)(postgres@3.4.8)
+        version: 0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.10)(postgres@3.4.8)
       elysia:
         specifier: ^1.4.18
         version: 1.4.22(@sinclair/typebox@0.34.47)(exact-mirror@0.2.6(@sinclair/typebox@0.34.47))(file-type@21.3.0)(openapi-types@12.1.3)(typescript@5.9.3)
+      elysia-rate-limit:
+        specifier: ^4.5.1
+        version: 4.5.1(elysia@1.4.22(@sinclair/typebox@0.34.47)(exact-mirror@0.2.6(@sinclair/typebox@0.34.47))(file-type@21.3.0)(openapi-types@12.1.3)(typescript@5.9.3))
       postgres:
         specifier: ^3.4.5
         version: 3.4.8
@@ -153,6 +156,10 @@ importers:
         version: 5.9.3
 
 packages:
+
+  '@alloc/quick-lru@5.2.0':
+    resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
+    engines: {node: '>=10'}
 
   '@better-auth/core@1.4.15':
     resolution: {integrity: sha512-uAvq8YA7SaS7v+TrvH/Kwt7LAJihzUqB3FX8VweDsqu3gn5t51M+Bve+V1vVWR9qBAtC6cN68V6b+scxZxDY4A==}
@@ -1609,6 +1616,15 @@ packages:
     resolution: {integrity: sha512-G7gHKj89n2owmkGb6WX6ixcnQ0Kf/0wpa9VIh9DGdbHu8wdrlaHU4ir3/bFNERl8N8nn4G7e7qbtBG8N9caihQ==}
     engines: {node: '>=12'}
 
+  debug@4.3.4:
+    resolution: {integrity: sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==}
+    engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
     engines: {node: '>=6.0'}
@@ -1758,6 +1774,11 @@ packages:
         optional: true
       sqlite3:
         optional: true
+
+  elysia-rate-limit@4.5.1:
+    resolution: {integrity: sha512-36u0BBMWV8Ae5f4q8k19Yuq4UusjbFTstZ7Ej1RU6m/Xc94RZHfai8kn5lOsC+LEduZJr4JdQlZu+jhuSxQfyw==}
+    peerDependencies:
+      elysia: '>= 1.0.0'
 
   elysia@1.4.22:
     resolution: {integrity: sha512-Q90VCb1RVFxnFaRV0FDoSylESQQLWgLHFmWciQJdX9h3b2cSasji9KWEUvaJuy/L9ciAGg4RAhUVfsXHg5K2RQ==}
@@ -2068,6 +2089,9 @@ packages:
   mrmime@2.0.1:
     resolution: {integrity: sha512-Y3wQdFg2Va6etvQ5I82yUhGdsKrcYox6p7FfL1LbK2J4V01F9TGlepTIhnK24t7koZibmg82KGglhA1XK5IsLQ==}
     engines: {node: '>=10'}
+
+  ms@2.1.2:
+    resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
@@ -2472,6 +2496,8 @@ packages:
     resolution: {integrity: sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==}
 
 snapshots:
+
+  '@alloc/quick-lru@5.2.0': {}
 
   '@better-auth/core@1.4.15(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0)':
     dependencies:
@@ -3363,7 +3389,7 @@ snapshots:
 
   base64-js@0.0.8: {}
 
-  better-auth@1.4.15(@sveltejs/kit@2.50.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.47.0)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.47.0)(typescript@5.9.3)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)))(drizzle-kit@0.30.6)(drizzle-orm@0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.15)(postgres@3.4.8))(svelte@5.47.0):
+  better-auth@1.4.15(@sveltejs/kit@2.50.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.47.0)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.47.0)(typescript@5.9.3)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)))(drizzle-kit@0.30.6)(drizzle-orm@0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.10)(postgres@3.4.8))(svelte@5.47.0):
     dependencies:
       '@better-auth/core': 1.4.15(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0)
       '@better-auth/telemetry': 1.4.15(@better-auth/core@1.4.15(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))
@@ -3380,10 +3406,10 @@ snapshots:
     optionalDependencies:
       '@sveltejs/kit': 2.50.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.47.0)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.47.0)(typescript@5.9.3)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2))
       drizzle-kit: 0.30.6
-      drizzle-orm: 0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.15)(postgres@3.4.8)
+      drizzle-orm: 0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.10)(postgres@3.4.8)
       svelte: 5.47.0
 
-  better-auth@1.4.15(@sveltejs/kit@2.50.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.47.0)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.47.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(lightningcss@1.30.2)))(drizzle-orm@0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.10)(postgres@3.4.8))(svelte@5.47.0):
+  better-auth@1.4.15(@sveltejs/kit@2.50.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.47.0)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.47.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(lightningcss@1.30.2)))(drizzle-orm@0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.15)(postgres@3.4.8))(svelte@5.47.0):
     dependencies:
       '@better-auth/core': 1.4.15(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0)
       '@better-auth/telemetry': 1.4.15(@better-auth/core@1.4.15(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))
@@ -3399,7 +3425,7 @@ snapshots:
       zod: 4.3.5
     optionalDependencies:
       '@sveltejs/kit': 2.50.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.47.0)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.47.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.0.9)(jiti@2.6.1)(lightningcss@1.30.2))
-      drizzle-orm: 0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.10)(postgres@3.4.8)
+      drizzle-orm: 0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.15)(postgres@3.4.8)
       svelte: 5.47.0
 
   better-call@1.1.8(zod@4.3.5):
@@ -3585,6 +3611,10 @@ snapshots:
       d3-delaunay: 6.0.4
       d3-scale: 4.0.2
 
+  debug@4.3.4:
+    dependencies:
+      ms: 2.1.2
+
   debug@4.4.3:
     dependencies:
       ms: 2.1.3
@@ -3636,7 +3666,6 @@ snapshots:
       gel: 2.2.0
       kysely: 0.28.10
       postgres: 3.4.8
-    optional: true
 
   drizzle-orm@0.44.7(bun-types@1.3.12)(gel@2.2.0)(kysely@0.28.15)(postgres@3.4.8):
     optionalDependencies:
@@ -3644,6 +3673,15 @@ snapshots:
       gel: 2.2.0
       kysely: 0.28.15
       postgres: 3.4.8
+    optional: true
+
+  elysia-rate-limit@4.5.1(elysia@1.4.22(@sinclair/typebox@0.34.47)(exact-mirror@0.2.6(@sinclair/typebox@0.34.47))(file-type@21.3.0)(openapi-types@12.1.3)(typescript@5.9.3)):
+    dependencies:
+      '@alloc/quick-lru': 5.2.0
+      debug: 4.3.4
+      elysia: 1.4.22(@sinclair/typebox@0.34.47)(exact-mirror@0.2.6(@sinclair/typebox@0.34.47))(file-type@21.3.0)(openapi-types@12.1.3)(typescript@5.9.3)
+    transitivePeerDependencies:
+      - supports-color
 
   elysia@1.4.22(@sinclair/typebox@0.34.47)(exact-mirror@0.2.6(@sinclair/typebox@0.34.47))(file-type@21.3.0)(openapi-types@12.1.3)(typescript@5.9.3):
     dependencies:
@@ -3982,6 +4020,8 @@ snapshots:
   mri@1.2.0: {}
 
   mrmime@2.0.1: {}
+
+  ms@2.1.2: {}
 
   ms@2.1.3: {}
 
