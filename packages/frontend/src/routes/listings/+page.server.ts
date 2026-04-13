@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { api } from '$lib/api/server';
-import { PUBLIC_API_URL } from '$env/static/public';
+import { apiFetch } from '$lib/api/fetch';
 
 export const load: PageServerLoad = async ({ url, request }) => {
 	const cookie = request.headers.get('cookie') || '';
@@ -37,7 +37,7 @@ export const load: PageServerLoad = async ({ url, request }) => {
 		api.items.get(),
 		api.currencies.get(),
 		api.categories.get(),
-		fetch(`${PUBLIC_API_URL}/watchlist/ids`, { headers: { cookie } })
+		apiFetch('/watchlist/ids', { headers: { cookie } })
 			.then((r) => r.json())
 			.catch(() => ({ success: false, data: [] }))
 	]);

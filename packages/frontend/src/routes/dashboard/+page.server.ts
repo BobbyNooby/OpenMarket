@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { api } from '$lib/api/server';
-import { PUBLIC_API_URL } from '$env/static/public';
+import { apiFetch } from '$lib/api/fetch';
 import type { PageServerLoad } from './$types';
 
 type ListingStats = { total_views: number; unique_sessions: number; unique_users: number; messages: number };
@@ -18,7 +18,7 @@ export const load: PageServerLoad = async ({ request }) => {
 		api.listings.user({ userId: session.user.id }).get({ headers }),
 		api.users.trades.get({ headers }).catch(() => null),
 		api.users.profile({ username: session.user.name }).get({ headers }).catch(() => null),
-		fetch(`${PUBLIC_API_URL}/api/conversations`, { headers: { cookie } })
+		apiFetch('/api/conversations', { headers: { cookie } })
 			.then((r) => r.json())
 			.catch(() => null),
 	]);

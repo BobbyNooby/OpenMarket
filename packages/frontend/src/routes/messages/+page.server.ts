@@ -1,12 +1,12 @@
 import type { PageServerLoad } from './$types';
-import { PUBLIC_API_URL } from '$env/static/public';
+import { apiFetch } from '$lib/api/fetch';
 
 export const load: PageServerLoad = async ({ request, url }) => {
 	const cookie = request.headers.get('cookie') || '';
 
 	let conversations: unknown[] = [];
 	try {
-		const res = await fetch(`${PUBLIC_API_URL}/api/conversations`, {
+		const res = await apiFetch('/api/conversations', {
 			headers: { cookie }
 		});
 		const json = await res.json();
