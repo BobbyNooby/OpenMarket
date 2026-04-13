@@ -98,7 +98,7 @@
 						{/if}
 						{#if data.session.ban.expiresAt}
 							<p class="text-sm text-destructive/80">
-								Expires: {new Date(data.session.ban.expiresAt).toLocaleDateString('en-US', {
+								Expires: {new Date(data.session.ban.expiresAt).toLocaleDateString(undefined, {
 									year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
 								})}
 							</p>

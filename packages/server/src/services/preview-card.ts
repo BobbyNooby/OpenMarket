@@ -20,7 +20,8 @@ const fonts = [
 
 async function fetchImageAsPngDataUri(url: string): Promise<string | null> {
 	try {
-		const fullUrl = url.startsWith('http') ? url : `http://localhost:${process.env.API_PORT || 3000}${url}`;
+		const base = process.env.PUBLIC_API_URL || `http://localhost:${process.env.API_PORT || 3000}`;
+		const fullUrl = url.startsWith('http') ? url : `${base}${url}`;
 		const res = await fetch(fullUrl);
 		if (!res.ok) return null;
 		const buf = Buffer.from(await res.arrayBuffer());

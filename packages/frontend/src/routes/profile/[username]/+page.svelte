@@ -55,7 +55,7 @@
 
 	function formatDate(dateString: string): string {
 		const date = new Date(dateString);
-		return date.toLocaleDateString('en-US', {
+		return date.toLocaleDateString(undefined, {
 			month: 'long',
 			day: 'numeric',
 			year: 'numeric'
