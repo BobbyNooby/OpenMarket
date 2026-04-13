@@ -139,6 +139,13 @@
 
 </script>
 
+<svelte:head>
+	<title>{data.siteConfig?.site_name ?? 'OpenMarket'}</title>
+	<meta name="description" content={data.siteConfig?.site_tagline ?? 'The marketplace for trading game items and currencies'} />
+	<meta property="og:title" content={data.siteConfig?.site_name ?? 'OpenMarket'} />
+	<meta property="og:description" content={data.siteConfig?.site_tagline ?? 'The marketplace for trading game items and currencies'} />
+</svelte:head>
+
 <div class="min-h-screen text-foreground">
 	<div class="relative z-10 bg-card py-32 shadow-sm overflow-visible">
 		<div class="mx-auto max-w-7xl px-8">

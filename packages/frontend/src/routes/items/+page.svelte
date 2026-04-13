@@ -20,6 +20,11 @@
 	);
 </script>
 
+<svelte:head>
+	<title>Items & Currencies · {data.siteConfig?.site_name ?? 'OpenMarket'}</title>
+	<meta name="description" content="Browse all tradeable items and currencies" />
+</svelte:head>
+
 <div class="min-h-screen text-foreground">
 	<div class="bg-card py-8 shadow-sm">
 		<div class="mx-auto max-w-7xl px-8">

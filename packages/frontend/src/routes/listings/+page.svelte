@@ -246,6 +246,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Browse Listings · {data.siteConfig?.site_name ?? 'OpenMarket'}</title>
+	<meta name="description" content="Browse and search game item and currency listings" />
+</svelte:head>
+
 <div class="min-h-screen text-foreground">
 	<!-- Header -->
 	<div class="bg-card py-8 shadow-sm">
