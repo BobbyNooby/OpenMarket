@@ -30,6 +30,11 @@ packages/frontend/src/lib/paraglide
 # Locally-hosted user uploads
 packages/server/uploads
 
+# Playwright
+tests/.auth/
+test-results/
+playwright-report/
+
 # Turbo
 .turbo
 
