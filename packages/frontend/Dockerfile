@@ -23,13 +23,19 @@ ENV PUBLIC_API_URL=${PUBLIC_API_URL}
 
 RUN pnpm build
 
-# Production stage
+# Production stage — keep full node_modules for workspace + eden deps
 FROM node:22-alpine AS production
 WORKDIR /app
 
+# Copy the entire monorepo node_modules (eden, server types, lib are in here)
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages/frontend/node_modules ./packages/frontend/node_modules
 COPY --from=build /app/packages/frontend/build ./build
-COPY --from=build /app/packages/frontend/package.json ./
-COPY --from=build /app/packages/frontend/node_modules ./node_modules
+COPY --from=build /app/packages/frontend/package.json ./package.json
+# Eden imports the server package for types at runtime
+COPY --from=build /app/packages/server/package.json ./packages/server/package.json
+COPY --from=build /app/packages/server/src ./packages/server/src
+COPY --from=build /app/packages/lib ./packages/lib
 
 EXPOSE 3000
 ENV PORT=3000
