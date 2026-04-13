@@ -8,7 +8,7 @@ const API_BASE = env.API_URL || PUBLIC_API_URL;
 
 // Paths that authenticated-but-no-profile users are allowed to access.
 // Everything else triggers a forced redirect to /onboarding.
-const ONBOARDING_ALLOWED = ["/onboarding", "/login"];
+const ONBOARDING_ALLOWED = ["/onboarding", "/login", "/api/auth"];
 
 // Default fallback if the public site config endpoint fails — keeps SSR working
 // even when the API is down on first boot.

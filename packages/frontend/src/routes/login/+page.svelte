@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
@@ -86,9 +85,9 @@
 			const sessionRes = await fetch(`${PUBLIC_API_URL}/api/auth/get-session`, { credentials: 'include' });
 			const session = await sessionRes.json();
 			if (session.hasProfile === false) {
-				goto('/onboarding');
+				window.location.href = '/onboarding';
 			} else {
-				goto('/');
+				window.location.href = '/';
 			}
 		} catch {
 			toast.error('Failed to sign in');
@@ -128,7 +127,8 @@
 				return;
 			}
 			toast.success('Account created successfully');
-			goto('/onboarding');
+			// Full page reload ensures cookies are sent correctly
+			window.location.href = '/onboarding';
 		} catch {
 			toast.error('Failed to create account');
 		} finally {
@@ -137,10 +137,14 @@
 	}
 
 	async function handleDiscordSignIn() {
-		await authClient.signIn.social({
-			provider: 'discord',
-			callbackURL: window.location.origin
-		});
+		try {
+			await authClient.signIn.social({
+				provider: 'discord',
+				callbackURL: window.location.origin
+			});
+		} catch {
+			toast.error('Discord sign-in is not available');
+		}
 	}
 
 	onMount(() => {
