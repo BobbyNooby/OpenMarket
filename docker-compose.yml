@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: openmarket
+      POSTGRES_PASSWORD: openmarket
+      POSTGRES_DB: openmarket
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openmarket"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  server:
+    build:
+      context: ./packages/server
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://openmarket:openmarket@postgres:5432/openmarket
+      API_PORT: 3000
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: http://localhost:3000
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      CORS_ORIGINS: http://localhost:4173,http://localhost:3001
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./packages/frontend
+      args:
+        PUBLIC_API_URL: http://localhost:3000
+    ports:
+      - "3001:3000"
+    environment:
+      PUBLIC_API_URL: http://localhost:3000
+    depends_on:
+      - server
+
+volumes:
+  pgdata:
+  uploads:
