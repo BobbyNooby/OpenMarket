@@ -14,7 +14,7 @@ function generateSlug(name: string): string {
 		.replace(/-+/g, '-');
 }
 
-export const categoriesRoutes = new Elysia({ prefix: '/categories' })
+export const categoriesRoutes = new Elysia({ prefix: '/categories', detail: { tags: ['Categories'] } })
 	.use(authMiddleware)
 	// Get all categories
 	.get('/', async () => {
@@ -25,7 +25,7 @@ export const categoriesRoutes = new Elysia({ prefix: '/categories' })
 			console.error('Get categories error:', err);
 			return { success: false, error: err.message, status: 500 };
 		}
-	})
+	}, { detail: { description: 'List all item categories' } })
 	// Get category by ID or slug
 	.get(
 		'/:id',
@@ -55,7 +55,8 @@ export const categoriesRoutes = new Elysia({ prefix: '/categories' })
 		{
 			params: t.Object({
 				id: t.String()
-			})
+			}),
+			detail: { description: 'Get a category by ID or slug' }
 		}
 	)
 	// Create category (admin only)
@@ -95,7 +96,8 @@ export const categoriesRoutes = new Elysia({ prefix: '/categories' })
 			body: t.Object({
 				name: t.String(),
 				icon_url: t.Optional(t.String())
-			})
+			}),
+			detail: { description: 'Create a new category' }
 		}
 	)
 	// Update category
@@ -141,7 +143,8 @@ export const categoriesRoutes = new Elysia({ prefix: '/categories' })
 			body: t.Object({
 				name: t.String(),
 				icon_url: t.Optional(t.String())
-			})
+			}),
+			detail: { description: 'Update an existing category' }
 		}
 	)
 	// Delete category (sets items' category_id to null)
@@ -167,6 +170,7 @@ export const categoriesRoutes = new Elysia({ prefix: '/categories' })
 			}
 		},
 		{
-			params: t.Object({ id: t.String() })
+			params: t.Object({ id: t.String() }),
+			detail: { description: 'Delete a category by ID' }
 		}
 	);

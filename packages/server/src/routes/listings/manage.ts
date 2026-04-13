@@ -81,7 +81,7 @@ export const listingsManageRoutes = new Elysia()
 				return { success: false, error: err.message, status: 500 };
 			}
 		},
-		{ body: offeredBody },
+		{ body: offeredBody, detail: { description: 'Create a new listing' } },
 	)
 
 	// PUT /:id — update listing (replaces offered items/currencies)
@@ -139,7 +139,7 @@ export const listingsManageRoutes = new Elysia()
 				return { success: false, error: err.message, status: 500 };
 			}
 		},
-		{ params: t.Object({ id: t.String() }), body: offeredBody },
+		{ params: t.Object({ id: t.String() }), body: offeredBody, detail: { description: 'Update an existing listing' } },
 	)
 
 	// PATCH /:id/status — change status
@@ -173,6 +173,7 @@ export const listingsManageRoutes = new Elysia()
 		{
 			params: t.Object({ id: t.String() }),
 			body: t.Object({ status: t.Union([t.Literal('active'), t.Literal('sold'), t.Literal('paused'), t.Literal('expired')]) }),
+			detail: { description: 'Change a listing status' }
 		},
 	)
 
@@ -208,7 +209,7 @@ export const listingsManageRoutes = new Elysia()
 				return { success: false, error: err.message, status: 500 };
 			}
 		},
-		{ params: t.Object({ id: t.String() }) },
+		{ params: t.Object({ id: t.String() }), detail: { description: 'Renew a listing for 30 more days' } },
 	)
 
 	// GET /:id/contacts — users who messaged about this listing (for buyer selection on sold)
@@ -256,7 +257,7 @@ export const listingsManageRoutes = new Elysia()
 
 			return { success: true, data: contacts };
 		},
-		{ params: t.Object({ id: t.String() }) },
+		{ params: t.Object({ id: t.String() }), detail: { description: 'Get users who contacted about a listing' } },
 	)
 
 	// DELETE /:id — hard delete (sold = delete), creates trade record
@@ -345,5 +346,6 @@ export const listingsManageRoutes = new Elysia()
 			body: t.Optional(t.Object({
 				buyer_id: t.Optional(t.String()),
 			})),
+			detail: { description: 'Delete a listing and record the trade' }
 		},
 	);

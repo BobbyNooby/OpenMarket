@@ -113,6 +113,7 @@ export const adminMediaRoutes = new Elysia()
 				limit: t.Optional(t.String()),
 				offset: t.Optional(t.String()),
 			}),
+			detail: { description: 'List uploaded files with pagination' }
 		},
 	)
 
@@ -129,7 +130,7 @@ export const adminMediaRoutes = new Elysia()
 			.from(uploadsTable);
 
 		return { success: true, data: stats };
-	})
+	}, { detail: { description: 'Get upload count and total size' } })
 
 	// GET /admin/media/:id — single upload detail + references
 	.get(
@@ -166,7 +167,7 @@ export const adminMediaRoutes = new Elysia()
 				},
 			};
 		},
-		{ params: t.Object({ id: t.String() }) },
+		{ params: t.Object({ id: t.String() }), detail: { description: 'Get upload details and references' } },
 	)
 
 	// DELETE /admin/media/:id — delete upload with cascade
@@ -228,7 +229,7 @@ export const adminMediaRoutes = new Elysia()
 
 			return { success: true, refs_cleared: refs.total };
 		},
-		{ params: t.Object({ id: t.String() }) },
+		{ params: t.Object({ id: t.String() }), detail: { description: 'Delete an upload and clear references' } },
 	)
 
 	// POST /admin/media/cleanup-orphans — delete uploads with no references
@@ -265,7 +266,7 @@ export const adminMediaRoutes = new Elysia()
 		);
 
 		return { success: true, deleted };
-	})
+	}, { detail: { description: 'Delete unreferenced orphan uploads' } })
 
 	// GET /admin/media/site-assets — list all slots with current values
 	.get('/media/site-assets', async ({ session, set }) => {
@@ -282,7 +283,7 @@ export const adminMediaRoutes = new Elysia()
 		}));
 
 		return { success: true, data: slots };
-	})
+	}, { detail: { description: 'List all site asset slots' } })
 
 	// PUT /admin/media/site-assets/:slot — assign an upload to a slot
 	.put(
@@ -337,6 +338,7 @@ export const adminMediaRoutes = new Elysia()
 		{
 			params: t.Object({ slot: t.String() }),
 			body: t.Object({ upload_id: t.String() }),
+			detail: { description: 'Assign an upload to a site asset slot' }
 		},
 	)
 
@@ -358,5 +360,5 @@ export const adminMediaRoutes = new Elysia()
 
 			return { success: true };
 		},
-		{ params: t.Object({ slot: t.String() }) },
+		{ params: t.Object({ slot: t.String() }), detail: { description: 'Clear a site asset slot' } },
 	);

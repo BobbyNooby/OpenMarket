@@ -9,7 +9,7 @@ import { createNotification } from '../services/notifications';
 import { trackEvent } from '../services/analytics';
 import { validateUsername } from '../utils/username';
 
-export const usersRoutes = new Elysia({ prefix: '/users' })
+export const usersRoutes = new Elysia({ prefix: '/users', detail: { tags: ['Users'] } })
 	.use(authMiddleware)
 
 	// Create or update user profile (called after OAuth login and from settings)
@@ -132,7 +132,8 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 				accent_color: t.Optional(t.String()),
 				avatar_url: t.Optional(t.String()),
 				notification_preferences: t.Optional(t.String()),
-			})
+			}),
+			detail: { description: 'Create or update user profile' }
 		}
 	)
 	// Update only the notification preferences for the authenticated user
@@ -170,6 +171,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 			body: t.Object({
 				notification_preferences: t.String(),
 			}),
+			detail: { description: 'Update notification preferences' }
 		},
 	)
 	// Update only the language preference for the authenticated user
@@ -208,6 +210,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 			body: t.Object({
 				language: t.String(),
 			}),
+			detail: { description: 'Update language preference' }
 		},
 	)
 	// Check if a username is available (used by settings + future registration flow)
@@ -237,6 +240,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 			query: t.Object({
 				username: t.String(),
 			}),
+			detail: { description: 'Check if a username is available' }
 		},
 	)
 	// Complete onboarding — called after a user first signs in to create their marketplace profile
@@ -307,6 +311,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 			body: t.Object({
 				username: t.String(),
 			}),
+			detail: { description: 'Complete new user onboarding' }
 		},
 	)
 	// List the linked auth providers for the authenticated user
@@ -331,6 +336,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 				})),
 			};
 		},
+		{ detail: { description: 'List linked auth providers' } },
 	)
 	// Search users by username or display name
 	.get(
@@ -374,6 +380,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 			query: t.Object({
 				q: t.Optional(t.String()),
 			}),
+			detail: { description: 'Search users by name or username' }
 		},
 	)
 	// Get user profile by username
@@ -533,7 +540,8 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 		{
 			params: t.Object({
 				username: t.String()
-			})
+			}),
+			detail: { description: 'Get a public user profile by username' }
 		}
 	)
 	// Submit a review for a user profile
@@ -622,7 +630,8 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 			body: t.Object({
 				type: t.Union([t.Literal('upvote'), t.Literal('downvote')]),
 				comment: t.Optional(t.String())
-			})
+			}),
+			detail: { description: 'Submit or update a profile review' }
 		}
 	)
 	// Get authenticated user's trade history
@@ -708,6 +717,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 				limit: t.Optional(t.String()),
 				offset: t.Optional(t.String()),
 			}),
+			detail: { description: 'Get authenticated user trade history' }
 		},
 	)
 	// Get user by ID
@@ -752,6 +762,7 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 		{
 			params: t.Object({
 				id: t.String()
-			})
+			}),
+			detail: { description: 'Get a user by ID' }
 		}
 	);

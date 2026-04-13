@@ -15,7 +15,7 @@ function generateSlug(name: string): string {
 		.replace(/-+/g, '-'); // Replace multiple hyphens with single
 }
 
-export const itemsRoutes = new Elysia({ prefix: '/items' })
+export const itemsRoutes = new Elysia({ prefix: '/items', detail: { tags: ['Items'] } })
 	.use(authMiddleware)
 	// Get all items
 	.get('/', async () => {
@@ -26,7 +26,7 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 			console.error('Get items error:', err);
 			return { success: false, error: err.message, status: 500 };
 		}
-	})
+	}, { detail: { description: 'List all items' } })
 	// Get item by ID or slug
 	.get(
 		'/:id',
@@ -57,7 +57,8 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 		{
 			params: t.Object({
 				id: t.String()
-			})
+			}),
+			detail: { description: 'Get an item by ID or slug' }
 		}
 	)
 	// Create item
@@ -106,7 +107,8 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 				wiki_link: t.Optional(t.String()),
 				image_url: t.Optional(t.String()),
 				category_id: t.Optional(t.String())
-			})
+			}),
+			detail: { description: 'Create a new item' }
 		}
 	)
 	// Update item
@@ -162,7 +164,8 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 				wiki_link: t.Optional(t.String()),
 				image_url: t.Optional(t.String()),
 				category_id: t.Optional(t.String())
-			})
+			}),
+			detail: { description: 'Update an existing item' }
 		}
 	)
 	// Delete item
@@ -190,11 +193,12 @@ export const itemsRoutes = new Elysia({ prefix: '/items' })
 		{
 			params: t.Object({
 				id: t.String()
-			})
+			}),
+			detail: { description: 'Delete an item by ID' }
 		}
 	);
 
-export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
+export const currenciesRoutes = new Elysia({ prefix: '/currencies', detail: { tags: ['Items'] } })
 	.use(authMiddleware)
 	// Get all currencies
 	.get('/', async () => {
@@ -205,7 +209,7 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 			console.error('Get currencies error:', err);
 			return { success: false, error: err.message, status: 500 };
 		}
-	})
+	}, { detail: { description: 'List all currencies' } })
 	// Get currency by ID or slug
 	.get(
 		'/:id',
@@ -236,7 +240,8 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 		{
 			params: t.Object({
 				id: t.String()
-			})
+			}),
+			detail: { description: 'Get a currency by ID or slug' }
 		}
 	)
 	// Create currency
@@ -283,7 +288,8 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 				description: t.Optional(t.String()),
 				wiki_link: t.Optional(t.String()),
 				image_url: t.Optional(t.String())
-			})
+			}),
+			detail: { description: 'Create a new currency' }
 		}
 	)
 	// Update currency
@@ -337,7 +343,8 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 				description: t.Optional(t.String()),
 				wiki_link: t.Optional(t.String()),
 				image_url: t.Optional(t.String())
-			})
+			}),
+			detail: { description: 'Update an existing currency' }
 		}
 	)
 	// Delete currency
@@ -365,6 +372,7 @@ export const currenciesRoutes = new Elysia({ prefix: '/currencies' })
 		{
 			params: t.Object({
 				id: t.String()
-			})
+			}),
+			detail: { description: 'Delete a currency by ID' }
 		}
 	);

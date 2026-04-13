@@ -141,7 +141,7 @@ export const listingAnalyticsRoutes = new Elysia()
 				return { success: false, error: message, status: 500 };
 			}
 		},
-		{ params: t.Object({ id: t.String() }) },
+		{ params: t.Object({ id: t.String() }), detail: { description: 'Get view stats for a listing' } },
 	)
 
 	// GET /popular — top 10 popular listings (most views last 7 days)
@@ -169,7 +169,7 @@ export const listingAnalyticsRoutes = new Elysia()
 			console.error('Popular listings error:', err);
 			return { success: false, error: message, status: 500 };
 		}
-	})
+	}, { detail: { description: 'Get top 10 popular listings by views' } })
 
 	// GET /trending — top 10 trending listings (highest view velocity last 24h)
 	.get('/trending', async () => {
@@ -200,7 +200,7 @@ export const listingAnalyticsRoutes = new Elysia()
 			console.error('Trending listings error:', err);
 			return { success: false, error: message, status: 500 };
 		}
-	})
+	}, { detail: { description: 'Get top 10 trending listings by velocity' } })
 
 	// GET /recommended — personalized recommendations (auth required)
 	.get('/recommended', async ({ session, set }) => {
@@ -340,4 +340,4 @@ export const listingAnalyticsRoutes = new Elysia()
 			console.error('Recommended listings error:', err);
 			return { success: false, error: message, status: 500 };
 		}
-	});
+	}, { detail: { description: 'Get personalized listing recommendations' } });

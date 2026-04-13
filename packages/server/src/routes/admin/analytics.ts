@@ -179,7 +179,7 @@ export const adminAnalyticsRoutes = new Elysia()
 				return { success: false, error: message };
 			}
 		},
-		{ query: dateQuerySchema }
+		{ query: dateQuerySchema, detail: { description: 'Get platform overview stats' } }
 	)
 
 	// --- GET /insights/events ---
@@ -248,7 +248,7 @@ export const adminAnalyticsRoutes = new Elysia()
 				return { success: false, error: message };
 			}
 		},
-		{ query: dateQuerySchema }
+		{ query: dateQuerySchema, detail: { description: 'Get event time-series data' } }
 	)
 
 	// --- GET /analytics/search ---
@@ -310,7 +310,7 @@ export const adminAnalyticsRoutes = new Elysia()
 				return { success: false, error: message };
 			}
 		},
-		{ query: dateQuerySchema }
+		{ query: dateQuerySchema, detail: { description: 'Get search analytics and top queries' } }
 	)
 
 	// --- GET /analytics/engagement ---
@@ -450,5 +450,5 @@ export const adminAnalyticsRoutes = new Elysia()
 				return { success: false, error: message };
 			}
 		},
-		{ query: dateQuerySchema }
+		{ query: dateQuerySchema, detail: { description: 'Get engagement metrics and top content' } }
 	);

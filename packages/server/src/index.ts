@@ -1,5 +1,6 @@
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
+import { swagger } from "@elysiajs/swagger";
 import { itemsRoutes, currenciesRoutes } from "./routes/items";
 import { listingsRoutes } from "./routes/listings/index";
 import { categoriesRoutes } from "./routes/categories";
@@ -67,6 +68,47 @@ const app = new Elysia()
     }),
   )
   .use(securityHeaders)
+  .use(swagger({
+    path: '/docs',
+    documentation: {
+      info: {
+        title: 'OpenMarket API',
+        version: '1.0.0',
+        description: 'Game item and currency trading marketplace API',
+      },
+      tags: [
+        { name: 'Auth', description: 'Authentication and sessions' },
+        { name: 'Items', description: 'Item and currency catalog' },
+        { name: 'Categories', description: 'Item categories' },
+        { name: 'Listings', description: 'Browse, create, and manage listings' },
+        { name: 'Users', description: 'User profiles and settings' },
+        { name: 'Messages', description: 'Conversations and chat' },
+        { name: 'Watchlist', description: 'Saved listings' },
+        { name: 'Notifications', description: 'User notifications' },
+        { name: 'Uploads', description: 'Image upload and serving' },
+        { name: 'Analytics', description: 'Tracking and telemetry' },
+        { name: 'Reports', description: 'User reports' },
+        { name: 'Admin', description: 'Administration endpoints' },
+      ],
+      components: {
+        schemas: {
+          Error: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', example: false },
+              error: { type: 'string', example: 'Error message' },
+            },
+          },
+        },
+        responses: {
+          Unauthorized: { description: 'Not authenticated' },
+          Forbidden: { description: 'Insufficient permissions' },
+          NotFound: { description: 'Resource not found' },
+          RateLimited: { description: 'Too many requests' },
+        },
+      },
+    },
+  }))
   .use(apiRateLimit)
   .get("/", () => "OpenMarket API")
   .get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }))

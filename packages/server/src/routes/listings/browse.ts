@@ -72,7 +72,7 @@ export const listingsBrowseRoutes = new Elysia()
 			console.error('Get listings error:', err);
 			return { success: false, error: err.message, status: 500 };
 		}
-	})
+	}, { detail: { description: 'Browse listings with filters and pagination' } })
 
 	// GET /user/:userId — all listings by a specific author
 	.get(
@@ -101,7 +101,7 @@ export const listingsBrowseRoutes = new Elysia()
 				return { success: false, error: err.message, status: 500 };
 			}
 		},
-		{ params: t.Object({ userId: t.String() }) },
+		{ params: t.Object({ userId: t.String() }), detail: { description: 'List all listings by a user' } },
 	)
 
 	// GET /:id — single listing by ID
@@ -132,5 +132,5 @@ export const listingsBrowseRoutes = new Elysia()
 				return { success: false, error: err.message, status: 500 };
 			}
 		},
-		{ params: t.Object({ id: t.String() }) },
+		{ params: t.Object({ id: t.String() }), detail: { description: 'Get a single listing by ID' } },
 	);

@@ -4,7 +4,7 @@ import { notificationsTable } from "../db/schemas";
 import { eq, and, desc, count } from "drizzle-orm";
 import { authMiddleware } from "../middleware/rbac";
 
-export const notificationsRoutes = new Elysia({ prefix: "/notifications" })
+export const notificationsRoutes = new Elysia({ prefix: "/notifications", detail: { tags: ["Notifications"] } })
   .use(authMiddleware)
 
   // GET /notifications — paginated, newest first, includes unread count
@@ -57,6 +57,7 @@ export const notificationsRoutes = new Elysia({ prefix: "/notifications" })
         limit: t.Optional(t.String()),
         offset: t.Optional(t.String()),
       }),
+      detail: { description: 'List notifications for current user' }
     },
   )
 
@@ -87,7 +88,7 @@ export const notificationsRoutes = new Elysia({ prefix: "/notifications" })
 
       return { success: true };
     },
-    { params: t.Object({ id: t.String() }) },
+    { params: t.Object({ id: t.String() }), detail: { description: 'Mark a notification as read' } },
   )
 
   // POST /notifications/read-all — mark all as read
@@ -108,4 +109,4 @@ export const notificationsRoutes = new Elysia({ prefix: "/notifications" })
       );
 
     return { success: true };
-  });
+  }, { detail: { description: 'Mark all notifications as read' } });

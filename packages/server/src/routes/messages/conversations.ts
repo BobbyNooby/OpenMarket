@@ -78,6 +78,7 @@ export const conversationRoutes = new Elysia()
         target_user_id: t.String(),
         listing_id: t.Optional(t.String()),
       }),
+      detail: { description: 'Create or reuse a conversation' }
     },
   )
 
@@ -120,7 +121,7 @@ export const conversationRoutes = new Elysia()
     }
 
     return { success: true, count };
-  })
+  }, { detail: { description: 'Get total unread message count' } })
 
   // GET /conversations — list authenticated user's conversations with previews + unread counts
   .get("/conversations", async ({ session, set }) => {
@@ -217,4 +218,4 @@ export const conversationRoutes = new Elysia()
     });
 
     return { success: true, data };
-  });
+  }, { detail: { description: 'List conversations with previews' } });

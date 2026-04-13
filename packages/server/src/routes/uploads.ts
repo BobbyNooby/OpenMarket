@@ -20,7 +20,7 @@ await mkdir(UPLOAD_DIR, { recursive: true }).catch(() => {});
 // Only allow [a-z0-9-] + .webp in served filenames so there's no path traversal
 const SAFE_FILENAME = /^[a-z0-9-]+\.webp$/i;
 
-export const uploadsRoutes = new Elysia({ prefix: '/uploads' })
+export const uploadsRoutes = new Elysia({ prefix: '/uploads', detail: { tags: ['Uploads'] } })
 	.use(authMiddleware)
 
 	// POST /uploads/image — upload a single image
@@ -113,6 +113,7 @@ export const uploadsRoutes = new Elysia({ prefix: '/uploads' })
 			body: t.Object({
 				file: t.File({ maxSize: MAX_SIZE_BYTES }),
 			}),
+			detail: { description: 'Upload and process a single image' }
 		},
 	)
 
@@ -139,5 +140,5 @@ export const uploadsRoutes = new Elysia({ prefix: '/uploads' })
 				},
 			});
 		},
-		{ params: t.Object({ filename: t.String() }) },
+		{ params: t.Object({ filename: t.String() }), detail: { description: 'Serve an uploaded image file' } },
 	);

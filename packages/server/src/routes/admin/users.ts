@@ -142,7 +142,8 @@ export const adminUserRoutes = new Elysia()
 				offset: t.Optional(t.String()),
 				search: t.Optional(t.String()),
 				role: t.Optional(t.String())
-			})
+			}),
+			detail: { description: 'List users with search and role filter' }
 		}
 	)
 
@@ -183,7 +184,8 @@ export const adminUserRoutes = new Elysia()
 		},
 		{
 			params: t.Object({ id: t.String() }),
-			body: t.Object({ role: t.String() })
+			body: t.Object({ role: t.String() }),
+			detail: { description: 'Assign a role to a user' }
 		}
 	)
 
@@ -214,7 +216,8 @@ export const adminUserRoutes = new Elysia()
 			}
 		},
 		{
-			params: t.Object({ id: t.String(), role: t.String() })
+			params: t.Object({ id: t.String(), role: t.String() }),
+			detail: { description: 'Remove a role from a user' }
 		}
 	)
 
@@ -280,7 +283,8 @@ export const adminUserRoutes = new Elysia()
 			body: t.Object({
 				reason: t.String({ minLength: 1 }),
 				expiresAt: t.Optional(t.String()),
-			})
+			}),
+			detail: { description: 'Ban a user' }
 		}
 	)
 
@@ -315,7 +319,8 @@ export const adminUserRoutes = new Elysia()
 			}
 		},
 		{
-			params: t.Object({ id: t.String() })
+			params: t.Object({ id: t.String() }),
+			detail: { description: 'Remove all active bans from a user' }
 		}
 	)
 
@@ -369,7 +374,8 @@ export const adminUserRoutes = new Elysia()
 			params: t.Object({ id: t.String() }),
 			body: t.Object({
 				reason: t.String({ minLength: 1 }),
-			})
+			}),
+			detail: { description: 'Issue a warning to a user' }
 		}
 	)
 
@@ -438,7 +444,8 @@ export const adminUserRoutes = new Elysia()
 			}
 		},
 		{
-			params: t.Object({ id: t.String() })
+			params: t.Object({ id: t.String() }),
+			detail: { description: 'Get ban and warning history for a user' }
 		}
 	)
 
@@ -484,6 +491,7 @@ export const adminUserRoutes = new Elysia()
 			}
 		},
 		{
-			params: t.Object({ id: t.String() })
+			params: t.Object({ id: t.String() }),
+			detail: { description: 'Permanently delete a user' }
 		}
 	);

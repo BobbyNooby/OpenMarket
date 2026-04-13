@@ -4,7 +4,7 @@ import { listingsManageRoutes } from './manage';
 import { listingAnalyticsRoutes } from './analytics';
 import { listingPreviewRoutes } from './preview';
 
-export const listingsRoutes = new Elysia({ prefix: '/listings' })
+export const listingsRoutes = new Elysia({ prefix: '/listings', detail: { tags: ['Listings'] } })
 	.use(listingsBrowseRoutes)
 	.use(listingsManageRoutes)
 	.use(listingAnalyticsRoutes)

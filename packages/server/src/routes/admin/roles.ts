@@ -18,7 +18,7 @@ export const adminRoleRoutes = new Elysia()
 			console.error('Get roles error:', err);
 			return { success: false, error: err.message, status: 500 };
 		}
-	})
+	}, { detail: { description: 'List all roles' } })
 
 	// Get all permissions
 	.get('/permissions', async () => {
@@ -29,7 +29,7 @@ export const adminRoleRoutes = new Elysia()
 			console.error('Get permissions error:', err);
 			return { success: false, error: err.message, status: 500 };
 		}
-	})
+	}, { detail: { description: 'List all permissions' } })
 
 	// Get single role with its permissions
 	.get(
@@ -63,7 +63,8 @@ export const adminRoleRoutes = new Elysia()
 			}
 		},
 		{
-			params: t.Object({ id: t.String() })
+			params: t.Object({ id: t.String() }),
+			detail: { description: 'Get a role with its permissions' }
 		}
 	)
 
@@ -101,7 +102,8 @@ export const adminRoleRoutes = new Elysia()
 			body: t.Object({
 				name: t.String(),
 				description: t.Optional(t.String())
-			})
+			}),
+			detail: { description: 'Create a new role' }
 		}
 	)
 
@@ -131,7 +133,8 @@ export const adminRoleRoutes = new Elysia()
 			body: t.Object({
 				name: t.String(),
 				description: t.Optional(t.String())
-			})
+			}),
+			detail: { description: 'Update a role name or description' }
 		}
 	)
 
@@ -160,7 +163,8 @@ export const adminRoleRoutes = new Elysia()
 			}
 		},
 		{
-			params: t.Object({ id: t.String() })
+			params: t.Object({ id: t.String() }),
+			detail: { description: 'Delete a custom role' }
 		}
 	)
 
@@ -204,6 +208,7 @@ export const adminRoleRoutes = new Elysia()
 			params: t.Object({ id: t.String() }),
 			body: t.Object({
 				permissions: t.Array(t.String())
-			})
+			}),
+			detail: { description: 'Replace all permissions for a role' }
 		}
 	);

@@ -215,7 +215,8 @@ export const adminReportRoutes = new Elysia()
 				limit: t.Optional(t.String()),
 				offset: t.Optional(t.String()),
 				status: t.Optional(t.String()),
-			})
+			}),
+			detail: { description: 'List reports with optional status filter' }
 		}
 	)
 
@@ -277,7 +278,8 @@ export const adminReportRoutes = new Elysia()
 			params: t.Object({ id: t.String() }),
 			body: t.Object({
 				status: t.Union([t.Literal('resolved'), t.Literal('dismissed')]),
-			})
+			}),
+			detail: { description: 'Resolve or dismiss a report' }
 		}
 	)
 
@@ -507,6 +509,7 @@ export const adminReportRoutes = new Elysia()
 				limit: t.Optional(t.String()),
 				offset: t.Optional(t.String()),
 				type: t.Optional(t.String()),
-			})
+			}),
+			detail: { description: 'Get unified moderation log' }
 		}
 	);

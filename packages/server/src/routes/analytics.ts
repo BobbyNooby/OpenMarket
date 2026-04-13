@@ -31,7 +31,7 @@ setInterval(() => {
   }
 }, 5 * 60_000);
 
-export const analyticsRoutes = new Elysia({ prefix: "/telemetry" })
+export const analyticsRoutes = new Elysia({ prefix: "/telemetry", detail: { tags: ["Analytics"] } })
   .use(authMiddleware)
 
   .post(
@@ -66,5 +66,6 @@ export const analyticsRoutes = new Elysia({ prefix: "/telemetry" })
         path: t.Optional(t.String()),
         referrer: t.Optional(t.String()),
       }),
+      detail: { description: 'Track a client-side analytics event' }
     },
   );

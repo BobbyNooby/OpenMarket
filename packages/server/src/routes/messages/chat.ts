@@ -108,6 +108,7 @@ export const chatRoutes = new Elysia()
         before: t.Optional(t.String()),
         limit: t.Optional(t.String()),
       }),
+      detail: { description: 'Get paginated messages in a conversation' }
     },
   )
 
@@ -199,6 +200,7 @@ export const chatRoutes = new Elysia()
     {
       params: t.Object({ id: t.String() }),
       body: t.Object({ content: t.String() }),
+      detail: { description: 'Send a message in a conversation' }
     },
   )
 
@@ -242,5 +244,5 @@ export const chatRoutes = new Elysia()
 
       return { success: true };
     },
-    { params: t.Object({ id: t.String() }) },
+    { params: t.Object({ id: t.String() }), detail: { description: 'Soft-delete a message' } },
   );

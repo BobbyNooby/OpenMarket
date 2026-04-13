@@ -13,7 +13,7 @@ import { authMiddleware } from '../middleware/rbac';
 
 const MAX_PER_LIST = 50;
 
-export const listsRoutes = new Elysia({ prefix: '/lists' })
+export const listsRoutes = new Elysia({ prefix: '/lists', detail: { tags: ['Users'] } })
 	.use(authMiddleware)
 
 	// GET /lists/:userId — fetch a user's have/want lists (public)
@@ -72,7 +72,7 @@ export const listsRoutes = new Elysia({ prefix: '/lists' })
 
 			return { success: true, data: { have, want } };
 		},
-		{ params: t.Object({ userId: t.String() }) },
+		{ params: t.Object({ userId: t.String() }), detail: { description: 'Get a user have/want lists' } },
 	)
 
 	// POST /lists — add an entry for the authenticated user
@@ -142,6 +142,7 @@ export const listsRoutes = new Elysia({ prefix: '/lists' })
 				item_id: t.Optional(t.String()),
 				currency_id: t.Optional(t.String()),
 			}),
+			detail: { description: 'Add an item or currency to a list' }
 		},
 	)
 
@@ -168,7 +169,7 @@ export const listsRoutes = new Elysia({ prefix: '/lists' })
 
 			return { success: true };
 		},
-		{ params: t.Object({ id: t.String() }) },
+		{ params: t.Object({ id: t.String() }), detail: { description: 'Remove an entry from a list' } },
 	)
 
 	// GET /lists/search — reverse search: find users who have/want a specific item or currency
@@ -258,5 +259,6 @@ export const listsRoutes = new Elysia({ prefix: '/lists' })
 				limit: t.Optional(t.String()),
 				offset: t.Optional(t.String()),
 			}),
+			detail: { description: 'Find users who have or want an item' }
 		},
 	);

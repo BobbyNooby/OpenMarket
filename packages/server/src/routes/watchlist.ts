@@ -16,7 +16,7 @@ import {
 	serializeListing,
 } from './listings/shared';
 
-export const watchlistRoutes = new Elysia({ prefix: '/watchlist' })
+export const watchlistRoutes = new Elysia({ prefix: '/watchlist', detail: { tags: ['Watchlist'] } })
 	.use(authMiddleware)
 
 	// GET /watchlist — list authenticated user's saved listings
@@ -55,7 +55,7 @@ export const watchlistRoutes = new Elysia({ prefix: '/watchlist' })
 			.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
 
 		return { success: true, data: serialized };
-	})
+	}, { detail: { description: 'List saved listings for current user' } })
 
 	// GET /watchlist/ids — lightweight: just the IDs (used by listing pages to show heart state)
 	.get('/ids', async ({ session, set }) => {
@@ -67,7 +67,7 @@ export const watchlistRoutes = new Elysia({ prefix: '/watchlist' })
 			.where(eq(watchlistTable.user_id, session.user.id));
 
 		return { success: true, data: rows.map((r) => r.listing_id) };
-	})
+	}, { detail: { description: 'Get saved listing IDs for current user' } })
 
 	// POST /watchlist/:listingId — toggle saved state
 	.post(
@@ -111,5 +111,5 @@ export const watchlistRoutes = new Elysia({ prefix: '/watchlist' })
 
 			return { success: true, saved: true };
 		},
-		{ params: t.Object({ listingId: t.String() }) },
+		{ params: t.Object({ listingId: t.String() }), detail: { description: 'Toggle a listing saved state' } },
 	);

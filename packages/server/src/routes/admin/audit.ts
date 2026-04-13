@@ -124,6 +124,7 @@ export const adminAuditRoutes = new Elysia()
 				action: t.Optional(t.String()),
 				actor: t.Optional(t.String()),
 				target_type: t.Optional(t.String()),
-			})
+			}),
+			detail: { description: 'List audit log entries with filters' }
 		}
 	);

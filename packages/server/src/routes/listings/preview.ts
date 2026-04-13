@@ -98,5 +98,5 @@ export const listingPreviewRoutes = new Elysia()
 				return { success: false, error: err?.message ?? 'Failed to render preview' };
 			}
 		},
-		{ params: t.Object({ id: t.String() }) },
+		{ params: t.Object({ id: t.String() }), detail: { description: 'Generate an OG preview image for a listing' } },
 	);

@@ -6,7 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/rbac';
 import { trackEvent } from '../services/analytics';
 
-export const reportsRoutes = new Elysia({ prefix: '/reports' })
+export const reportsRoutes = new Elysia({ prefix: '/reports', detail: { tags: ['Reports'] } })
 	.use(authMiddleware)
 	.post(
 		'/',
@@ -115,6 +115,7 @@ export const reportsRoutes = new Elysia({ prefix: '/reports' })
 				target_type: t.Union([t.Literal('listing'), t.Literal('review'), t.Literal('user')]),
 				target_id: t.String(),
 				reason: t.String({ minLength: 1 }),
-			})
+			}),
+			detail: { description: 'Submit a report against content or a user' }
 		}
 	);

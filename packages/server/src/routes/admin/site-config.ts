@@ -18,14 +18,14 @@ const ALLOWED_VARIABLES = new Set<string>(THEME_VARIABLES);
 export const adminSiteConfigRoutes = new Elysia()
 	.use(authMiddleware)
 
-	// GET /admin/site-config — full config + both theme variants (admin only)
+	// GET /admin/site-config
 	.get('/site-config', ({ session, set }) => {
 		if (!session.permissions.includes('admin:settings')) {
 			set.status = 403;
 			return { success: false, error: 'Forbidden' };
 		}
 		return { success: true, data: { config: getSiteConfig(), theme: getSiteTheme() } };
-	})
+	}, { detail: { description: 'Get full site config and theme' } })
 
 	// PUT /admin/site-config — update non-theme config
 	.put(
@@ -48,6 +48,7 @@ export const adminSiteConfigRoutes = new Elysia()
 		},
 		{
 			body: t.Record(t.String(), t.String()),
+			detail: { description: 'Update site config values' }
 		},
 	)
 
@@ -98,6 +99,7 @@ export const adminSiteConfigRoutes = new Elysia()
 				variant: t.String(),
 				variables: t.Record(t.String(), t.String()),
 			}),
+			detail: { description: 'Update theme variables for a variant' }
 		},
 	)
 
@@ -149,5 +151,6 @@ export const adminSiteConfigRoutes = new Elysia()
 				variant: t.String(),
 				variable: t.Optional(t.String()),
 			}),
+			detail: { description: 'Reset theme variant or variable to default' }
 		},
 	);

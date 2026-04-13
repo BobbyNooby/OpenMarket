@@ -32,9 +32,11 @@ export const apiRateLimit = new Elysia({ name: 'api-rate-limit' })
 		}),
 	);
 
-// Security headers — set on every response
+// Security headers — set on every response (skip docs pages)
 export const securityHeaders = new Elysia({ name: 'security-headers' })
-	.onAfterHandle(({ set }) => {
+	.onAfterHandle(({ set, request }) => {
+		const path = new URL(request.url).pathname;
+		if (path.startsWith('/docs')) return;
 		set.headers['x-content-type-options'] = 'nosniff';
 		set.headers['x-frame-options'] = 'DENY';
 		set.headers['x-xss-protection'] = '1; mode=block';
