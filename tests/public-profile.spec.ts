@@ -6,9 +6,9 @@ test.describe('Public Profile', () => {
 		await page.waitForLoadState('networkidle');
 		// In CI the testuser profile might not exist — allow 404 or redirect
 		if (page.url().includes('/login') || page.url().includes('/onboarding')) return;
+		// Either the profile renders or we get a not-found page — both are valid
 		const heading = page.getByRole('heading', { name: 'testuser' });
-		const notFound = page.getByText(/not found/i);
-		// Either the profile renders or we get a not-found page
+		const notFound = page.getByRole('heading', { name: /not found/i });
 		await expect(heading.or(notFound)).toBeVisible({ timeout: 5000 });
 	});
 
