@@ -82,13 +82,22 @@
 			'role.assign': m.admin_audit_action_role_assigned(),
 			'role.remove': m.admin_audit_action_role_removed(),
 			'report.resolve': m.admin_audit_action_report_resolved(),
+			'site_config:update': 'Site Config Updated',
+			'site_theme:update': 'Theme Updated',
+			'site_theme:reset_variable': 'Theme Variable Reset',
+			'site_theme:reset_variant': 'Theme Variant Reset',
+			'media:delete': 'Media Deleted',
+			'media:cleanup': 'Media Cleanup',
+			'media:assign_asset': 'Asset Assigned',
+			'media:clear_asset': 'Asset Cleared',
 		};
-		return labels[action] ?? action;
+		return labels[action] ?? action.replace(/[_:]/g, ' ');
 	}
 
 	function actionVariant(action: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-		if (action === 'user.ban' || action === 'user.delete') return 'destructive';
+		if (action === 'user.ban' || action === 'user.delete' || action === 'media:delete') return 'destructive';
 		if (action === 'user.warn') return 'default';
+		if (action.startsWith('site_config') || action.startsWith('site_theme') || action.startsWith('media')) return 'secondary';
 		return 'outline';
 	}
 
@@ -99,6 +108,12 @@
 		if (md.role) return `Role: ${md.role}`;
 		if (md.status) return `Status: ${md.status}`;
 		if (md.deletedUserName) return `User: ${md.deletedUserName}`;
+		if (md.keys) return `Keys: ${(md.keys as string[]).join(', ')}`;
+		if (md.filename) return String(md.filename);
+		if (md.deleted) return `${md.deleted} files removed`;
+		if (md.upload_id) return `Upload: ${String(md.upload_id).slice(0, 8)}...`;
+		if (md.variable) return String(md.variable);
+		if (md.variant) return String(md.variant);
 		return '';
 	}
 
