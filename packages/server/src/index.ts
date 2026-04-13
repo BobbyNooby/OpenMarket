@@ -58,7 +58,9 @@ const app = new Elysia()
   })
   .use(
     cors({
-      origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:4173"],
+      origin: process.env.CORS_ORIGINS
+        ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+        : ["http://localhost:5173", "http://localhost:5174", "http://localhost:4173"],
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       credentials: true,
     }),
