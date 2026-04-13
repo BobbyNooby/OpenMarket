@@ -94,7 +94,11 @@
 				return;
 			}
 
-			toast.success(m.onboarding_welcome_toast({ site: siteName }));
+			if (json.isAdmin) {
+				toast.success('You are the first user — admin role has been assigned!', { duration: 8000 });
+			} else {
+				toast.success(m.onboarding_welcome_toast({ site: siteName }));
+			}
 			goto('/');
 		} catch {
 			toast.error('Failed to complete setup');

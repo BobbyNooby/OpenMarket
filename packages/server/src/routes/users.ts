@@ -276,17 +276,22 @@ export const usersRoutes = new Elysia({ prefix: '/users' })
 							last_activity_at: new Date(),
 						})
 						.onConflictDoNothing();
-					await tx
-						.insert(userRolesTable)
-						.values({
-							userId: session.user!.id,
-							roleId: 'user',
-						})
-						.onConflictDoNothing();
 				});
 
+				// First user gets admin, everyone else gets user
+				const [{ profileCount }] = await db.select({ profileCount: count() }).from(userProfilesTable);
+				const isFirstUser = profileCount === 1;
+
+				if (isFirstUser) {
+					await db.insert(userRolesTable).values({ userId: session.user!.id, roleId: 'admin' }).onConflictDoNothing();
+					await db.insert(userRolesTable).values({ userId: session.user!.id, roleId: 'user' }).onConflictDoNothing();
+					console.log(`First user — assigned admin role to ${username}`);
+				} else {
+					await db.insert(userRolesTable).values({ userId: session.user!.id, roleId: 'user' }).onConflictDoNothing();
+				}
+
 				console.log(`Onboarding complete: ${session.user.id} (${username})`);
-				return { success: true };
+				return { success: true, isAdmin: isFirstUser };
 			} catch (err: any) {
 				const message = typeof err?.message === 'string' ? err.message : 'Unknown error';
 				const isConflict = /unique|constraint|conflict/i.test(message);
