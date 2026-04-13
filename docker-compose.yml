@@ -17,26 +17,28 @@ services:
 
   server:
     build:
-      context: ./packages/server
+      context: .
+      dockerfile: packages/server/Dockerfile
     ports:
       - "3000:3000"
     environment:
       DATABASE_URL: postgresql://openmarket:openmarket@postgres:5432/openmarket
       API_PORT: 3000
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-openmarket-dev-secret-change-me}
       BETTER_AUTH_URL: http://localhost:3000
-      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
-      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
       CORS_ORIGINS: http://localhost:4173,http://localhost:3001
     volumes:
-      - uploads:/app/uploads
+      - uploads:/app/packages/server/uploads
     depends_on:
       postgres:
         condition: service_healthy
 
   frontend:
     build:
-      context: ./packages/frontend
+      context: .
+      dockerfile: packages/frontend/Dockerfile
       args:
         PUBLIC_API_URL: http://localhost:3000
     ports:
