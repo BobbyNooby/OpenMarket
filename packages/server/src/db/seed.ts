@@ -2,7 +2,6 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import {
   user,
-  account,
   userProfilesTable,
   usersActivityTable,
   itemsTable,
@@ -507,18 +506,6 @@ async function seed() {
       email: `${userData.username}@openmarket.test`,
       emailVerified: false,
       image: getAvatarUrl(userData.username),
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    // Create a credential account so these users can sign in with email/password
-    await db.insert(account).values({
-      id: generateId(),
-      accountId: userId,
-      providerId: "credential",
-      userId: userId,
-      // bcrypt hash of "SimPassword123!"
-      password: "$2b$10$Urs/5JilLHr7VEcborCcce1zDC5GfOhxCziCXE6ymHxn38maLkNIq",
       createdAt: now,
       updatedAt: now,
     });
