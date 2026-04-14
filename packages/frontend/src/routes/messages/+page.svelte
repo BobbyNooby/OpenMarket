@@ -181,7 +181,7 @@
 	}
 
 	async function markAsRead(conversationId: string) {
-		// The GET messages endpoint already marks as read, but we call it to ensure
+		// The GET messages endpoint already marks as read, but we call it to be safe
 		await fetch(
 			`${PUBLIC_API_URL}/api/conversations/${conversationId}/messages?limit=1`,
 			{ credentials: 'include' }

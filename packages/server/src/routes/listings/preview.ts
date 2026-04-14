@@ -48,10 +48,8 @@ export const listingPreviewRoutes = new Elysia()
 			}
 
 			try {
-				console.log('Preview: fetching offered items for listing', listing.id);
 				const { offeredItemsByListing, offeredCurrenciesByListing } =
 					await fetchOfferedForListings([listing.id]);
-				console.log('Preview: offeredItems map has', offeredItemsByListing.size, 'entries, offeredCurrencies map has', offeredCurrenciesByListing.size);
 
 				const serialized = serializeListing(listing as any, offeredItemsByListing, offeredCurrenciesByListing);
 
