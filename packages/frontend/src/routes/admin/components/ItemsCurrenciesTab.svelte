@@ -6,6 +6,9 @@
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { m } from '$lib/paraglide/messages.js';
+	import { apiFetch, apiJson } from './admin-api';
+	import Upload from '@lucide/svelte/icons/upload';
+	import Download from '@lucide/svelte/icons/download';
 
 	interface Props {
 		data: {
@@ -125,14 +128,133 @@
 		error = null;
 		showForm = true;
 	}
+	let importInputEl: HTMLInputElement | undefined = $state();
+	let importHelpOpen = $state(false);
+
+	async function handleImport(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		input.value = '';
+
+		try {
+			const text = await file.text();
+			const json = JSON.parse(text);
+
+			if (!json.items && !json.currencies) {
+				toast.error('JSON must have an "items" and/or "currencies" array');
+				return;
+			}
+
+			const result = await apiJson('/admin/import', 'POST', json);
+
+			if (result.success) {
+				const parts = [];
+				if (result.items_imported || result.items_skipped) parts.push(`Items: ${result.items_imported} imported, ${result.items_skipped} skipped`);
+				if (result.currencies_imported || result.currencies_skipped) parts.push(`Currencies: ${result.currencies_imported} imported, ${result.currencies_skipped} skipped`);
+				toast.success(parts.join('. ') || 'Nothing to import');
+				if (result.errors?.length) {
+					result.errors.forEach((err: string) => toast.error(err));
+				}
+				await invalidateAll();
+			} else {
+				toast.error(result.error || 'Import failed');
+			}
+		} catch {
+			toast.error('Invalid JSON file');
+		}
+	}
+
+	async function handleExport() {
+		const { PUBLIC_API_URL } = await import('$env/static/public');
+		const result = await fetch(`${PUBLIC_API_URL}/admin/export`, { credentials: 'include' });
+		if (!result.ok) {
+			toast.error('Export failed');
+			return;
+		}
+		const blob = await result.blob();
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = 'catalog.json';
+		a.click();
+		URL.revokeObjectURL(url);
+	}
 </script>
 
 <div class="flex items-center justify-between mb-6">
 	<p class="text-muted-foreground">{m.admin_items_manage()}</p>
-	<Button onclick={handleCreate} disabled={isLoading}>
-		+ {m.admin_items_create()}
-	</Button>
+	<div class="flex items-center gap-2">
+		<Button variant="outline" size="sm" onclick={handleExport}>
+			<Download class="mr-1.5 h-3.5 w-3.5" />
+			Export
+		</Button>
+		<Button variant="outline" size="sm" onclick={() => { importHelpOpen = true; }}>
+			<Upload class="mr-1.5 h-3.5 w-3.5" />
+			Import JSON
+		</Button>
+		<Button onclick={handleCreate} disabled={isLoading}>
+			+ {m.admin_items_create()}
+		</Button>
+	</div>
 </div>
+
+<input
+	bind:this={importInputEl}
+	type="file"
+	accept=".json"
+	class="hidden"
+	onchange={handleImport}
+/>
+
+<!-- Import help dialog -->
+<Dialog.Root bind:open={importHelpOpen}>
+	<Dialog.Content class="sm:max-w-lg">
+		<Dialog.Header>
+			<Dialog.Title>Import Items or Currencies</Dialog.Title>
+			<Dialog.Description>Upload a JSON file matching one of the formats below.</Dialog.Description>
+		</Dialog.Header>
+
+		<div class="space-y-4 py-2">
+			<div class="space-y-2">
+				<p class="text-sm font-medium">JSON format</p>
+				<pre class="rounded-md bg-muted p-3 text-xs overflow-x-auto">{`{
+  "items": [
+    {
+      "name": "Diamond Sword",
+      "description": "A powerful blade",
+      "image_url": "https://...",
+      "category": "weapons"
+    }
+  ],
+  "currencies": [
+    {
+      "name": "Gold Coins",
+      "description": "Standard currency"
+    }
+  ]
+}`}</pre>
+				<p class="text-xs text-muted-foreground">Include one or both arrays in a single file.</p>
+			</div>
+
+			<div class="rounded-md border border-border p-3 text-xs text-muted-foreground space-y-1">
+				<p><strong>name</strong> is required. All other fields are optional.</p>
+				<p><strong>slug</strong> is auto-generated from name if not provided.</p>
+				<p><strong>category</strong> can be a slug (e.g. "weapons") or name (e.g. "Weapons").</p>
+				<p>Duplicates (by slug) are skipped automatically.</p>
+				<p>Max 500 entries per import.</p>
+			</div>
+		</div>
+
+		<div class="flex justify-between">
+			<Button variant="ghost" size="sm" onclick={() => { importHelpOpen = false; }}>Cancel</Button>
+			<Button size="sm" onclick={() => { importHelpOpen = false; importInputEl?.click(); }}>
+				<Upload class="mr-1.5 h-3.5 w-3.5" />
+				Choose file
+			</Button>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>
 
 <Dialog.Root bind:open={showForm}>
 	<Dialog.Content class="sm:max-w-4xl">

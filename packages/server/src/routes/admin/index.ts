@@ -7,6 +7,7 @@ import { adminAuditRoutes } from './audit';
 import { adminAnalyticsRoutes } from './analytics';
 import { adminSiteConfigRoutes } from './site-config';
 import { adminMediaRoutes } from './media';
+import { adminImportExportRoutes } from './import-export';
 
 export const adminRoutes = new Elysia({ prefix: '/admin', detail: { tags: ['Admin'] } })
 	.use(requireAuth())
@@ -16,4 +17,5 @@ export const adminRoutes = new Elysia({ prefix: '/admin', detail: { tags: ['Admi
 	.use(adminAuditRoutes)
 	.use(adminAnalyticsRoutes)
 	.use(adminSiteConfigRoutes)
-	.use(adminMediaRoutes);
+	.use(adminMediaRoutes)
+	.use(adminImportExportRoutes);
