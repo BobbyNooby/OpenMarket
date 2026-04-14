@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { ListingCard } from '$lib/components';
+	import { chatManager } from '$lib/stores/chat.svelte';
+	import { onMount } from 'svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
@@ -34,6 +36,20 @@
 	let allListings = $state<any[]>(data.listings || []);
 	let loading = $state(false);
 	let hasMore = $state(data.pagination?.hasMore ?? false);
+	let newListingIds = $state(new Set<string>());
+
+	onMount(() => {
+		const off = chatManager.on('new_listing', (rawData: unknown) => {
+			const listing = rawData as any;
+			if (allListings.some((l: any) => l.id === listing.id)) return;
+			allListings = [listing, ...allListings];
+			newListingIds.add(listing.id);
+			setTimeout(() => {
+				newListingIds = new Set([...newListingIds].filter(id => id !== listing.id));
+			}, 5000);
+		});
+		return off;
+	});
 	let offset = $state(data.listings?.length || 0);
 	let totalCount = $state(data.pagination?.total ?? 0);
 	const limit = 20;
@@ -536,7 +552,9 @@
 				{:else}
 					<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
 						{#each listings as order (order.id)}
-							<ListingCard {order} sessionUserId={data.session?.user?.id} watchlisted={watchlistSet.has(order.id)} />
+							<div class={newListingIds.has(order.id) ? 'animate-slide-in' : ''}>
+								<ListingCard {order} sessionUserId={data.session?.user?.id} watchlisted={watchlistSet.has(order.id)} />
+							</div>
 						{/each}
 					</div>
 				{/if}

@@ -13,6 +13,8 @@ import {
 	user,
 } from '../../db/schemas';
 import { eq, and, ne, inArray } from 'drizzle-orm';
+import { broadcastAll } from '../ws/connection-manager';
+import { listingSelectShape, requestedCurrencyTable, fetchOfferedForListings, serializeListing } from './shared';
 import { authMiddleware } from '../../middleware/rbac';
 import { trackEvent } from '../../services/analytics';
 
@@ -75,6 +77,23 @@ export const listingsManageRoutes = new Elysia()
 				}
 
 				trackEvent({ type: "listing_created", userId: session.user.id, metadata: { listing_id: listing.id, order_type: body.order_type, item_id: body.requested_item_id } });
+
+				// Broadcast new listing to all connected users
+				try {
+					const [full] = await db.select(listingSelectShape)
+						.from(listingsTable)
+						.innerJoin(user, eq(listingsTable.author_id, user.id))
+						.leftJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
+						.leftJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
+						.leftJoin(requestedCurrencyTable, eq(listingsTable.requested_currency_id, requestedCurrencyTable.id))
+						.where(eq(listingsTable.id, listing.id));
+					if (full) {
+						const { offeredItemsByListing, offeredCurrenciesByListing } = await fetchOfferedForListings([listing.id]);
+						const serialized = serializeListing(full as any, offeredItemsByListing, offeredCurrenciesByListing);
+						broadcastAll({ type: 'new_listing', data: serialized as unknown as Record<string, unknown> });
+					}
+				} catch { /* fire and forget */ }
+
 				return { success: true, data: listing };
 			} catch (err: any) {
 				console.error('Create listing error:', err);

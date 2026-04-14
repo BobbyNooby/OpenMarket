@@ -35,7 +35,8 @@ type WsMessageOut =
 				created_at: string;
 			};
 	  }
-	| { type: 'pong' };
+	| { type: 'pong' }
+	| { type: 'new_listing'; data: Record<string, unknown> };
 
 type EventCallback = (data: unknown) => void;
 
@@ -144,6 +145,12 @@ class ChatManager {
 		}
 
 		if (msg.type === 'pong') return;
+
+		// Broadcast new listing to any registered listeners
+		if (msg.type === 'new_listing') {
+			this.emit('new_listing', msg.data);
+			return;
+		}
 
 		// Handle notification events — show toast and update notification store
 		if (msg.type === 'notification') {

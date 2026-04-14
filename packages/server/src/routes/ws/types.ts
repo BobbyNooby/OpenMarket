@@ -35,7 +35,8 @@ export type WsMessageOut =
         created_at: string;
       };
     }
-  | { type: "pong" };
+  | { type: "pong" }
+  | { type: "new_listing"; data: Record<string, unknown> };
 
 export type WsMessageIn =
   | { type: "ping" }

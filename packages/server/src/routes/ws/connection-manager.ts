@@ -80,3 +80,13 @@ export function isUserConnected(userId: string): boolean {
   const set = connections.get(userId);
   return !!set && set.size > 0;
 }
+
+// Send a message to ALL connected users
+export function broadcastAll(message: WsMessageOut): void {
+  const payload = JSON.stringify(message);
+  for (const [, set] of connections) {
+    for (const ws of set) {
+      try { ws.send(payload); } catch {}
+    }
+  }
+}

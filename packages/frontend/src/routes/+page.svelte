@@ -14,6 +14,8 @@
 	import Eye from '@lucide/svelte/icons/eye';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import { m } from '$lib/paraglide/messages.js';
+	import { chatManager } from '$lib/stores/chat.svelte';
+	import { onMount } from 'svelte';
 
 	let { data } = $props();
 	let searchQuery = $state('');
@@ -59,12 +61,30 @@
 	let offset = $state(0);
 	const limit = 12;
 
+	let newListingIds = $state(new Set<string>());
+
 	$effect(() => {
 		if (data.listings) {
 			allListings = data.listings;
 			offset = data.listings.length;
 		}
 		hasMore = data.pagination?.hasMore ?? false;
+	});
+
+	onMount(() => {
+		const off = chatManager.on('new_listing', (rawData: unknown) => {
+			const listing = rawData as any;
+			// Don't add duplicates
+			if (allListings.some((l: any) => l.id === listing.id)) return;
+			// Prepend to the list
+			allListings = [listing, ...allListings];
+			newListingIds.add(listing.id);
+			// Remove the "new" highlight after 5 seconds
+			setTimeout(() => {
+				newListingIds = new Set([...newListingIds].filter(id => id !== listing.id));
+			}, 5000);
+		});
+		return off;
 	});
 
 	const listings = $derived(
@@ -242,7 +262,9 @@
 						</h3>
 						<div class="space-y-4">
 							{#each buyOrders as order (order.id)}
-								<ListingCard {order} sessionUserId={data.session?.user?.id} />
+								<div class={newListingIds.has(order.id) ? 'animate-slide-in' : ''}>
+									<ListingCard {order} sessionUserId={data.session?.user?.id} />
+								</div>
 							{/each}
 							{#if buyOrders.length === 0}
 								<p class="py-4 text-center text-muted-foreground">No buy orders</p>
@@ -257,7 +279,9 @@
 						</h3>
 						<div class="space-y-4">
 							{#each sellOrders as order (order.id)}
-								<ListingCard {order} sessionUserId={data.session?.user?.id} />
+								<div class={newListingIds.has(order.id) ? 'animate-slide-in' : ''}>
+									<ListingCard {order} sessionUserId={data.session?.user?.id} />
+								</div>
 							{/each}
 							{#if sellOrders.length === 0}
 								<p class="py-4 text-center text-muted-foreground">No sell orders</p>
