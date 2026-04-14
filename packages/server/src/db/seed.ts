@@ -517,8 +517,8 @@ async function seed() {
       accountId: userId,
       providerId: "credential",
       userId: userId,
-      // bcrypt hash of "Password123!" (pre-computed)
-      password: "$2b$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012",
+      // bcrypt hash of "SimPassword123!"
+      password: "$2b$10$Urs/5JilLHr7VEcborCcce1zDC5GfOhxCziCXE6ymHxn38maLkNIq",
       createdAt: now,
       updatedAt: now,
     });

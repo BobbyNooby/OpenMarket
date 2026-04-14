@@ -1,17 +1,13 @@
-// Activity Simulator — hits the live API as random seeded users
+// Activity Simulator — creates realistic marketplace traffic directly via DB
 // Usage: bun --env-file=../../.env scripts/simulate.ts [--tick=2000] [--max=100]
-//
-// Creates realistic traffic: browsing, listing creation, watchlisting,
-// messaging, reviews, and more. Great for demos and populating analytics.
 
 import { db } from '../src/db/db';
-import { session as sessionTable, user } from '../src/db/schemas';
-import { userProfilesTable } from '../src/db/schemas';
+import { user, userProfilesTable, listingsTable, listingOfferedItemsTable, listingOfferedCurrenciesTable, itemsTable, currenciesTable, profileReviewsTable, watchlistTable } from '../src/db/schemas';
 import { eq, sql } from 'drizzle-orm';
+import { listingSelectShape, requestedCurrencyTable, fetchOfferedForListings, serializeListing } from '../src/routes/listings/shared';
 
 const API_URL = process.env.PUBLIC_API_URL || 'http://localhost:3000';
 
-// Parse CLI args
 const args = process.argv.slice(2);
 function getArg(name: string, fallback: number): number {
 	const arg = args.find(a => a.startsWith(`--${name}=`));
@@ -20,43 +16,32 @@ function getArg(name: string, fallback: number): number {
 const TICK_MS = getArg('tick', 2000);
 const MAX_EVENTS = getArg('max', 200);
 
-// Weighted action list
-const ACTIONS = [
-	{ name: 'browse', weight: 30, fn: browseListing },
-	{ name: 'view', weight: 20, fn: viewListing },
-	{ name: 'watchlist', weight: 10, fn: toggleWatchlist },
-	{ name: 'create_listing', weight: 8, fn: createListing },
-	{ name: 'review', weight: 8, fn: submitReview },
-	{ name: 'message', weight: 7, fn: sendMessage },
-	{ name: 'have_want', weight: 5, fn: toggleHaveWant },
-	{ name: 'pause_listing', weight: 4, fn: pauseListing },
-	{ name: 'track', weight: 8, fn: trackPageView },
-];
-
-const totalWeight = ACTIONS.reduce((sum, a) => sum + a.weight, 0);
-
-function pickAction() {
-	let r = Math.random() * totalWeight;
-	for (const action of ACTIONS) {
-		r -= action.weight;
-		if (r <= 0) return action;
-	}
-	return ACTIONS[0];
-}
-
 function randomChoice<T>(arr: T[]): T {
 	return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// Session cache: userId -> cookie string
-const sessions = new Map<string, string>();
+const ACTIONS = [
+	{ name: 'browse', weight: 10, fn: trackPageView },
+	{ name: 'create_listing', weight: 30, fn: createListing },
+	{ name: 'review', weight: 10, fn: submitReview },
+	{ name: 'watchlist', weight: 10, fn: toggleWatchlist },
+	{ name: 'view', weight: 15, fn: trackPageView },
+	{ name: 'pause_listing', weight: 5, fn: pauseListing },
+];
+
+const totalWeight = ACTIONS.reduce((sum, a) => sum + a.weight, 0);
+function pickAction() {
+	let r = Math.random() * totalWeight;
+	for (const a of ACTIONS) { r -= a.weight; if (r <= 0) return a; }
+	return ACTIONS[0];
+}
+
 let userList: { id: string; username: string }[] = [];
 let itemIds: string[] = [];
 let currencyIds: string[] = [];
 let listingIds: string[] = [];
 
 async function setup() {
-	// Get all seeded users (test emails)
 	const users = await db
 		.select({ id: user.id, username: userProfilesTable.username })
 		.from(user)
@@ -64,212 +49,147 @@ async function setup() {
 		.where(sql`${user.email} LIKE '%@openmarket.test'`);
 
 	if (users.length === 0) {
-		console.error('No seeded users found. Run pnpm db:seed first.');
+		console.error('No seeded users. Run pnpm db:seed first.');
 		process.exit(1);
 	}
 	userList = users;
 
-	// Create sessions for all users (or reuse existing)
-	for (const u of userList) {
-		const token = `sim_${u.id}_${Date.now()}`;
-		const sessionId = crypto.randomUUID();
-		await db.insert(sessionTable).values({
-			id: sessionId,
-			token,
-			userId: u.id,
-			expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-			createdAt: new Date(),
-			updatedAt: new Date(),
-			userAgent: 'OpenMarket-Simulator/1.0',
-			ipAddress: '127.0.0.1',
-		}).onConflictDoNothing();
-		sessions.set(u.id, `better-auth.session_token=${token}`);
-	}
+	const items = await db.select({ id: itemsTable.id }).from(itemsTable);
+	const currencies = await db.select({ id: currenciesTable.id }).from(currenciesTable);
+	const listings = await db.select({ id: listingsTable.id }).from(listingsTable).limit(50);
 
-	// Fetch items, currencies, listings
-	const [itemsRes, currRes, listRes] = await Promise.all([
-		apiFetch('/items'),
-		apiFetch('/currencies'),
-		apiFetch('/listings?limit=50'),
-	]);
-	itemIds = (itemsRes?.data ?? []).map((i: any) => i.id);
-	currencyIds = (currRes?.data ?? []).map((c: any) => c.id);
-	listingIds = (listRes?.data ?? []).map((l: any) => l.id);
+	itemIds = items.map(i => i.id);
+	currencyIds = currencies.map(c => c.id);
+	listingIds = listings.map(l => l.id);
 
 	console.log(`Loaded ${userList.length} users, ${itemIds.length} items, ${currencyIds.length} currencies, ${listingIds.length} listings`);
 }
 
-// API helpers
-async function apiFetch(path: string, init?: RequestInit & { cookie?: string }) {
-	const headers: Record<string, string> = { ...(init?.headers as Record<string, string> ?? {}) };
-	if (init?.cookie) headers['Cookie'] = init.cookie;
-	if (init?.body && typeof init.body === 'string') headers['Content-Type'] = 'application/json';
-	try {
-		const res = await fetch(`${API_URL}${path}`, { ...init, headers });
-		return res.json();
-	} catch {
-		return { success: false };
-	}
-}
-
 function randomUser() {
-	const u = randomChoice(userList);
-	return { ...u, cookie: sessions.get(u.id)! };
-}
-
-// Action handlers
-async function browseListing() {
-	const u = randomUser();
-	await apiFetch('/listings?limit=12&offset=0', { cookie: u.cookie });
-	return `${u.username} browsed listings`;
-}
-
-async function viewListing() {
-	if (listingIds.length === 0) return 'no listings to view';
-	const u = randomUser();
-	const id = randomChoice(listingIds);
-	await apiFetch(`/listings/${id}`, { cookie: u.cookie });
-	return `${u.username} viewed listing ${id.slice(0, 8)}`;
-}
-
-async function toggleWatchlist() {
-	if (listingIds.length === 0) return 'no listings to watchlist';
-	const u = randomUser();
-	const id = randomChoice(listingIds);
-	await apiFetch(`/watchlist/${id}`, { method: 'POST', cookie: u.cookie });
-	return `${u.username} toggled watchlist on ${id.slice(0, 8)}`;
+	return randomChoice(userList);
 }
 
 async function createListing() {
 	const u = randomUser();
+	const isBuy = Math.random() > 0.5;
 	const requestsItem = Math.random() > 0.2;
-	const body: any = {
+
+	const values: any = {
+		author_id: u.id,
 		amount: Math.floor(Math.random() * 10) + 1,
-		order_type: Math.random() > 0.5 ? 'buy' : 'sell',
+		order_type: isBuy ? 'buy' : 'sell',
 		paying_type: Math.random() > 0.7 ? 'total' : 'each',
-		offered_items: [],
-		offered_currencies: [],
+		status: 'active',
+		expires_at: new Date(Date.now() + 30 * 86400000),
 	};
 
 	if (requestsItem && itemIds.length > 0) {
-		body.requested_item_id = randomChoice(itemIds);
-		if (currencyIds.length > 0) {
-			body.offered_currencies = [{ currency_id: randomChoice(currencyIds), amount: Math.floor(Math.random() * 10000) + 100 }];
-		}
+		values.requested_item_id = randomChoice(itemIds);
 	} else if (currencyIds.length > 0) {
-		body.requested_currency_id = randomChoice(currencyIds);
-		body.amount = Math.floor(Math.random() * 50000) + 1000;
-		if (itemIds.length > 0) {
-			body.offered_items = [{ item_id: randomChoice(itemIds), amount: Math.floor(Math.random() * 5) + 1 }];
-		}
+		values.requested_currency_id = randomChoice(currencyIds);
+		values.amount = Math.floor(Math.random() * 50000) + 1000;
 	} else {
-		return 'no items or currencies available';
+		return 'no items or currencies';
 	}
 
-	const res = await apiFetch('/listings', { method: 'POST', body: JSON.stringify(body), cookie: u.cookie });
-	if (res?.success && res?.data?.id) {
-		listingIds.push(res.data.id);
+	const [listing] = await db.insert(listingsTable).values(values).returning();
+	listingIds.push(listing.id);
+
+	// Add offered items/currencies
+	if (currencyIds.length > 0 && !values.requested_currency_id) {
+		await db.insert(listingOfferedCurrenciesTable).values({
+			listing_id: listing.id,
+			currency_id: randomChoice(currencyIds),
+			amount: Math.floor(Math.random() * 10000) + 100,
+		});
 	}
-	return `${u.username} created a ${body.order_type} listing`;
+	if (itemIds.length > 0 && values.requested_currency_id) {
+		await db.insert(listingOfferedItemsTable).values({
+			listing_id: listing.id,
+			item_id: randomChoice(itemIds),
+			amount: Math.floor(Math.random() * 5) + 1,
+		});
+	}
+
+	// Broadcast via the internal endpoint so WebSocket clients see it in real-time
+	try {
+		const [full] = await db.select(listingSelectShape)
+			.from(listingsTable)
+			.innerJoin(user, eq(listingsTable.author_id, user.id))
+			.leftJoin(userProfilesTable, eq(user.id, userProfilesTable.userId))
+			.leftJoin(itemsTable, eq(listingsTable.requested_item_id, itemsTable.id))
+			.leftJoin(requestedCurrencyTable, eq(listingsTable.requested_currency_id, requestedCurrencyTable.id))
+			.where(eq(listingsTable.id, listing.id));
+		if (full) {
+			const { offeredItemsByListing, offeredCurrenciesByListing } = await fetchOfferedForListings([listing.id]);
+			const serialized = serializeListing(full as any, offeredItemsByListing, offeredCurrenciesByListing);
+			await fetch(`${API_URL}/internal/broadcast-listing`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(serialized),
+			});
+		}
+	} catch {}
+
+	return `${u.username} created a ${values.order_type} listing`;
 }
 
 async function submitReview() {
 	const reviewer = randomUser();
 	const target = randomChoice(userList.filter(u => u.id !== reviewer.id));
-	if (!target) return 'not enough users for review';
-	const body = {
+	if (!target) return 'not enough users';
+
+	const comments = ['Great trader!', 'Fast response', 'Good deal', 'Smooth trade', 'Reliable', 'Fair prices', 'Friendly'];
+	await db.insert(profileReviewsTable).values({
+		profile_user_id: target.id,
+		voter_user_id: reviewer.id,
 		type: Math.random() > 0.15 ? 'upvote' : 'downvote',
-		comment: Math.random() > 0.3 ? randomChoice([
-			'Great trader!', 'Fast response', 'Good deal', 'Smooth trade',
-			'Would trade again', 'Reliable', 'Fair prices', 'Friendly',
-		]) : undefined,
-	};
-	await apiFetch(`/users/profile/${target.username}/reviews`, {
-		method: 'POST',
-		body: JSON.stringify(body),
-		cookie: reviewer.cookie,
-	});
+		comment: Math.random() > 0.3 ? randomChoice(comments) : null,
+	}).onConflictDoNothing();
+
 	return `${reviewer.username} reviewed ${target.username}`;
 }
 
-async function sendMessage() {
-	const sender = randomUser();
-	const target = randomChoice(userList.filter(u => u.id !== sender.id));
-	if (!target) return 'not enough users for message';
-
-	// Start or get conversation
-	const convRes = await apiFetch('/api/conversations', {
-		method: 'POST',
-		body: JSON.stringify({ target_user_id: target.id }),
-		cookie: sender.cookie,
-	});
-	const convId = convRes?.data?.id;
-	if (!convId) return `${sender.username} failed to start conversation`;
-
-	const messages = [
-		'hey, interested in trading?', 'got any good deals?', 'how much for that?',
-		'still available?', 'nice collection!', 'want to trade?', 'good price',
-		'deal!', 'thanks for the trade', 'looking for anything specific?',
-	];
-	await apiFetch(`/api/conversations/${convId}/messages`, {
-		method: 'POST',
-		body: JSON.stringify({ content: randomChoice(messages) }),
-		cookie: sender.cookie,
-	});
-	return `${sender.username} messaged ${target.username}`;
-}
-
-async function toggleHaveWant() {
+async function toggleWatchlist() {
+	if (listingIds.length === 0) return 'no listings';
 	const u = randomUser();
-	const listType = Math.random() > 0.5 ? 'have' : 'want';
-	const isItem = Math.random() > 0.3;
-	const body: any = { list_type: listType };
-	if (isItem && itemIds.length > 0) {
-		body.item_id = randomChoice(itemIds);
-	} else if (currencyIds.length > 0) {
-		body.currency_id = randomChoice(currencyIds);
-	} else {
-		return 'no items to add';
-	}
-	await apiFetch(`/lists/${u.id}`, { method: 'POST', body: JSON.stringify(body), cookie: u.cookie });
-	return `${u.username} updated ${listType} list`;
+	const id = randomChoice(listingIds);
+	await db.insert(watchlistTable).values({
+		user_id: u.id,
+		listing_id: id,
+	}).onConflictDoNothing();
+	return `${u.username} watchlisted ${id.slice(0, 8)}`;
 }
 
 async function pauseListing() {
-	if (listingIds.length === 0) return 'no listings to pause';
-	const u = randomUser();
+	if (listingIds.length === 0) return 'no listings';
 	const id = randomChoice(listingIds);
 	const status = Math.random() > 0.5 ? 'paused' : 'active';
-	await apiFetch(`/listings/${id}/status`, {
-		method: 'PATCH',
-		body: JSON.stringify({ status }),
-		cookie: u.cookie,
-	});
-	return `${u.username} set listing ${id.slice(0, 8)} to ${status}`;
+	await db.update(listingsTable).set({ status }).where(eq(listingsTable.id, id));
+	return `set ${id.slice(0, 8)} to ${status}`;
 }
 
 async function trackPageView() {
+	// Just a no-op log — analytics tracking requires HTTP
 	const u = randomUser();
-	const pages = ['/', '/listings', '/items', '/dashboard', '/watchlist', '/messages'];
-	const path = randomChoice(pages);
-	await apiFetch('/telemetry/track', {
-		method: 'POST',
-		body: JSON.stringify({
-			event_type: 'page_view',
-			path,
-			session_id: `sim_${u.id}`,
-		}),
-		cookie: u.cookie,
-	});
-	return `${u.username} viewed ${path}`;
+	const pages = ['/', '/listings', '/items', '/dashboard', '/watchlist'];
+	return `${u.username} browsed ${randomChoice(pages)}`;
 }
 
-// Main loop
+async function fireAction() {
+	const action = pickAction();
+	try {
+		const result = await action.fn();
+		return { name: action.name, result };
+	} catch (err: any) {
+		return { name: action.name, result: `ERROR: ${err.message}` };
+	}
+}
+
 async function run() {
 	console.log('\n  OpenMarket Activity Simulator\n');
-	console.log(`  API:    ${API_URL}`);
-	console.log(`  Tick:   ${TICK_MS}ms`);
-	console.log(`  Max:    ${MAX_EVENTS} events\n`);
+	console.log(`  Tick:  ${TICK_MS}ms`);
+	console.log(`  Max:   ${MAX_EVENTS} events\n`);
 
 	await setup();
 
@@ -284,27 +204,27 @@ async function run() {
 			process.exit(0);
 		}
 
-		const action = pickAction();
-		try {
-			const result = await action.fn();
+		// 20% chance of a burst (3-5 rapid actions)
+		if (Math.random() < 0.2) {
+			const burstSize = Math.floor(Math.random() * 3) + 3;
+			console.log(`  --- burst of ${burstSize} ---`);
+			const results = await Promise.all(Array.from({ length: burstSize }, () => fireAction()));
+			for (const r of results) {
+				count++;
+				console.log(`  [${new Date().toLocaleTimeString()}] #${count} ${r.name}: ${r.result}`);
+			}
+		} else {
+			const r = await fireAction();
 			count++;
-			const time = new Date().toLocaleTimeString();
-			console.log(`  [${time}] #${count} ${action.name}: ${result}`);
-		} catch (err: any) {
-			console.error(`  [ERROR] ${action.name}: ${err.message}`);
+			console.log(`  [${new Date().toLocaleTimeString()}] #${count} ${r.name}: ${r.result}`);
 		}
 	}, TICK_MS);
 
-	// Graceful shutdown
 	process.on('SIGINT', () => {
 		clearInterval(interval);
-		const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-		console.log(`\n  Stopped. ${count} events in ${elapsed}s\n`);
+		console.log(`\n  Stopped. ${count} events in ${((Date.now() - startTime) / 1000).toFixed(1)}s\n`);
 		process.exit(0);
 	});
 }
 
-run().catch((err) => {
-	console.error('Simulator failed:', err);
-	process.exit(1);
-});
+run().catch(err => { console.error('Failed:', err); process.exit(1); });

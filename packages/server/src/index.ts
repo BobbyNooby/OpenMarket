@@ -18,6 +18,7 @@ import { auth } from "./auth";
 import { authMiddleware } from "./middleware/rbac";
 import { securityHeaders, authRateLimit, apiRateLimit } from "./middleware/security";
 import { eq } from "drizzle-orm";
+import { broadcastAll } from "./routes/ws/connection-manager";
 import { db } from "./db/db";
 import { userProfilesTable, usersActivityTable } from "./db/schemas";
 import { userRolesTable } from "./db/rbac-schema";
@@ -117,6 +118,16 @@ const app = new Elysia()
     success: true,
     data: { config: getSiteConfig(), theme: getSiteTheme(), assets: getSiteAssets() },
   }))
+  // Internal-only broadcast endpoint for the simulator (no auth, localhost only)
+  .post("/internal/broadcast-listing", async ({ body, request, set }) => {
+    const origin = request.headers.get('host') || '';
+    if (!origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+      set.status = 403;
+      return { success: false, error: 'Internal only' };
+    }
+    broadcastAll({ type: 'new_listing', data: body as Record<string, unknown> });
+    return { success: true };
+  })
   .use(authMiddleware)
   .get("/api/auth/get-session", async ({ session }) => {
     if (!session.user) return session;
