@@ -151,7 +151,6 @@
 				totalCount = result.pagination?.total ?? 0;
 			}
 		} catch (err) {
-			console.error('Failed to fetch listings:', err);
 		} finally {
 			loading = false;
 		}
@@ -201,7 +200,6 @@
 				hasMore = result.pagination?.hasMore ?? false;
 			}
 		} catch (err) {
-			console.error('Failed to load more listings:', err);
 		} finally {
 			loading = false;
 		}

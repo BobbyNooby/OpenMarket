@@ -70,23 +70,12 @@ export function sendToUser(userId: string, message: WsMessageOut): void {
   }
 }
 
-export function broadcast(userIds: string[], message: WsMessageOut): void {
-  for (const userId of userIds) {
-    sendToUser(userId, message);
-  }
-}
-
-export function isUserConnected(userId: string): boolean {
-  const set = connections.get(userId);
-  return !!set && set.size > 0;
-}
-
 // Send a message to ALL connected users
 export function broadcastAll(message: WsMessageOut): void {
   const payload = JSON.stringify(message);
   for (const [, set] of connections) {
     for (const ws of set) {
-      try { ws.send(payload); } catch {}
+      try { ws.send(payload); } catch { /* dead connection, cleaned up on close */ }
     }
   }
 }

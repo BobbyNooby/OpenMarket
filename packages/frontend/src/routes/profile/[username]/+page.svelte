@@ -156,7 +156,6 @@
 				reviewComment = '';
 			}
 		} catch (err: any) {
-			console.error('Failed to submit review:', err);
 			submitError = err.message || 'Failed to submit review';
 			toast.error(submitError!);
 		} finally {

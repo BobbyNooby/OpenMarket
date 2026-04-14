@@ -119,7 +119,6 @@
 				hasMore = result.pagination?.hasMore ?? false;
 			}
 		} catch (err) {
-			console.error('Failed to load more listings:', err);
 		} finally {
 			loading = false;
 		}

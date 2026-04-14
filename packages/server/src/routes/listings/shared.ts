@@ -5,8 +5,9 @@ import {
 	itemsTable,
 	currenciesTable,
 	userProfilesTable,
+	user,
+	listingsTable,
 } from '../../db/schemas';
-import { user } from '../../db/schemas';
 import { eq, inArray } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 
@@ -14,47 +15,38 @@ export const requestedCurrencyTable = alias(currenciesTable, 'requested_currency
 
 // --- serializers ---
 
-export function serializeItem(item: {
+type CatalogEntity = {
 	id: string; created_at: Date; slug: string; name: string;
 	description: string | null; wiki_link: string | null; image_url: string | null;
-}) {
+};
+
+function serializeEntity(e: CatalogEntity) {
 	return {
-		id: item.id,
-		created_at: item.created_at.toISOString(),
-		slug: item.slug,
-		name: item.name,
-		description: item.description ?? undefined,
-		wiki_link: item.wiki_link ?? undefined,
-		image_url: item.image_url ?? undefined,
+		id: e.id,
+		created_at: e.created_at.toISOString(),
+		slug: e.slug,
+		name: e.name,
+		description: e.description ?? undefined,
+		wiki_link: e.wiki_link ?? undefined,
+		image_url: e.image_url ?? undefined,
 	};
 }
 
-export function serializeCurrency(currency: {
-	id: string; created_at: Date; slug: string; name: string;
-	description: string | null; wiki_link: string | null; image_url: string | null;
-}) {
-	return {
-		id: currency.id,
-		created_at: currency.created_at.toISOString(),
-		slug: currency.slug,
-		name: currency.name,
-		description: currency.description ?? undefined,
-		wiki_link: currency.wiki_link ?? undefined,
-		image_url: currency.image_url ?? undefined,
-	};
-}
+// Keep named aliases for readability in serializeListing
+const serializeItem = serializeEntity;
+const serializeCurrency = serializeEntity;
 
-export function serializeItemOrNull(item: { id: string | null } & Record<string, unknown>) {
+function serializeItemOrNull(item: { id: string | null } & Record<string, unknown>) {
 	if (!item || !item.id) return undefined;
-	return serializeItem(item as Parameters<typeof serializeItem>[0]);
+	return serializeEntity(item as CatalogEntity);
 }
 
-export function serializeCurrencyOrNull(currency: { id: string | null } & Record<string, unknown>) {
+function serializeCurrencyOrNull(currency: { id: string | null } & Record<string, unknown>) {
 	if (!currency || !currency.id) return undefined;
 	return serializeCurrency(currency as Parameters<typeof serializeCurrency>[0]);
 }
 
-export function serializeAuthor(
+function serializeAuthor(
 	userData: { id: string; name: string; image: string | null; createdAt: Date },
 	profile: { username: string; description: string | null } | null,
 ) {
@@ -107,8 +99,6 @@ export const listingSelectShape = {
 		created_at: requestedCurrencyTable.created_at,
 	},
 };
-
-import { listingsTable } from '../../db/schemas';
 
 // --- batched offered items + currencies fetcher ---
 

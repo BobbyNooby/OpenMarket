@@ -8,7 +8,7 @@ import { eq, and } from "drizzle-orm";
 
 // --- defaults ---
 
-export const CONFIG_DEFAULTS: Record<string, string> = {
+const CONFIG_DEFAULTS: Record<string, string> = {
 	site_name: "OpenMarket",
 	site_tagline: "The marketplace for trading game items and currencies",
 	site_logo_url: "",
@@ -32,11 +32,11 @@ export const THEME_VARIABLES = [
 	"ring",
 ] as const;
 
-export type ThemeVariable = (typeof THEME_VARIABLES)[number];
+type ThemeVariable = (typeof THEME_VARIABLES)[number];
 export type ThemeVariant = "light" | "dark";
-export type ThemeVariables = Record<string, string>;
+type ThemeVariables = Record<string, string>;
 
-export const THEME_DEFAULTS: Record<ThemeVariant, ThemeVariables> = {
+const THEME_DEFAULTS: Record<ThemeVariant, ThemeVariables> = {
 	light: {
 		background: "0 0% 100%",
 		foreground: "222.2 47.4% 11.2%",
@@ -131,7 +131,7 @@ export function getSiteAssets(): Record<string, string> {
 	return { ...assetOverrides };
 }
 
-export function isLoaded() {
+function isLoaded() {
 	return loaded;
 }
 
