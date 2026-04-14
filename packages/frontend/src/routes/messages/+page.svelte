@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { PUBLIC_API_URL } from '$env/static/public';
-	import { chatManager } from '$lib/stores/chat.svelte';
+	import { wsManager } from '$lib/stores/ws.svelte';
 	import ConversationList from './ConversationList.svelte';
 	import MessageThread from './MessageThread.svelte';
 	import MessageInput from './MessageInput.svelte';
@@ -68,7 +68,7 @@
 	onMount(() => {
 		// Subscribe to real-time events
 		unsubscribers.push(
-			chatManager.on('new_message', (raw) => {
+			wsManager.on('new_message', (raw) => {
 				const msg = raw as Message;
 				// If this is the active conversation, append message
 				if (msg.conversation_id === activeConversationId) {
@@ -82,7 +82,7 @@
 							? { ...c, unread_count: c.unread_count + 1 }
 							: c
 					);
-					// totalUnread is bumped automatically by chatManager
+					// totalUnread is bumped automatically by wsManager
 				}
 
 				// Update last message preview and reorder
@@ -106,7 +106,7 @@
 		);
 
 		unsubscribers.push(
-			chatManager.on('message_deleted', (raw) => {
+			wsManager.on('message_deleted', (raw) => {
 				const data = raw as { message_id: string; conversation_id: string };
 				messages = messages.map((m) =>
 					m.id === data.message_id ? { ...m, is_deleted: true, content: null } : m
@@ -116,7 +116,7 @@
 
 		// Auto-open conversation if deep-linked
 		if (activeConversationId) {
-			chatManager.activeConversationId = activeConversationId;
+			wsManager.activeConversationId = activeConversationId;
 			loadMessages(activeConversationId);
 			showSidebar = false;
 		}
@@ -124,7 +124,7 @@
 
 	onDestroy(() => {
 		for (const unsub of unsubscribers) unsub();
-		chatManager.activeConversationId = null;
+		wsManager.activeConversationId = null;
 	});
 
 	async function loadMessages(conversationId: string) {
@@ -190,12 +190,12 @@
 
 	function recalcTotalUnread() {
 		const total = conversations.reduce((sum, c) => sum + c.unread_count, 0);
-		chatManager.updateUnreadCount(total);
+		wsManager.updateUnreadCount(total);
 	}
 
 	function selectConversation(id: string) {
 		activeConversationId = id;
-		chatManager.activeConversationId = id;
+		wsManager.activeConversationId = id;
 		showSidebar = false;
 		loadMessages(id);
 	}
@@ -203,7 +203,7 @@
 	function backToList() {
 		showSidebar = true;
 		activeConversationId = null;
-		chatManager.activeConversationId = null;
+		wsManager.activeConversationId = null;
 	}
 
 	async function startNewConversation(targetUserId: string) {
@@ -331,7 +331,7 @@
 				{hasMore}
 				onLoadMore={loadOlderMessages}
 				onBack={backToList}
-				typingUsers={chatManager.typingUsers.get(activeConversation.id)}
+				typingUsers={wsManager.typingUsers.get(activeConversation.id)}
 			/>
 			<MessageInput
 				conversationId={activeConversation.id}

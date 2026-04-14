@@ -10,7 +10,7 @@
 	import Moon from '@lucide/svelte/icons/moon';
 	import Toaster from '$lib/components/ui/sonner/sonner.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import { chatManager } from '$lib/stores/chat.svelte';
+	import { wsManager } from '$lib/stores/ws.svelte';
 	import { notificationManager } from '$lib/stores/notifications.svelte';
 	import { track } from '$lib/utils/analytics';
 	import { afterNavigate } from '$app/navigation';
@@ -48,8 +48,8 @@
 
 		// Connect WebSocket for real-time messaging (logged-in users only)
 		if (data.session?.user) {
-			chatManager.updateUnreadCount(data.unreadMessageCount ?? 0);
-			chatManager.connect();
+			wsManager.updateUnreadCount(data.unreadMessageCount ?? 0);
+			wsManager.connect();
 			notificationManager.fetch();
 		}
 	});
@@ -59,7 +59,7 @@
 	});
 
 	onDestroy(() => {
-		chatManager.disconnect();
+		wsManager.disconnect();
 	});
 </script>
 

@@ -6,7 +6,7 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { createPermissionChecker, type Session } from '$lib/utils/permissions';
-	import { chatManager } from '$lib/stores/chat.svelte';
+	import { wsManager } from '$lib/stores/ws.svelte';
 	import NotificationDropdown from './NotificationDropdown.svelte';
 	import MessageSquare from '@lucide/svelte/icons/message-square';
 	import Languages from '@lucide/svelte/icons/languages';
@@ -90,12 +90,12 @@
 					class="relative font-medium text-foreground transition-colors hover:text-primary"
 				>
 					<MessageSquare class="h-5 w-5" />
-					{#if chatManager.totalUnread > 0}
+					{#if wsManager.totalUnread > 0}
 						<Badge
 							variant="destructive"
 							class="absolute -right-2.5 -top-2 h-4 min-w-4 px-1 text-[10px]"
 						>
-							{chatManager.totalUnread > 99 ? '99+' : chatManager.totalUnread}
+							{wsManager.totalUnread > 99 ? '99+' : wsManager.totalUnread}
 						</Badge>
 					{/if}
 				</a>

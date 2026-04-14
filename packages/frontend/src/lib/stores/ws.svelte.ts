@@ -40,7 +40,7 @@ type WsMessageOut =
 
 type EventCallback = (data: unknown) => void;
 
-class ChatManager {
+class WsManager {
 	connected = $state(false);
 	totalUnread = $state(0);
 	typingUsers = $state<Map<string, Set<string>>>(new Map());
@@ -146,12 +146,6 @@ class ChatManager {
 
 		if (msg.type === 'pong') return;
 
-		// Broadcast new listing to any registered listeners
-		if (msg.type === 'new_listing') {
-			this.emit('new_listing', msg.data);
-			return;
-		}
-
 		// Handle notification events — show toast and update notification store
 		if (msg.type === 'notification') {
 			// Dynamically import to avoid circular dependency
@@ -250,4 +244,4 @@ class ChatManager {
 	}
 }
 
-export const chatManager = new ChatManager();
+export const wsManager = new WsManager();

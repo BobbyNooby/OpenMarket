@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { ListingCard } from '$lib/components';
-	import { chatManager } from '$lib/stores/chat.svelte';
+	import { wsManager } from '$lib/stores/ws.svelte';
 	import { onMount } from 'svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
-	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import type { Item, Currency } from '$lib/api/types';
@@ -39,7 +38,7 @@
 	let newListingIds = $state(new Set<string>());
 
 	onMount(() => {
-		const off = chatManager.on('new_listing', (rawData: unknown) => {
+		const off = wsManager.on('new_listing', (rawData: unknown) => {
 			const listing = rawData as any;
 			if (allListings.some((l: any) => l.id === listing.id)) return;
 			allListings = [listing, ...allListings];

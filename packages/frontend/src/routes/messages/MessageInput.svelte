@@ -2,7 +2,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Button } from '$lib/components/ui/button';
 	import SendHorizontal from '@lucide/svelte/icons/send-horizontal';
-	import { chatManager } from '$lib/stores/chat.svelte';
+	import { wsManager } from '$lib/stores/ws.svelte';
 
 	interface Props {
 		conversationId: string;
@@ -46,7 +46,7 @@
 		// Typing indicator
 		if (!isTyping) {
 			isTyping = true;
-			chatManager.sendTyping(conversationId);
+			wsManager.sendTyping(conversationId);
 		}
 
 		if (typingTimeout) clearTimeout(typingTimeout);
@@ -58,7 +58,7 @@
 	function stopTyping() {
 		if (isTyping) {
 			isTyping = false;
-			chatManager.sendStopTyping(conversationId);
+			wsManager.sendStopTyping(conversationId);
 		}
 		if (typingTimeout) {
 			clearTimeout(typingTimeout);

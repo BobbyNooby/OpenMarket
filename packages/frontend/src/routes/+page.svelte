@@ -14,8 +14,7 @@
 	import Eye from '@lucide/svelte/icons/eye';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import { m } from '$lib/paraglide/messages.js';
-	import { chatManager } from '$lib/stores/chat.svelte';
-	import { onMount } from 'svelte';
+	import { wsManager } from '$lib/stores/ws.svelte';
 
 	let { data } = $props();
 	let searchQuery = $state('');
@@ -72,7 +71,7 @@
 	});
 
 	onMount(() => {
-		const off = chatManager.on('new_listing', (rawData: unknown) => {
+		const off = wsManager.on('new_listing', (rawData: unknown) => {
 			const listing = rawData as any;
 			// Don't add duplicates
 			if (allListings.some((l: any) => l.id === listing.id)) return;
