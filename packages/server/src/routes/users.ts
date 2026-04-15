@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../db/db';
-import { user, userProfilesTable, usersActivityTable, profileReviewsTable, listingsTable, tradesTable, account } from '../db/schemas';
-import { userRolesTable } from '../db/rbac-schema';
+import { user, userProfilesTable, usersActivityTable, profileReviewsTable, listingsTable, tradesTable, account, watchlistTable, userItemListsTable, notificationsTable, messagesTable, conversationParticipantsTable, reportsTable, uploadsTable } from '../db/schemas';
+import { userRolesTable, userBansTable, userWarningsTable } from '../db/rbac-schema';
 import { eq, and, ne, desc, ilike, or, sql, count } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { authMiddleware } from '../middleware/rbac';
@@ -719,6 +719,108 @@ export const usersRoutes = new Elysia({ prefix: '/users', detail: { tags: ['User
 			}),
 			detail: { description: 'Get authenticated user trade history' }
 		},
+	)
+	// Export all personal data (GDPR data portability)
+	.get(
+		'/me/export',
+		async ({ session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+
+			const userId = session.user.id;
+
+			try {
+				// Gather all user data in parallel
+				const [
+					[userData],
+					[profile],
+					[activity],
+					roles,
+					listings,
+					reviews,
+					trades,
+					watchlist,
+					itemLists,
+					notifications,
+					messages,
+					reports,
+					uploads,
+					bans,
+					warnings,
+				] = await Promise.all([
+					db.select().from(user).where(eq(user.id, userId)),
+					db.select().from(userProfilesTable).where(eq(userProfilesTable.userId, userId)),
+					db.select().from(usersActivityTable).where(eq(usersActivityTable.user_id, userId)),
+					db.select({ roleId: userRolesTable.roleId }).from(userRolesTable).where(eq(userRolesTable.userId, userId)),
+					db.select().from(listingsTable).where(eq(listingsTable.author_id, userId)),
+					db.select().from(profileReviewsTable).where(or(eq(profileReviewsTable.profile_user_id, userId), eq(profileReviewsTable.voter_user_id, userId))),
+					db.select().from(tradesTable).where(or(eq(tradesTable.seller_id, userId), eq(tradesTable.buyer_id, userId))),
+					db.select().from(watchlistTable).where(eq(watchlistTable.user_id, userId)),
+					db.select().from(userItemListsTable).where(eq(userItemListsTable.user_id, userId)),
+					db.select().from(notificationsTable).where(eq(notificationsTable.user_id, userId)),
+					db.select().from(messagesTable).where(eq(messagesTable.sender_id, userId)),
+					db.select().from(reportsTable).where(eq(reportsTable.reporter_id, userId)),
+					db.select().from(uploadsTable).where(eq(uploadsTable.user_id, userId)),
+					db.select().from(userBansTable).where(eq(userBansTable.userId, userId)),
+					db.select().from(userWarningsTable).where(eq(userWarningsTable.userId, userId)),
+				]);
+
+				const exportData = {
+					exported_at: new Date().toISOString(),
+					account: userData ? {
+						id: userData.id,
+						name: userData.name,
+						email: userData.email,
+						email_verified: userData.emailVerified,
+						image: userData.image,
+						created_at: userData.createdAt,
+						updated_at: userData.updatedAt,
+					} : null,
+					profile: profile ?? null,
+					activity: activity ?? null,
+					roles: roles.map(r => r.roleId),
+					listings,
+					reviews,
+					trades,
+					watchlist,
+					item_lists: itemLists,
+					notifications,
+					messages,
+					reports,
+					uploads: uploads.map(u => ({ id: u.id, filename: u.filename, mime_type: u.mime_type, size_bytes: u.size_bytes, created_at: u.created_at })),
+					bans,
+					warnings,
+				};
+
+				return new Response(JSON.stringify(exportData, null, 2), {
+					headers: {
+						'content-type': 'application/json',
+						'content-disposition': `attachment; filename="openmarket-data-export.json"`,
+					},
+				});
+			} catch (err: any) {
+				console.error('Data export error:', err);
+				set.status = 500;
+				return { success: false, error: 'Failed to export data' };
+			}
+		},
+		{ detail: { description: 'Export all personal data (GDPR)' } },
+	)
+	// Delete own account permanently (GDPR right to erasure)
+	.delete(
+		'/me',
+		async ({ session, set }) => {
+			if (!session?.user) { set.status = 401; return { success: false, error: 'Unauthorized' }; }
+
+			try {
+				await db.delete(user).where(eq(user.id, session.user.id));
+				return { success: true, message: 'Account deleted' };
+			} catch (err: any) {
+				console.error('Account deletion error:', err);
+				set.status = 500;
+				return { success: false, error: 'Failed to delete account' };
+			}
+		},
+		{ detail: { description: 'Delete own account permanently (GDPR)' } },
 	)
 	// Get user by ID
 	.get(
