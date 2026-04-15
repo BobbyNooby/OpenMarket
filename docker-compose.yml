@@ -1,6 +1,9 @@
 services:
   postgres:
     image: postgres:17
+    # Uncomment to access DB from outside Docker (for seeding/simulator)
+    # ports:
+    #   - "5432:5432"
     environment:
       POSTGRES_USER: openmarket
       POSTGRES_PASSWORD: ${DB_PASSWORD:-openmarket}

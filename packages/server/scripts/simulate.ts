@@ -6,7 +6,8 @@ import { user, userProfilesTable, listingsTable, listingOfferedItemsTable, listi
 import { eq, sql } from 'drizzle-orm';
 import { listingSelectShape, requestedCurrencyTable, fetchOfferedForListings, serializeListing } from '../src/routes/listings/shared';
 
-const API_URL = process.env.PUBLIC_API_URL || 'http://localhost:3000';
+// For broadcast, always use localhost since the endpoint is localhost-only
+const API_URL = 'http://localhost:3000';
 
 const args = process.argv.slice(2);
 function getArg(name: string, fallback: number): number {
