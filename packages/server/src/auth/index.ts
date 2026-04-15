@@ -36,4 +36,9 @@ export const auth = betterAuth({
   trustedOrigins: process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
     : ["http://localhost:5173", "http://localhost:5174", "http://localhost:4173"],
+  advanced: {
+    crossSubDomainCookies: process.env.COOKIE_DOMAIN
+      ? { enabled: true, domain: process.env.COOKIE_DOMAIN }
+      : undefined,
+  },
 });

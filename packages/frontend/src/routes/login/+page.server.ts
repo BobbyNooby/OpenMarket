@@ -1,14 +1,14 @@
 import { redirect } from '@sveltejs/kit';
-import { apiFetch } from '$lib/api/fetch';
+import { apiFetch, getSessionCookie } from '$lib/api/fetch';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ cookies }) => {
-	const sessionToken = cookies.get('better-auth.session_token');
+	const auth = getSessionCookie(cookies);
 
-	if (sessionToken) {
+	if (auth) {
 		try {
 			const res = await apiFetch('/api/auth/get-session', {
-				headers: { Cookie: `better-auth.session_token=${sessionToken}` }
+				headers: auth.header
 			});
 			const data = await res.json();
 

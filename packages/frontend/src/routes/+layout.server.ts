@@ -1,6 +1,6 @@
 import type { LayoutServerLoad } from "./$types";
 import { redirect } from "@sveltejs/kit";
-import { apiFetch } from "$lib/api/fetch";
+import { apiFetch, getSessionCookie } from "$lib/api/fetch";
 
 // Paths that authenticated-but-no-profile users are allowed to access.
 // Everything else triggers a forced redirect to /onboarding.
@@ -23,14 +23,14 @@ type SiteTheme = { light: ThemeVariables; dark: ThemeVariables };
 const FALLBACK_THEME: SiteTheme = { light: {}, dark: {} };
 
 export const load: LayoutServerLoad = async ({ cookies, url }) => {
+  const auth = getSessionCookie(cookies);
+  const cookieHeader = auth?.header ?? {};
+
   let session = null;
   try {
-    const sessionToken = cookies.get("better-auth.session_token");
     const res = await apiFetch('/api/auth/get-session', {
       credentials: "include",
-      headers: sessionToken
-        ? { Cookie: `better-auth.session_token=${sessionToken}` }
-        : {},
+      headers: cookieHeader,
     });
 
     if (res.ok) {
@@ -72,11 +72,8 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
   let unreadMessageCount = 0;
   if (session?.user) {
     try {
-      const sessionToken = cookies.get("better-auth.session_token");
       const unreadRes = await apiFetch('/api/conversations/unread-count', {
-        headers: sessionToken
-          ? { Cookie: `better-auth.session_token=${sessionToken}` }
-          : {},
+        headers: cookieHeader,
       });
       if (unreadRes.ok) {
         const unreadData = await unreadRes.json();
