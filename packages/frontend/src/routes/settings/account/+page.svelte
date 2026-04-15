@@ -2,16 +2,19 @@
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import { toast } from 'svelte-sonner';
 	import { authClient } from '$lib/api/client';
+	import { m } from '$lib/paraglide/messages.js';
 	import Loader2 from '@lucide/svelte/icons/loader-2';
 	import Key from '@lucide/svelte/icons/key';
 	import Link from '@lucide/svelte/icons/link';
+	import Download from '@lucide/svelte/icons/download';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
-	import ExternalLink from '@lucide/svelte/icons/external-link';
 
 	let { data } = $props();
 
@@ -62,6 +65,54 @@
 
 	async function handleChangePassword() {
 		toast.info('Password change coming soon');
+	}
+
+	let exporting = $state(false);
+	let deleting = $state(false);
+	let deleteConfirm = $state('');
+	let showDeleteDialog = $state(false);
+
+	async function handleExportData() {
+		exporting = true;
+		try {
+			const res = await fetch(`${PUBLIC_API_URL}/api/users/me/export`, {
+				credentials: 'include'
+			});
+			if (!res.ok) throw new Error('Export failed');
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = 'openmarket-data-export.json';
+			a.click();
+			URL.revokeObjectURL(url);
+			toast.success(m.settings_account_export_success());
+		} catch {
+			toast.error(m.settings_account_export_error());
+		} finally {
+			exporting = false;
+		}
+	}
+
+	async function handleDeleteAccount() {
+		if (deleteConfirm !== 'DELETE') return;
+		deleting = true;
+		try {
+			const res = await fetch(`${PUBLIC_API_URL}/api/users/me`, {
+				method: 'DELETE',
+				credentials: 'include'
+			});
+			const json = await res.json();
+			if (json.success) {
+				window.location.href = '/';
+			} else {
+				toast.error(json.error || m.settings_account_delete_error());
+			}
+		} catch {
+			toast.error(m.settings_account_delete_error());
+		} finally {
+			deleting = false;
+		}
 	}
 
 	async function handleLinkDiscord() {
@@ -197,4 +248,86 @@
 			</Card.Content>
 		</Card.Root>
 	{/if}
+
+	<!-- Data & Privacy -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2">
+				<Download class="h-5 w-5" />
+				{m.settings_account_data_title()}
+			</Card.Title>
+			<Card.Description>
+				{m.settings_account_data_description()}
+			</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<p class="mb-4 text-sm text-muted-foreground">{m.settings_account_export_description()}</p>
+			<Button variant="outline" onclick={handleExportData} disabled={exporting}>
+				{#if exporting}
+					<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+				{:else}
+					<Download class="mr-2 h-4 w-4" />
+				{/if}
+				{m.settings_account_export_button()}
+			</Button>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- Danger Zone -->
+	<Card.Root class="border-destructive/50">
+		<Card.Header>
+			<Card.Title class="flex items-center gap-2 text-destructive">
+				<Trash2 class="h-5 w-5" />
+				{m.settings_account_danger_title()}
+			</Card.Title>
+			<Card.Description>
+				{m.settings_account_danger_description()}
+			</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<p class="mb-4 text-sm text-muted-foreground">{m.settings_account_delete_warning()}</p>
+			<AlertDialog.Root bind:open={showDeleteDialog}>
+				<AlertDialog.Trigger>
+					{#snippet child({ props })}
+						<Button variant="destructive" {...props}>
+							<Trash2 class="mr-2 h-4 w-4" />
+							{m.settings_account_delete_button()}
+						</Button>
+					{/snippet}
+				</AlertDialog.Trigger>
+				<AlertDialog.Content>
+					<AlertDialog.Header>
+						<AlertDialog.Title>{m.settings_account_delete_confirm_title()}</AlertDialog.Title>
+						<AlertDialog.Description>
+							{m.settings_account_delete_confirm_description()}
+						</AlertDialog.Description>
+					</AlertDialog.Header>
+					<div class="py-4">
+						<Label for="delete-confirm">{m.settings_account_delete_confirm_label()}</Label>
+						<Input
+							id="delete-confirm"
+							bind:value={deleteConfirm}
+							placeholder="DELETE"
+							class="mt-2"
+						/>
+					</div>
+					<AlertDialog.Footer>
+						<AlertDialog.Cancel onclick={() => { deleteConfirm = ''; }}>
+							{m.button_cancel()}
+						</AlertDialog.Cancel>
+						<Button
+							variant="destructive"
+							onclick={handleDeleteAccount}
+							disabled={deleteConfirm !== 'DELETE' || deleting}
+						>
+							{#if deleting}
+								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+							{/if}
+							{m.settings_account_delete_permanent()}
+						</Button>
+					</AlertDialog.Footer>
+				</AlertDialog.Content>
+			</AlertDialog.Root>
+		</Card.Content>
+	</Card.Root>
 </div>
