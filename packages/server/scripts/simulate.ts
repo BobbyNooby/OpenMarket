@@ -21,6 +21,10 @@ function randomChoice<T>(arr: T[]): T {
 	return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function randomInt(min: number, max: number) {
+	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 const ACTIONS = [
 	{ name: 'browse', weight: 10, fn: trackPageView },
 	{ name: 'create_listing', weight: 30, fn: createListing },
@@ -98,18 +102,26 @@ async function createListing() {
 
 	// Add offered items/currencies
 	if (currencyIds.length > 0 && !values.requested_currency_id) {
-		await db.insert(listingOfferedCurrenciesTable).values({
-			listing_id: listing.id,
-			currency_id: randomChoice(currencyIds),
-			amount: Math.floor(Math.random() * 10000) + 100,
-		});
+		const numCurr = randomInt(1, Math.min(3, currencyIds.length));
+		const shuffled = [...currencyIds].sort(() => Math.random() - 0.5);
+		for (let i = 0; i < numCurr; i++) {
+			await db.insert(listingOfferedCurrenciesTable).values({
+				listing_id: listing.id,
+				currency_id: shuffled[i],
+				amount: randomInt(100, 10000),
+			});
+		}
 	}
 	if (itemIds.length > 0 && values.requested_currency_id) {
-		await db.insert(listingOfferedItemsTable).values({
-			listing_id: listing.id,
-			item_id: randomChoice(itemIds),
-			amount: Math.floor(Math.random() * 5) + 1,
-		});
+		const numItems = randomInt(1, Math.min(7, itemIds.length));
+		const shuffled = [...itemIds].sort(() => Math.random() - 0.5);
+		for (let i = 0; i < numItems; i++) {
+			await db.insert(listingOfferedItemsTable).values({
+				listing_id: listing.id,
+				item_id: shuffled[i],
+				amount: randomInt(1, 5),
+			});
+		}
 	}
 
 	// Broadcast via the internal endpoint so WebSocket clients see it in real-time

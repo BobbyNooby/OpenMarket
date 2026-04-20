@@ -674,7 +674,7 @@ async function seed() {
     }
 
     if (original.requested_currency_id) {
-      const numItems = randomInt(1, 4);
+      const numItems = randomInt(1, 7);
       const shuffled = [...insertedItems].sort(() => Math.random() - 0.5);
       for (let i = 0; i < numItems && i < shuffled.length; i++) {
         await db.insert(listingOfferedItemsTable).values({
@@ -685,7 +685,7 @@ async function seed() {
         offeredItemsCount++;
       }
     } else if (Math.random() > 0.6) {
-      const numItems = randomInt(1, 4);
+      const numItems = randomInt(1, 7);
       const shuffled = [...insertedItems].sort(() => Math.random() - 0.5);
       for (let i = 0; i < numItems && i < shuffled.length; i++) {
         if (shuffled[i].id !== original.requested_item_id) {
