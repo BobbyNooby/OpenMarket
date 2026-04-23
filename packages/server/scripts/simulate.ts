@@ -5,6 +5,7 @@ import { db } from '../src/db/db';
 import { user, userProfilesTable, listingsTable, listingOfferedItemsTable, listingOfferedCurrenciesTable, itemsTable, currenciesTable, profileReviewsTable, watchlistTable } from '../src/db/schemas';
 import { eq, sql } from 'drizzle-orm';
 import { listingSelectShape, requestedCurrencyTable, fetchOfferedForListings, serializeListing } from '../src/routes/listings/shared';
+import { trackEvent } from '../src/services/analytics';
 
 // For broadcast, always use localhost since the endpoint is localhost-only
 const API_URL = 'http://localhost:3000';
@@ -25,13 +26,29 @@ function randomInt(min: number, max: number) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+const PAGE_PATHS = ['/', '/listings', '/items', '/dashboard', '/watchlist', '/profile'];
+const SEARCH_QUERIES = ['sword', 'rare', 'gold', 'armor', 'skin', 'legendary', 'cheap', 'bundle', 'rune', 'pet'];
+const FILTER_CHOICES: Array<{ filter_type: string; value: string }> = [
+	{ filter_type: 'order_type', value: 'buy' },
+	{ filter_type: 'order_type', value: 'sell' },
+	{ filter_type: 'paying_type', value: 'each' },
+	{ filter_type: 'paying_type', value: 'total' },
+	{ filter_type: 'status', value: 'active' },
+];
+
 const ACTIONS = [
-	{ name: 'browse', weight: 10, fn: trackPageView },
-	{ name: 'create_listing', weight: 30, fn: createListing },
-	{ name: 'review', weight: 10, fn: submitReview },
-	{ name: 'watchlist', weight: 10, fn: toggleWatchlist },
-	{ name: 'view', weight: 15, fn: trackPageView },
-	{ name: 'pause_listing', weight: 5, fn: pauseListing },
+	{ name: 'page_view', weight: 15, fn: pageView },
+	{ name: 'listing_view', weight: 20, fn: viewListing },
+	{ name: 'create_listing', weight: 15, fn: createListing },
+	{ name: 'search', weight: 10, fn: runSearch },
+	{ name: 'filter_applied', weight: 5, fn: applyFilter },
+	{ name: 'suggestion_clicked', weight: 4, fn: clickSuggestion },
+	{ name: 'profile_view', weight: 8, fn: viewProfile },
+	{ name: 'listing_contact', weight: 5, fn: contactListing },
+	{ name: 'review', weight: 7, fn: submitReview },
+	{ name: 'watchlist', weight: 6, fn: toggleWatchlist },
+	{ name: 'pause_listing', weight: 3, fn: pauseListing },
+	{ name: 'listing_renewed', weight: 2, fn: renewListing },
 ];
 
 const totalWeight = ACTIONS.reduce((sum, a) => sum + a.weight, 0);
@@ -42,9 +59,22 @@ function pickAction() {
 }
 
 let userList: { id: string; username: string }[] = [];
+let itemList: { id: string; name: string }[] = [];
+let currencyList: { id: string; name: string }[] = [];
 let itemIds: string[] = [];
 let currencyIds: string[] = [];
 let listingIds: string[] = [];
+const listingAuthors = new Map<string, string>();
+const sessionsByUser = new Map<string, string>();
+
+function sessionFor(userId: string): string {
+	let s = sessionsByUser.get(userId);
+	if (!s) {
+		s = `sim-${Math.random().toString(36).slice(2, 12)}`;
+		sessionsByUser.set(userId, s);
+	}
+	return s;
+}
 
 async function setup() {
 	const users = await db
@@ -59,13 +89,16 @@ async function setup() {
 	}
 	userList = users;
 
-	const items = await db.select({ id: itemsTable.id }).from(itemsTable);
-	const currencies = await db.select({ id: currenciesTable.id }).from(currenciesTable);
-	const listings = await db.select({ id: listingsTable.id }).from(listingsTable).limit(50);
+	const items = await db.select({ id: itemsTable.id, name: itemsTable.name }).from(itemsTable);
+	const currencies = await db.select({ id: currenciesTable.id, name: currenciesTable.name }).from(currenciesTable);
+	const listings = await db.select({ id: listingsTable.id, author_id: listingsTable.author_id }).from(listingsTable).limit(50);
 
+	itemList = items;
+	currencyList = currencies;
 	itemIds = items.map(i => i.id);
 	currencyIds = currencies.map(c => c.id);
 	listingIds = listings.map(l => l.id);
+	for (const l of listings) listingAuthors.set(l.id, l.author_id);
 
 	console.log(`Loaded ${userList.length} users, ${itemIds.length} items, ${currencyIds.length} currencies, ${listingIds.length} listings`);
 }
@@ -99,6 +132,19 @@ async function createListing() {
 
 	const [listing] = await db.insert(listingsTable).values(values).returning();
 	listingIds.push(listing.id);
+	listingAuthors.set(listing.id, u.id);
+
+	trackEvent({
+		type: 'listing_created',
+		userId: u.id,
+		sessionId: sessionFor(u.id),
+		path: '/listings/new',
+		metadata: {
+			listing_id: listing.id,
+			order_type: values.order_type,
+			item_id: values.requested_item_id ?? undefined,
+		},
+	});
 
 	// Add offered items/currencies
 	if (currencyIds.length > 0 && !values.requested_currency_id) {
@@ -152,15 +198,24 @@ async function submitReview() {
 	const target = randomChoice(userList.filter(u => u.id !== reviewer.id));
 	if (!target) return 'not enough users';
 
+	const reviewType = Math.random() > 0.15 ? 'upvote' : 'downvote';
 	const comments = ['Great trader!', 'Fast response', 'Good deal', 'Smooth trade', 'Reliable', 'Fair prices', 'Friendly'];
 	await db.insert(profileReviewsTable).values({
 		profile_user_id: target.id,
 		voter_user_id: reviewer.id,
-		type: Math.random() > 0.15 ? 'upvote' : 'downvote',
+		type: reviewType,
 		comment: Math.random() > 0.3 ? randomChoice(comments) : null,
 	}).onConflictDoNothing();
 
-	return `${reviewer.username} reviewed ${target.username}`;
+	trackEvent({
+		type: 'review_submitted',
+		userId: reviewer.id,
+		sessionId: sessionFor(reviewer.id),
+		path: `/u/${target.username}`,
+		metadata: { target_user_id: target.id, type: reviewType },
+	});
+
+	return `${reviewer.username} ${reviewType}d ${target.username}`;
 }
 
 async function toggleWatchlist() {
@@ -182,11 +237,120 @@ async function pauseListing() {
 	return `set ${id.slice(0, 8)} to ${status}`;
 }
 
-async function trackPageView() {
-	// Just a no-op log — analytics tracking requires HTTP
+async function pageView() {
 	const u = randomUser();
-	const pages = ['/', '/listings', '/items', '/dashboard', '/watchlist'];
-	return `${u.username} browsed ${randomChoice(pages)}`;
+	const path = randomChoice(PAGE_PATHS);
+	trackEvent({
+		type: 'page_view',
+		userId: u.id,
+		sessionId: sessionFor(u.id),
+		path,
+	});
+	return `${u.username} viewed ${path}`;
+}
+
+async function viewListing() {
+	if (listingIds.length === 0) return 'no listings';
+	const u = randomUser();
+	const id = randomChoice(listingIds);
+	const source = randomChoice(['browse', 'search', 'direct'] as const);
+	trackEvent({
+		type: 'listing_view',
+		userId: u.id,
+		sessionId: sessionFor(u.id),
+		path: `/listing/${id}`,
+		metadata: { listing_id: id, source },
+	});
+	return `${u.username} viewed listing ${id.slice(0, 8)} (${source})`;
+}
+
+async function runSearch() {
+	const u = randomUser();
+	const query = randomChoice(SEARCH_QUERIES);
+	trackEvent({
+		type: 'search',
+		userId: u.id,
+		sessionId: sessionFor(u.id),
+		path: '/listings',
+		metadata: { query, result_count: randomInt(0, 50) },
+	});
+	return `${u.username} searched "${query}"`;
+}
+
+async function applyFilter() {
+	const u = randomUser();
+	const choice = randomChoice(FILTER_CHOICES);
+	trackEvent({
+		type: 'filter_applied',
+		userId: u.id,
+		sessionId: sessionFor(u.id),
+		path: '/listings',
+		metadata: { filter_type: choice.filter_type, value: choice.value },
+	});
+	return `${u.username} filtered ${choice.filter_type}=${choice.value}`;
+}
+
+async function clickSuggestion() {
+	const u = randomUser();
+	const useItem = Math.random() > 0.5 && itemList.length > 0;
+	const entry = useItem ? randomChoice(itemList) : (currencyList.length > 0 ? randomChoice(currencyList) : null);
+	if (!entry) return 'no items or currencies';
+	const kind: 'item' | 'currency' = useItem ? 'item' : 'currency';
+	trackEvent({
+		type: 'suggestion_clicked',
+		userId: u.id,
+		sessionId: sessionFor(u.id),
+		path: '/listings',
+		metadata: { type: kind, id: entry.id, name: entry.name, query: randomChoice(SEARCH_QUERIES) },
+	});
+	return `${u.username} clicked ${kind} suggestion ${entry.name}`;
+}
+
+async function viewProfile() {
+	const u = randomUser();
+	const target = randomChoice(userList.filter(x => x.id !== u.id));
+	if (!target) return 'not enough users';
+	trackEvent({
+		type: 'profile_view',
+		userId: u.id,
+		sessionId: sessionFor(u.id),
+		path: `/u/${target.username}`,
+		metadata: { target_user_id: target.id },
+	});
+	return `${u.username} viewed ${target.username}'s profile`;
+}
+
+async function contactListing() {
+	if (listingIds.length === 0) return 'no listings';
+	const u = randomUser();
+	const id = randomChoice(listingIds);
+	const authorId = listingAuthors.get(id);
+	if (!authorId || authorId === u.id) return 'skipped self-contact';
+	trackEvent({
+		type: 'listing_contact',
+		userId: u.id,
+		sessionId: sessionFor(u.id),
+		path: `/listing/${id}`,
+		metadata: { listing_id: id, author_id: authorId },
+	});
+	return `${u.username} contacted listing ${id.slice(0, 8)}`;
+}
+
+async function renewListing() {
+	if (listingIds.length === 0) return 'no listings';
+	const id = randomChoice(listingIds);
+	const authorId = listingAuthors.get(id);
+	if (!authorId) return 'unknown author';
+	const newExpiry = new Date(Date.now() + 30 * 86400000);
+	await db.update(listingsTable).set({ expires_at: newExpiry }).where(eq(listingsTable.id, id));
+	trackEvent({
+		type: 'listing_renewed',
+		userId: authorId,
+		sessionId: sessionFor(authorId),
+		path: `/listing/${id}`,
+		metadata: { listing_id: id },
+	});
+	return `renewed ${id.slice(0, 8)}`;
 }
 
 async function fireAction() {
